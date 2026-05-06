@@ -1,0 +1,188 @@
+{
+  "roots": [
+    "companion_app",
+    "core",
+    "dm_app",
+    "dnd_workspace"
+  ],
+  "packages": [
+    {
+      "name": "dnd_workspace",
+      "version": "0.0.0",
+      "dependencies": [],
+      "devDependencies": []
+    },
+    {
+      "name": "core",
+      "version": "0.0.1",
+      "dependencies": [
+        "nsd"
+      ],
+      "devDependencies": []
+    },
+    {
+      "name": "dm_app",
+      "version": "1.0.0+1",
+      "dependencies": [
+        "core",
+        "flutter"
+      ],
+      "devDependencies": []
+    },
+    {
+      "name": "companion_app",
+      "version": "1.0.0+1",
+      "dependencies": [
+        "core",
+        "flutter"
+      ],
+      "devDependencies": []
+    },
+    {
+      "name": "flutter",
+      "version": "0.0.0",
+      "dependencies": [
+        "characters",
+        "collection",
+        "material_color_utilities",
+        "meta",
+        "sky_engine",
+        "vector_math"
+      ]
+    },
+    {
+      "name": "nsd",
+      "version": "5.0.1",
+      "dependencies": [
+        "flutter",
+        "nsd_android",
+        "nsd_ios",
+        "nsd_macos",
+        "nsd_platform_interface",
+        "nsd_windows"
+      ]
+    },
+    {
+      "name": "vector_math",
+      "version": "2.2.0",
+      "dependencies": []
+    },
+    {
+      "name": "sky_engine",
+      "version": "0.0.0",
+      "dependencies": []
+    },
+    {
+      "name": "meta",
+      "version": "1.17.0",
+      "dependencies": []
+    },
+    {
+      "name": "material_color_utilities",
+      "version": "0.13.0",
+      "dependencies": [
+        "collection"
+      ]
+    },
+    {
+      "name": "collection",
+      "version": "1.19.1",
+      "dependencies": []
+    },
+    {
+      "name": "characters",
+      "version": "1.4.1",
+      "dependencies": []
+    },
+    {
+      "name": "nsd_windows",
+      "version": "3.0.1",
+      "dependencies": [
+        "flutter"
+      ]
+    },
+    {
+      "name": "nsd_platform_interface",
+      "version": "2.2.0",
+      "dependencies": [
+        "collection",
+        "flutter",
+        "plugin_platform_interface",
+        "provider",
+        "uuid"
+      ]
+    },
+    {
+      "name": "nsd_macos",
+      "version": "3.0.1",
+      "dependencies": [
+        "flutter"
+      ]
+    },
+    {
+      "name": "nsd_ios",
+      "version": "3.0.1",
+      "dependencies": [
+        "flutter"
+      ]
+    },
+    {
+      "name": "nsd_android",
+      "version": "2.2.0",
+      "dependencies": [
+        "flutter"
+      ]
+    },
+    {
+      "name": "provider",
+      "version": "6.1.5+1",
+      "dependencies": [
+        "collection",
+        "flutter",
+        "nested"
+      ]
+    },
+    {
+      "name": "plugin_platform_interface",
+      "version": "2.1.8",
+      "dependencies": [
+        "meta"
+      ]
+    },
+    {
+      "name": "nested",
+      "version": "1.0.0",
+      "dependencies": [
+        "flutter"
+      ]
+    },
+    {
+      "name": "uuid",
+      "version": "4.5.3",
+      "dependencies": [
+        "crypto",
+        "fixnum"
+      ]
+    },
+    {
+      "name": "fixnum",
+      "version": "1.1.1",
+      "dependencies": []
+    },
+    {
+      "name": "crypto",
+      "version": "3.0.7",
+      "dependencies": [
+        "typed_data"
+      ]
+    },
+    {
+      "name": "typed_data",
+      "version": "1.4.0",
+      "dependencies": [
+        "collection"
+      ]
+    }
+  ],
+  "configVersion": 1
+}

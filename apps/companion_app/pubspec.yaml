@@ -1,0 +1,11 @@
+name: companion_app
+publish_to: none
+version: 1.0.0+1
+resolution: workspace
+environment:
+  sdk: ^3.11.5
+dependencies:
+  flutter:
+    sdk: flutter
+  core:
+    path: ../../packages/core
