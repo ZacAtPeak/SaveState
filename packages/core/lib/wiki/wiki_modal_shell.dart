@@ -4,6 +4,7 @@ import 'wiki_modal_provider.dart';
 import 'wiki_page_list.dart';
 import 'wiki_page_detail.dart';
 import 'wiki_type_picker.dart';
+import 'wiki_create_form.dart';
 import 'package:core/models/models.dart';
 
 class WikiModalShell extends StatefulWidget {
@@ -111,15 +112,12 @@ class _WikiModalShellState extends State<WikiModalShell> {
       );
     }
     if (modal.isCreating && modal.pendingType != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Selected type: ${modal.pendingType!.displayName}'),
-            const SizedBox(height: 12),
-            OutlinedButton(onPressed: widget.provider.cancelCreate, child: const Text('Cancel')),
-          ],
-        ),
+      return WikiCreateForm(
+        selectedType: modal.pendingType!,
+        onCancel: widget.provider.cancelCreate,
+        onSubmit: (_) {
+          widget.provider.cancelCreate();
+        },
       );
     }
     return modal.selectedPage != null
@@ -144,21 +142,16 @@ class _WikiModalShellState extends State<WikiModalShell> {
                   },
                 );
               }
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Selected type: ${modal.pendingType!.displayName}'),
-                    const SizedBox(height: 12),
-                    OutlinedButton(
-                      onPressed: () {
-                        widget.provider.cancelCreate();
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text('Cancel'),
-                    ),
-                  ],
-                ),
+              return WikiCreateForm(
+                selectedType: modal.pendingType!,
+                onCancel: () {
+                  widget.provider.cancelCreate();
+                  Navigator.of(context).pop();
+                },
+                onSubmit: (_) {
+                  widget.provider.cancelCreate();
+                  Navigator.of(context).pop();
+                },
               );
             },
           ),
