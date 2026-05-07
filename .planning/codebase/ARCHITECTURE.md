@@ -4,155 +4,127 @@
 
 ## Pattern Overview
 
-**Overall:** Multi-app Flutter workspace with shared core package, designed for peer-to-peer local network communication between a Dungeon Master (DM) app and a Player Companion app.
+**Overall:** Package-based monorepo with shared domain layer and app-specific presentation layers.
 
 **Key Characteristics:**
-- Dart workspace resolution (`resolution: workspace`) for unified dependency management
-- Shared `core` package for common models, services, and utilities
-- Network Service Discovery (NSD) for local network peer discovery and communication
-- Provider-based state management (resolved dependency)
-- Two independent Flutter apps with distinct roles sharing a common protocol layer
-
-## Project: SaveState
-
-A D&D (Dungeons & Dragons) tooling system consisting of two apps that communicate over a local network:
-- **DM App** (`dm_app`) - Run by the Dungeon Master, likely hosts the game session
-- **Companion App** (`companion_app`) - Run by players, connects to the DM's session
+- Domain models are immutable value objects with JSON serialization
+- Apps use `StatefulWidget` + `setState` for local state (Provider declared but not wired)
+- Drag-and-drop data transfer between sidebar and initiative tracker
+- Demo/fixture data lives in core, not in apps
+- No external backend — all data is in-memory (networking packages declared but unused)
 
 ## Layers
 
-### Shared Core Layer
-- **Purpose:** Common types, models, protocols, and services shared between both apps
-- **Location:** `packages/core/`
-- **Contains:** Data models, network protocol definitions, shared utilities, NSD service wrappers
-- **Depends on:** `nsd` (Network Service Discovery), `uuid`, `crypto`
-- **Used by:** Both `dm_app` and `companion_app`
+**Domain Layer (core):**
+- Purpose: D&D domain models, value types, enums, and demo data
+- Location: `packages/core/lib/`
+- Contains: `models/`, `data/`
+- Depends on: `uuid` (ID generation), `nsd` (network discovery — declared), `shelf` + `http` (server/client — declared)
+- Used by: Both `companion_app` and `dm_app`
 
-### Application Layer (DM App)
-- **Purpose:** Dungeon Master-facing Flutter application
-- **Location:** `apps/dm_app/`
-- **Contains:** UI widgets, screens, DM-specific business logic, session hosting
-- **Depends on:** `flutter`, `core`
-- **Used by:** End user (Dungeon Master)
-
-### Application Layer (Companion App)
-- **Purpose:** Player-facing Flutter companion application
-- **Location:** `apps/companion_app/`
-- **Contains:** UI widgets, screens, player-specific business logic, session joining
-- **Depends on:** `flutter`, `core`
-- **Used by:** End user (Player)
+**Presentation Layer (apps):**
+- Purpose: Flutter UI, screens, widgets, and app-specific state
+- Location: `apps/companion_app/lib/`, `apps/dm_app/lib/`
+- Contains: `main.dart` (entry + root widget), `widgets/` (reusable components)
+- Depends on: `flutter` (SDK), `core` (path dependency), `provider` (declared, not used)
+- Used by: End users (players via companion_app, DMs via dm_app)
 
 ## Data Flow
 
-### Session Discovery and Connection Flow (Intended)
+**DM App — Combatant Registration:**
 
-1. **DM App** starts and registers a network service via NSD (service type likely `_savestate._tcp`)
-2. **Companion App** scans for available NSD services on the local network
-3. **Companion App** discovers the DM's service and initiates a connection
-4. **Peer-to-peer communication** established between the two apps for game state sync
+1. Demo data loaded in `HomeScreen` state (`_characters`, `_monsters`, `_npcs`)
+2. Each entry wrapped in `_SidebarEntry` containing `CombatantDragData` + `CreatureDetail`
+3. Sidebar renders `_DraggableCombatantTile` wrapping `Draggable<CombatantDragData>`
+4. User drags tile onto `InitiativeTracker`'s `DragTarget<CombatantDragData>`
+5. `_onCombatantDropped` rolls initiative (d20 + dex mod), creates `InitiativeEntry`
+6. Entry added to `_sortedEntries`, sorted by initiative descending
+7. `RollHistoryEntry` emitted via `onRoll` callback to parent state
 
-**State Management:**
-- `provider` (v6.1.5+) is resolved as a transitive dependency, indicating Provider pattern will be used
-- State likely flows through `ChangeNotifier` or `Riverpod`-style providers
-- Game state synchronization happens over the NSD-discovered connection
+**DM App — Detail View Selection:**
 
-### Network Communication
+1. Sidebar tile tapped → `_onSelect` sets `_selectedDetail`
+2. Initiative card tapped → `_onTrackerEntryTap` looks up detail via `_detailById` map
+3. `CreatureDetailView` receives `CreatureDetail?` and renders tabbed content
+4. Spell slot tracking is local to `_SpellSlotBlockState` (toggles available count)
 
-**Discovery Layer:**
-- `nsd` package (v5.0.1) provides cross-platform Network Service Discovery
-- Platform implementations resolved: `nsd_android` (2.2.0), `nsd_ios` (3.0.1), `nsd_macos` (3.0.1), `nsd_windows` (3.0.1)
-- All route through `nsd_platform_interface` (2.2.0)
+**DM App — Turn Management:**
 
-**Identity & Security:**
-- `uuid` (v4.5.3) for generating unique session/player identifiers
-- `crypto` (v3.0.7) for cryptographic operations (likely session tokens, message signing)
+1. `_activeIndex` tracked in `HomeScreen` state
+2. Previous/Next buttons call `_previousTurn` / `_nextTurn` on `InitiativeTracker`
+3. `onActiveIndexChanged` callback propagates to parent
+4. HP adjustments via `_adjustHP` (±1) mutate entry in place via `copyWith`
+
+**Companion App — Skeleton:**
+
+1. `HomeScreen` renders `GenericTabView` with 3 placeholder tabs (Characters, Inventory, Spells)
+2. No data flow yet — all content is `Center(child: Text(...))` placeholders
+
+## State Management
+
+**Current approach:** `StatefulWidget` + `setState` in both apps.
+
+- `HomeScreen` (dm_app) owns all state: entries, active index, sidebar expansion, roll history, selected detail
+- `InitiativeTracker` maintains internal `_sortedEntries` copy, syncs to parent via callbacks
+- `_SpellSlotBlockState` manages local spell slot toggling
+- `provider ^6.1.2` is a dependency in both apps but **not wired up anywhere**
+
+**Callback pattern:** Child widgets emit changes via `ValueChanged<T>` callbacks to parent `setState`:
+```dart
+// InitiativeTracker → HomeScreen
+onEntriesChanged: _onEntriesChanged,        // List<InitiativeEntry>
+onActiveIndexChanged: _onActiveIndexChanged, // int
+onRoll: _onRoll,                            // RollHistoryEntry
+onEntryTap: _onTrackerEntryTap,             // InitiativeEntry
+```
 
 ## Key Abstractions
 
-### Network Service (NSD)
-- **Purpose:** Local network peer discovery without requiring internet or central server
-- **Expected location in core:** `packages/core/lib/src/services/discovery_service.dart` (not yet created)
-- **Pattern:** Service wrapper around `nsd` package providing app-specific service registration and discovery
+**CreatureDetail (`apps/dm_app/lib/widgets/creature_detail_view.dart`):**
+- Purpose: Unified display model that normalizes `PlayerCharacter`, `Monster`, and `NPC` into a single view shape
+- Factory constructors: `fromPlayerCharacter`, `fromMonster`, `fromNPC`
+- Pattern: Adapter — maps three different domain types to one presentation type
 
-### Game Session
-- **Purpose:** Represent an active D&D game session with state, players, and DM
-- **Expected location in core:** `packages/core/lib/src/models/` (not yet created)
-- **Pattern:** Likely immutable data classes with serialization support
+**CombatantDragData (`apps/dm_app/lib/widgets/initiative_tracker.dart`):**
+- Purpose: Lightweight data carrier for drag-and-drop (id, name, initiative modifier, HP, status)
+- Factory constructors: `fromPlayerCharacter`, `fromMonster`, `fromNPC`
+- Pattern: DTO — strips domain model down to what drag-and-drop needs
 
-### Communication Protocol
-- **Purpose:** Define message types and serialization between DM and companion apps
-- **Expected location in core:** `packages/core/lib/src/protocol/` (not yet created)
-- **Pattern:** Message types with JSON or binary serialization
+**InitiativeEntry (`apps/dm_app/lib/widgets/initiative_tracker.dart`):**
+- Purpose: Runtime combat tracker entry with `sourceId` linking back to original creature
+- Has `copyWith` for immutable updates
+- Pattern: Value object with identity (unique `id` per instance, even for same creature)
+
+**EncounterState / EncounterEntry (`packages/core/lib/models/encounter.dart`):**
+- Purpose: Serialized encounter state (round, turn index, entries, notes)
+- **Not exported** in `models.dart` barrel file — currently unused
+- `EncounterState` has mutable fields (`round`, `currentTurnIndex`, `isActive`)
 
 ## Entry Points
 
-### DM App
-- **Location:** `apps/dm_app/lib/main.dart` (not yet created)
-- **Triggers:** User launches the app
-- **Responsibilities:** Initialize NSD service registration, present DM UI, host game session
+**`apps/dm_app/lib/main.dart`:**
+- Triggers: `flutter run` from `apps/dm_app/`
+- Responsibilities: Creates `DmApp` (MaterialApp), renders `HomeScreen` with sidebar + initiative tracker + detail view + roll history drawer
 
-### Companion App
-- **Location:** `apps/companion_app/lib/main.dart` (not yet created)
-- **Triggers:** User launches the app
-- **Responsibilities:** Scan for DM services, present player UI, join game session
-
-### Core Package
-- **Location:** `packages/core/lib/core.dart` (barrel export, not yet created)
-- **Triggers:** Imported by both apps
-- **Responsibilities:** Export shared models, services, and utilities
+**`apps/companion_app/lib/main.dart`:**
+- Triggers: `flutter run` from `apps/companion_app/`
+- Responsibilities: Creates `CompanionApp` (MaterialApp), renders `HomeScreen` with `GenericTabView` (3 placeholder tabs)
 
 ## Error Handling
 
-**Strategy:** Not yet implemented - project is in scaffolding phase.
+**Strategy:** No explicit error handling — no try/catch, no error boundaries, no error states in UI.
 
-**Expected Patterns (based on Flutter conventions):**
-- Result/Either types for network operations
-- Exception classes in `packages/core/lib/src/exceptions/`
-- UI-level error display via Provider state
+**Patterns:**
+- Null-safe defaults throughout (e.g., `json['id'] as String?` with fallback constructors)
+- `DamageType.values.byName()` will throw on unknown values (no graceful fallback)
+- Initiative tracker silently ignores out-of-range indices
 
 ## Cross-Cutting Concerns
 
-**Logging:** Not yet configured. Expected to use `debugPrint` or a logging package added to core.
-
-**Validation:** Not yet implemented. Expected model-level validation in core package.
-
-**Authentication:** Not required - local network communication with NSD-based discovery. Session identity handled via UUID tokens.
-
-**Serialization:** Not yet implemented. Expected JSON serialization for network messages, likely using `json_serializable` or manual `toJson`/`fromJson` methods.
-
-## Platform Support
-
-**Target Platforms (inferred from NSD platform plugins):**
-- Android (nsd_android 2.2.0)
-- iOS (nsd_ios 3.0.1)
-- macOS (nsd_macos 3.0.1)
-- Windows (nsd_windows 3.0.1)
-
-**Flutter Version:** 3.41.9
-**Dart SDK:** ^3.11.5 (workspace), ^3.5.0 (core, dm_app), ^3.11.5 (companion_app)
-
-## Dependency Graph
-
-```
-dnd_workspace (workspace root)
-├── core
-│   ├── nsd ^5.0.1
-│   │   ├── nsd_android ^2.2.0
-│   │   ├── nsd_ios ^3.0.1
-│   │   ├── nsd_macos ^3.0.1
-│   │   ├── nsd_windows ^3.0.1
-│   │   └── nsd_platform_interface ^2.2.0
-│   ├── uuid (transitive) ^4.5.3
-│   └── crypto (transitive) ^3.0.7
-├── dm_app
-│   ├── flutter (sdk)
-│   ├── core (path dependency)
-│   └── provider (transitive) ^6.1.5+1
-└── companion_app
-    ├── flutter (sdk)
-    ├── core (path dependency)
-    └── provider (transitive) ^6.1.5+1
-```
+**Logging:** None — no logging framework, no console output
+**Validation:** None — models accept any values from JSON without validation
+**Authentication:** None — no auth mechanism
+**Serialization:** Manual `toJson`/`fromJson` on every model class (no codegen like `json_serializable`)
 
 ---
 

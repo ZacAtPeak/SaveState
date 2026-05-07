@@ -5,29 +5,51 @@
 ## APIs & External Services
 
 **Network Service Discovery (NSD):**
-- `nsd` 5.0.1 - Cross-platform network service discovery
-  - Location: `packages/core/pubspec.yaml:8`
-  - Purpose: Enables local network device/service discovery between DM app and companion app
-  - Platform plugins: `nsd_android`, `nsd_ios`, `nsd_macos`, `nsd_windows`
-  - This is the **only external service integration** in the workspace
+- `nsd` ^5.0.1 — Local network device discovery for app-to-app communication
+  - Platform implementations: `nsd_android` 2.2.0, `nsd_ios` 3.0.1, `nsd_macos` 3.0.1, `nsd_windows` 3.0.1
+  - Registered in macOS `GeneratedPluginRegistrant.swift` for both apps
+  - Purpose: Enable companion_app and dm_app to discover each other on local network
+  - Declared in: `packages/core/pubspec.yaml`
 
-**Note:** This is an early-stage workspace. No cloud APIs, backend services, or third-party integrations are configured yet.
+**HTTP Client:**
+- `http` ^1.6.0 — HTTP client for network requests
+  - Declared in: `packages/core/pubspec.yaml`
+  - Current usage: Not actively imported in any `.dart` files (dependency present but unused)
+
+**HTTP Server:**
+- `shelf` ^1.4.2 — Lightweight HTTP server framework
+  - Declared in: `packages/core/pubspec.yaml`
+  - Current usage: Not actively imported in any `.dart` files (dependency present but unused)
 
 ## Data Storage
 
 **Databases:**
-- None configured
+- None — No database integration detected
 
 **File Storage:**
-- Local filesystem only (no cloud storage integration)
+- Local filesystem only — No cloud storage integration
+
+**Serialization:**
+- Manual JSON serialization — All domain models implement `toJson()` / `fromJson()`
+  - `PlayerCharacter` (`packages/core/lib/models/player_character.dart`)
+  - `Monster` (`packages/core/lib/models/monster.dart`)
+  - `NPC` (`packages/core/lib/models/npc.dart`)
+  - `Item` (`packages/core/lib/models/item.dart`)
+  - `EncounterEntry`, `EncounterState`, `DiceRoll` (`packages/core/lib/models/encounter.dart`)
+  - Value types: `AbilityScores`, `MovementSpeed`, `Senses`, `SkillProficiency`, `SpecialAbility`, `Attack`, `LegendaryAction`, `SpellSlot`, `StatusCondition` (`packages/core/lib/models/value_types.dart`)
 
 **Caching:**
-- None configured
+- None detected
 
 ## Authentication & Identity
 
 **Auth Provider:**
-- None configured
+- None — No authentication system implemented
+
+**Entity Identification:**
+- `uuid` ^4.5.1 (locked: 4.5.3) — UUID v4 generation
+  - Used for auto-generating IDs on all domain entities when not provided
+  - Pattern: `id = id ?? const Uuid().v4()` in constructors
 
 ## Monitoring & Observability
 
@@ -35,82 +57,63 @@
 - None
 
 **Logs:**
-- No logging framework configured
+- None — No logging framework in use
 
 ## CI/CD & Deployment
 
 **Hosting:**
-- Not configured
+- Not configured — No deployment target detected
 
 **CI Pipeline:**
-- None (no `.github/`, no CI configuration files)
+- None — No `.github/workflows/`, `.gitlab-ci.yml`, or equivalent
+
+**Build Automation:**
+- None — No Makefile, shell scripts, or build automation
 
 ## Environment Configuration
 
 **Required env vars:**
-- None defined (no `.env` files detected)
+- None detected — No environment variable usage
 
 **Secrets location:**
-- Not applicable - no secrets configured
-
-## Dependency Graph
-
-```
-dnd_workspace (root)
-├── core (packages/core)
-│   └── nsd ^5.0.1
-│       ├── nsd_android 2.2.0
-│       ├── nsd_ios 3.0.1
-│       ├── nsd_macos 3.0.1
-│       ├── nsd_windows 3.0.1
-│       └── nsd_platform_interface 2.2.0
-│           ├── provider 6.1.5+1
-│           ├── plugin_platform_interface 2.1.8
-│           ├── uuid 4.5.3
-│           │   ├── crypto 3.0.7
-│           │   │   └── typed_data 1.4.0
-│           │   └── fixnum 1.1.1
-│           └── collection, flutter, nested
-├── dm_app (apps/dm_app)
-│   ├── flutter (SDK)
-│   └── core (path: ../../packages/core)
-└── companion_app (apps/companion_app)
-    ├── flutter (SDK)
-    └── core (path: ../../packages/core)
-```
-
-## Package Sources
-
-**pub.dev (hosted):**
-- All external packages sourced from `https://pub.dev`
-- Verified via SHA256 checksums in `pubspec.lock`
-
-**Local (path):**
-- `core` package referenced via relative path from both apps
-
-**SDK:**
-- `flutter` - Flutter SDK packages
+- None — No secret management
 
 ## Webhooks & Callbacks
 
 **Incoming:**
-- None
+- None detected
 
 **Outgoing:**
-- None
+- None detected
 
-## Platform Support (via NSD)
+## Inter-App Communication (Planned)
 
-The `nsd` package provides cross-platform service discovery:
+**Local Network Discovery:**
+- NSD (`nsd` package) is the intended mechanism for companion_app ↔ dm_app communication
+- Both apps declare NSD as a transitive dependency via the `core` package
+- Platform plugins are registered for macOS, Android, iOS, and Windows
+- **Current state:** NSD is declared but not actively used in any Dart source files — no `import 'package:nsd/...'` found in `.dart` files
+- `shelf` and `http` are also declared in core but not actively imported — likely reserved for future local HTTP server/client communication between apps
 
-| Platform | Plugin | Version |
-|----------|--------|---------|
-| Android | `nsd_android` | 2.2.0 |
-| iOS | `nsd_ios` | 3.0.1 |
-| macOS | `nsd_macos` | 3.0.1 |
-| Windows | `nsd_windows` | 3.0.1 |
+## State Management Integration
 
-**Note:** Platform directories (`android/`, `ios/`, `macos/`, `windows/`) have not been created yet in either app. The NSD plugins will require platform setup before they can be used.
+**Provider:**
+- `provider` ^6.1.2 (locked: 6.1.5+1) — Declared in both apps
+- **Current state:** Not actively used — no `import 'package:provider/...'` found in any `.dart` files
+- Both apps currently use `StatefulWidget` / `setState` for local state management
+
+## Third-Party Package Summary
+
+| Package | Version | Declared In | Actively Used | Purpose |
+|---------|---------|-------------|---------------|---------|
+| `nsd` | 5.0.1 | core | No (platform plugins registered) | Local device discovery |
+| `uuid` | 4.5.3 | core | Yes | Entity ID generation |
+| `shelf` | 1.4.2 | core | No | HTTP server (reserved) |
+| `http` | 1.6.0 | core | No | HTTP client (reserved) |
+| `provider` | 6.1.5+1 | apps | No | State management (reserved) |
+| `flutter` | SDK | apps | Yes | UI framework |
+| `flutter_test` | SDK | apps (dev) | Yes | Widget testing |
+| `flutter_lints` | transitive | apps | Yes | Lint rules |
 
 ---
 

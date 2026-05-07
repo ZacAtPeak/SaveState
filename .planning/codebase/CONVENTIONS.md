@@ -2,159 +2,159 @@
 
 **Analysis Date:** 2026-05-07
 
-## Overview
-
-This is an early-stage Dart workspace with no source code committed yet. The workspace structure is defined but all packages (`core`, `dm_app`, `companion_app`) contain only `pubspec.yaml` and `.dart_tool/` directories. The conventions below describe what **should be followed** as code is added, based on the project's established tooling choices and Dart/Flutter ecosystem standards.
-
-## Language & Runtime
-
-**Primary Language:**
-- Dart 3.11.5 (workspace-level constraint: `^3.11.5`)
-- Flutter 3.41.9 (installed at `/opt/homebrew/share/flutter`)
-
-**Package Manager:**
-- `pub` with Dart workspace resolution
-- Lockfile: `pubspec.lock` present at workspace root
-
-## Workspace Structure
-
-**Root workspace:** `pubspec.yaml` declares workspace members:
-- `packages/core` — shared core library
-- `apps/dm_app` — Dungeon Master Flutter app
-- `apps/companion_app` — Player companion Flutter app
-
-Each package uses `resolution: workspace` in its `pubspec.yaml`.
-
-## Naming Conventions (Dart Standard)
+## Naming Patterns
 
 **Files:**
-- Use `snake_case` for file names: `network_service.dart`, `player_model.dart`
-- Test files: `<source>_test.dart` co-located or in `test/` directory
+- `snake_case` for all Dart file names (e.g., `player_character.dart`, `creature_detail_view.dart`)
+- Barrel files match directory name: `models.dart`, `data.dart`
 
-**Classes & Types:**
-- Use `PascalCase`: `PlayerService`, `NetworkManager`, `GameState`
+**Classes:**
+- `PascalCase` for all classes (e.g., `PlayerCharacter`, `CreatureDetail`, `InitiativeTracker`)
+- Private classes prefixed with `_` (e.g., `_SidebarEntry`, `_SidebarState`, `_SpellSlotCell`)
+- Widget classes end with `Widget` or describe their purpose (e.g., `CreatureDetailView`, `RollHistoryPanel`)
+- Data classes use domain names (e.g., `Monster`, `NPC`, `EncounterState`, `DiceRoll`)
 
-**Functions & Variables:**
-- Use `camelCase`: `getPlayer()`, `isConnected`, `updateState()`
+**Functions/Methods:**
+- `camelCase` for all methods (e.g., `modifierFor`, `_formatCR`, `_toggleSection`)
+- Private methods prefixed with `_` (e.g., `_titleCase`, `_formatSpeed`, `_handleTabChange`)
+- Factory constructors use `from<SourceType>` pattern (e.g., `fromJson`, `fromPlayerCharacter`, `fromMonster`, `fromNPC`)
 
-**Constants:**
-- Use `lowerCamelCase` for constants (Dart convention): `maxPlayers`, `defaultPort`
+**Variables:**
+- `camelCase` for instance variables (e.g., `currentHP`, `armorClass`, `initiativeModifier`)
+- `camelCase` for local variables (e.g., `sortedEntries`, `rollMessage`)
+- Private instance variables prefixed with `_` (e.g., `_entries`, `_activeIndex`, `_tabController`)
+- Constants use `lowerCamelCase` (e.g., `_allSkills`, `_romanNumerals`, `_actions`)
 
-**Directories:**
-- Use `snake_case`: `network_services/`, `game_models/`
+**Enums:**
+- `PascalCase` for enum types (e.g., `CreatureSize`, `DamageType`, `Alignment`)
+- `camelCase` for enum values (e.g., `lawfulGood`, `chaoticEvil`, `bludgeoning`)
 
 ## Code Style
 
 **Formatting:**
-- Tool: `dart format` (built-in Dart formatter)
-- No custom `dart_format` config file detected
-- Line length: default 80 characters (Dart standard)
-- Line endings: LF normalized (`.gitattributes`: `* text=auto`)
+- No explicit formatter config detected (uses Flutter default `dart format`)
+- 2-space indentation throughout
+- Trailing commas used in multi-line constructor calls
+- Line length follows Flutter default (80 chars soft limit)
 
 **Linting:**
-- **No `analysis_options.yaml` detected** in any package or workspace root
-- **Recommendation:** Add `analysis_options.yaml` at workspace root with `package:lints` or `package:flutter_lints` as the base
-
-**Recommended analysis_options.yaml (workspace root):**
-```yaml
-include: package:flutter_lints/flutter.yaml
-
-linter:
-  rules:
-    - prefer_const_constructors
-    - prefer_const_declarations
-    - avoid_print
-    - prefer_single_quotes
-```
+- Both apps use `package:flutter_lints/flutter.yaml` as base lint rules
+- `apps/dm_app/analysis_options.yaml` — default Flutter lints, no custom rules enabled
+- `apps/companion_app/analysis_options.yaml` — default Flutter lints, no custom rules enabled
+- **Core package has NO `analysis_options.yaml`** — no linting enforced on shared code
+- No `// ignore:` directives used in Dart source files
 
 ## Import Organization
 
-**Order (Dart standard):**
-1. `dart:` imports (e.g., `dart:async`, `dart:convert`)
-2. `package:` imports (e.g., `package:flutter/material.dart`, `package:core/...`)
-3. Relative imports (e.g., `import '../models/player.dart'`)
+**Order:**
+1. `dart:` imports (e.g., `dart:math`)
+2. `package:` imports (e.g., `package:flutter/material.dart`, `package:core/models/models.dart`)
+3. Relative imports (e.g., `'enums.dart'`, `'../models/models.dart'`)
 
 **Path Aliases:**
-- No custom path aliases detected
-- Cross-package imports use relative paths: `package:core/...`
+- No path aliases configured
+- Core package imported via `package:core/...` (e.g., `package:core/models/models.dart`, `package:core/data/data.dart`)
+- Apps import each other's widgets via relative paths within their own `lib/` directory
 
-## Dependency Patterns
+**Import Style:**
+- Barrel files used for grouped exports:
+  - `packages/core/lib/models/models.dart` — exports all model files
+  - `packages/core/lib/data/data.dart` — exports all demo data files
+- Prefer barrel imports in apps: `package:core/models/models.dart`
 
-**Core package (`packages/core/pubspec.yaml`):**
-- `nsd: ^5.0.1` — Network Service Discovery for local network peer finding
+## Model Design Patterns
 
-**App packages (`apps/*/pubspec.yaml`):**
-- `flutter` (SDK dependency)
-- `core` (path dependency: `../../packages/core`)
+**Immutability:**
+- All model fields are `final` (immutable after construction)
+- Exception: `EncounterEntry` and `EncounterState` have mutable fields (`currentHp`, `round`, `currentTurnIndex`, `dmNotes`, `isActive`, `notes`) for runtime state tracking
 
-**Transitive dependencies of note:**
-- `provider: 6.1.5+1` — State management (available transitively)
-- `uuid: 4.5.3` — UUID generation
-- `crypto: 3.0.7` — Cryptographic utilities
+**Constructors:**
+- Named parameters with `required` keyword for mandatory fields
+- Default values for optional fields using `= const []` for empty lists, `= false` for bools, `= 0` for numbers
+- Auto-generated IDs via initializer list: `id = id ?? const Uuid().v4()`
+- `const` constructors used where all fields are final and compile-time constants (e.g., `AbilityScores`, `MovementSpeed`, `SpecialAbility`)
 
-## Error Handling
+**Serialization:**
+- Every model has `Map<String, dynamic> toJson()` method
+- Every model has `factory Model.fromJson(Map<String, dynamic> json)` constructor
+- Enum serialization uses `.name` for output and `EnumType.values.byName()` for input
+- Nested objects call their own `toJson()`/`fromJson()` recursively
+- Nullable fields use `as Type?` casts with `?? default` fallbacks
+- List deserialization pattern:
+  ```dart
+  (json['skills'] as List<dynamic>)
+      .map((s) => SkillProficiency.fromJson(Map<String, dynamic>.from(s as Map)))
+      .toList()
+  ```
 
-**No source code present** — conventions not yet established.
+**Factory Methods:**
+- Domain conversion factories follow `from<SourceType>` pattern:
+  - `CreatureDetail.fromPlayerCharacter(PlayerCharacter pc)`
+  - `CreatureDetail.fromMonster(Monster m)`
+  - `CreatureDetail.fromNPC(NPC npc)`
+  - `CombatantDragData.fromPlayerCharacter(PlayerCharacter pc)`
+  - `InitiativeEntry.fromMonster(Monster m)`
 
-**Recommended patterns (Dart standard):**
-- Use custom exception classes extending `Exception`
-- Use `Result` or `Either` types for recoverable errors
-- Throw descriptive exceptions with context
-- Use `try/catch` with specific exception types
+## Widget Design Patterns
 
-## Logging
+**Widget Structure:**
+- `StatelessWidget` for simple display widgets (e.g., `CreatureDetail`, `RollHistoryPanel`, `TabData`)
+- `StatefulWidget` for interactive widgets (e.g., `InitiativeTracker`, `GenericTabView`, `_Sidebar`)
+- Private state classes named `_WidgetNameState` (e.g., `_InitiativeTrackerState`, `_GenericTabViewState`)
 
-**No logging framework configured.**
+**State Management:**
+- Uses `provider: ^6.1.2` as dependency (declared in both app pubspecs)
+- No `Provider` or `ChangeNotifier` usage observed in current code
+- State managed via `setState()` in `StatefulWidget`s
+- Parent-to-child communication via callbacks (`ValueChanged<T>`, `VoidCallback`)
 
-**Recommended:**
-- Use `dart:developer` for Flutter DevTools logging
-- Consider `logger` package for structured logging
-- Avoid `print()` in production code (lint rule: `avoid_print`)
+**Widget Composition:**
+- Small private widgets for UI sections (e.g., `_StatRow`, `_AbilityCard`, `_SkillRow`, `_EmptyTab`)
+- Theme accessed via `Theme.of(context)` in `build()` methods
+- Local `final theme = Theme.of(context)` pattern used consistently
+- `const` constructors used for all widgets where possible
 
-## Comments & Documentation
+**Helper Functions:**
+- Private formatting functions at file level (e.g., `_titleCase`, `_formatCR`, `_formatSpeed`, `_formatSenses`, `_modifierLabel`, `_abbrev`, `_toRoman`)
+- Static constants for reference data (e.g., `_allSkills`, `_romanNumerals`)
 
-**No source code present** — conventions not yet established.
+## Comments
 
-**Recommended (Dart standard):**
-- Use `///` doc comments for public APIs
-- Use `//` for implementation notes
-- Document all public classes, methods, and properties
+**Dartdoc:**
+- No `///` dartdoc comments in any Dart source files
+- Only dartdoc comments found are in auto-generated Windows platform files
+
+**Inline Comments:**
+- No inline comments in Dart source files
+- Demo data files have no comments
+
+## Function Design
+
+**Size:**
+- Widget `build()` methods range from ~20 lines (`RollHistoryPanel`) to ~75 lines (`HomeScreen`)
+- Helper functions are short (1-10 lines)
+- `toJson()`/`fromJson()` methods are verbose but mechanical (20-60 lines for complex models)
+
+**Parameters:**
+- Named parameters exclusively used for constructors with 2+ parameters
+- Positional parameters not used in constructors
+- Callbacks typed as `ValueChanged<T>` or `VoidCallback`
+
+**Return Values:**
+- Single return type per function
+- Nullable return types used where appropriate (e.g., `EncounterEntry? get currentTurnEntry`)
 
 ## Module Design
 
 **Exports:**
-- Core package should use barrel exports: `lib/core.dart` exporting all public APIs
-- Apps should import from `package:core/` not relative paths into core
+- Barrel files re-export all sibling files:
+  - `packages/core/lib/models/models.dart`: exports `enums.dart`, `value_types.dart`, `player_character.dart`, `npc.dart`, `monster.dart`, `item.dart`
+  - `packages/core/lib/data/data.dart`: exports `demo_player_characters.dart`, `demo_monsters.dart`, `demo_npcs.dart`, `demo_items.dart`
 
-**Barrel Files:**
-- Recommended pattern for `packages/core/lib/core.dart`:
-```dart
-export 'src/models/...';
-export 'src/services/...';
-export 'src/utils/...';
-```
-
-## CI/CD
-
-**No CI/CD configuration detected.**
-- No `.github/workflows/` directory
-- No `Makefile` or build scripts
-- No `.gitignore` file
-
-**Recommended:**
-- Add `.gitignore` for Dart/Flutter projects
-- Add GitHub Actions for `dart analyze`, `dart format --set-exit-if-changed`, and `dart test`
-
-## Platform Requirements
-
-**Development:**
-- Dart SDK >= 3.11.5
-- Flutter SDK >= 3.41.0
-- macOS development environment (Flutter installed via Homebrew)
-
-**Target Platforms:**
-- Flutter apps (iOS, Android, macOS, Windows, Linux — not yet configured)
-- Core package is pure Dart (cross-platform)
+**Package Dependencies:**
+- Apps depend on `core` via path dependency: `path: ../../packages/core`
+- Apps depend on `provider: ^6.1.2`
+- Core depends on `nsd`, `uuid`, `shelf`, `http`
 
 ---
 

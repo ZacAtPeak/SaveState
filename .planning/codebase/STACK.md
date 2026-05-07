@@ -5,109 +5,129 @@
 ## Languages
 
 **Primary:**
-- Dart 3.11.5 - All application code across workspace packages
+- Dart 3.11.5+ — All application code across workspace (core package, companion_app, dm_app)
+
+**Secondary:**
+- Swift — macOS platform code for both apps (AppDelegate, MainFlutterWindow, GeneratedPluginRegistrant)
 
 ## Runtime
 
 **Environment:**
-- Flutter 3.41.9 - UI framework and runtime for both apps
-- Dart SDK 3.11.5 - Language runtime
+- Flutter SDK >=3.41.0 — UI framework for both mobile/desktop apps
+- Dart SDK >=3.11.5 <4.0.0 — Language runtime (root workspace constraint)
+  - Core package uses looser constraint: `^3.5.0`
 
 **Package Manager:**
-- pub (Dart package manager)
-- Lockfile: `pubspec.lock` present with fully resolved dependency tree
-- Pub cache: `/Users/zacharyreyes/.pub-cache`
-
-**Flutter Root:** `/opt/homebrew/share/flutter` (Homebrew installation on macOS ARM)
+- `dart pub` with workspace resolution
+- Lockfile: `pubspec.lock` present (workspace-level)
 
 ## Frameworks
 
 **Core:**
-- Flutter 3.41.9 - Cross-platform UI framework for both `dm_app` and `companion_app`
+- Flutter (SDK) — Cross-platform UI framework for companion_app and dm_app
+- Material 3 — Both apps use `useMaterial3: true` with `ColorScheme.fromSeed()` theming
 
 **State Management:**
-- Provider 6.1.5+1 - Available transitively via `nsd_platform_interface` dependency
+- Provider 6.1.5+1 — Declared dependency in both apps (`companion_app`, `dm_app`)
 
-## Workspace Structure
+**Testing:**
+- flutter_test (SDK) — Widget testing framework (bundled with Flutter SDK)
 
-**Root Workspace:** `dnd_workspace` (`pubspec.yaml`)
-- Uses Dart workspace resolution (`resolution: workspace`)
-- Three member packages:
-  - `packages/core` - Shared core library (v0.0.1)
-  - `apps/dm_app` - Dungeon Master application (v1.0.0+1)
-  - `apps/companion_app` - Player companion application (v1.0.0+1)
+**Build/Dev:**
+- Dart workspace resolution — All packages use `resolution: workspace`
+- flutter_lints — Lint rules via `analysis_options.yaml` in both apps
 
 ## Key Dependencies
 
-### Direct Dependencies
+**Direct (core package):**
 
-| Package | Version | Where | Purpose |
-|---------|---------|-------|---------|
-| `flutter` | SDK | `apps/dm_app/pubspec.yaml:8`, `apps/companion_app/pubspec.yaml:8` | UI framework |
-| `core` | path | `apps/dm_app/pubspec.yaml:10`, `apps/companion_app/pubspec.yaml:10` | Shared library (local) |
-| `nsd` | ^5.0.1 | `packages/core/pubspec.yaml:8` | Network Service Discovery |
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `nsd` | ^5.0.1 | Network Service Discovery — local device discovery for app-to-app communication |
+| `uuid` | ^4.5.1 | UUID generation — entity ID creation (PlayerCharacter, Monster, NPC, Item, EncounterEntry) |
+| `shelf` | ^1.4.2 | HTTP server — likely for local API serving between apps |
+| `http` | ^1.6.0 | HTTP client — network requests |
 
-### Transitive Dependencies (Resolved)
+**Direct (apps):**
 
-**Flutter Core:**
-- `characters` 1.4.1 - String/grapheme handling
-- `collection` 1.19.1 - Extended collection types
-- `material_color_utilities` 0.13.0 - Material Design color system
-- `meta` 1.17.0 - Annotations and metadata
-- `vector_math` 2.2.0 - Vector/matrix math
-- `sky_engine` - Flutter engine bindings
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `provider` | ^6.1.2 | State management — declared in both apps |
+| `core` | path: ../../packages/core | Shared domain models and data |
 
-**NSD (Network Service Discovery):**
-- `nsd` 5.0.1 - Main NSD API
-- `nsd_android` 2.2.0 - Android platform implementation
-- `nsd_ios` 3.0.1 - iOS platform implementation
-- `nsd_macos` 3.0.1 - macOS platform implementation
-- `nsd_windows` 3.0.1 - Windows platform implementation
-- `nsd_platform_interface` 2.2.0 - Platform interface contract
+**Transitive (locked versions):**
 
-**NSD Transitive:**
-- `provider` 6.1.5+1 - State management (used by NSD platform interface)
-- `plugin_platform_interface` 2.1.8 - Flutter plugin base
-- `nested` 1.0.0 - Nested widget support
-- `uuid` 4.5.3 - UUID generation
-- `crypto` 3.0.7 - Cryptographic utilities
-- `fixnum` 1.1.1 - Fixed-size integers
-- `typed_data` 1.4.0 - Typed data lists
+| Package | Version | Notes |
+|---------|---------|-------|
+| `nsd_android` | 2.2.0 | NSD Android platform implementation |
+| `nsd_ios` | 3.0.1 | NSD iOS platform implementation |
+| `nsd_macos` | 3.0.1 | NSD macOS platform implementation (actively imported in GeneratedPluginRegistrant) |
+| `nsd_windows` | 3.0.1 | NSD Windows platform implementation |
+| `nsd_platform_interface` | 2.2.0 | NSD platform interface |
 
 ## Configuration
 
 **Environment:**
-- Dart SDK constraint: `^3.11.5` (workspace root, `pubspec.yaml:7`)
-- Package-level SDK constraints: `^3.5.0` for `core` and `dm_app`, `^3.11.5` for `companion_app`
-- No `analysis_options.yaml` detected - no linting rules configured yet
-- No `.gitignore` detected
-- `.gitattributes` present with `text=auto` for LF normalization
+- No `.env` files detected — no environment variable configuration
+- All configuration is code-level (hardcoded demo data, theme seeds)
+
+**Linting:**
+- `analysis_options.yaml` in `apps/companion_app/` and `apps/dm_app/`
+- Both include `package:flutter_lints/flutter.yaml` with no custom rules enabled
 
 **Build:**
-- No platform directories created yet (no `android/`, `ios/`, `macos/`, `web/`, `windows/`, `linux/`)
-- No `Makefile` or build scripts detected
-- No CI/CD configuration (no `.github/` directory)
+- No CI/CD pipeline detected (no `.github/`, `.gitlab-ci.yml`, Makefile, Dockerfile)
+- No custom build configuration beyond Flutter defaults
 
-## Platform Requirements
+## Platform Support
 
-**Development:**
-- Dart SDK >= 3.11.5
-- Flutter SDK >= 3.41.0
-- macOS ARM development environment (Homebrew Flutter installation)
+**Confirmed:**
+- macOS — Full platform directories present for both apps (`macos/Runner/`, `macos/Flutter/`)
+- NSD plugins registered for macOS in both apps
 
-**Production:**
-- No platform targets configured yet
-- NSD plugin supports: Android, iOS, macOS, Windows
-- Both apps are Flutter applications (no web target detected)
+**Declared (via NSD platform plugins):**
+- Android (`nsd_android`)
+- iOS (`nsd_ios`)
+- Windows (`nsd_windows`)
 
-## SDK Constraints Matrix
+**Not detected:**
+- Linux platform directories
+- Web platform configuration
 
-| Package | Dart SDK | Flutter SDK |
-|---------|----------|-------------|
-| `dnd_workspace` (root) | ^3.11.5 | - |
-| `core` | ^3.5.0 | - |
-| `dm_app` | ^3.5.0 | via SDK |
-| `companion_app` | ^3.11.5 | via SDK |
+## Package Placement
+
+| Code Type | Location |
+|-----------|----------|
+| DnD domain models | `packages/core/lib/models/` |
+| Demo data | `packages/core/lib/data/` |
+| Companion app UI | `apps/companion_app/lib/` |
+| DM app UI | `apps/dm_app/lib/` |
+| Tests | `apps/<app>/test/` |
+
+## SDK Constraints
+
+```yaml
+# Root workspace
+sdk: '^3.11.5'
+
+# Core package (more permissive)
+sdk: ^3.5.0
+
+# Both apps
+sdk: ^3.11.5
+```
+
+## Version Summary
+
+```
+Dart SDK:       >=3.11.5 <4.0.0
+Flutter SDK:    >=3.41.0
+nsd:            5.0.1
+uuid:           4.5.3
+shelf:          1.4.2
+http:           1.6.0
+provider:       6.1.5+1
+```
 
 ---
 

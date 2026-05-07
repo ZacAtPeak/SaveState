@@ -5,192 +5,164 @@
 ## Directory Layout
 
 ```
-SaveState/                          # Workspace root (dnd_workspace)
-├── pubspec.yaml                    # Workspace definition
-├── pubspec.lock                    # Resolved dependency lockfile
-├── README.md                       # Project readme (minimal)
-├── .gitattributes                  # Git text normalization
-├── .dart_tool/                     # Dart tooling cache
-│   └── pub/                        # Package resolution data
-│
+SaveState/
+├── pubspec.yaml              # Workspace root (name: dnd_workspace)
+├── pubspec.lock              # Resolved dependency lockfile
+├── AGENTS.md                 # Agent instructions
+├── CLAUDE.md                 # Claude-specific project context
+├── README.md                 # Project readme (minimal)
 ├── packages/
-│   └── core/                       # Shared core package
-│       ├── pubspec.yaml            # Core package manifest
-│       ├── .dart_tool/             # Dart tooling cache
-│       └── lib/                    # [NOT YET CREATED] Shared code
-│           ├── core.dart           # [PLANNED] Barrel export
-│           └── src/
-│               ├── models/         # [PLANNED] Shared data models
-│               ├── services/       # [PLANNED] Shared services (NSD, etc.)
-│               ├── protocol/       # [PLANNED] Communication protocol
-│               └── utils/          # [PLANNED] Shared utilities
-│
+│   └── core/                 # Shared domain package
+│       ├── pubspec.yaml      # name: core, resolution: workspace
+│       └── lib/
+│           ├── data/         # Demo/fixture data
+│           │   ├── data.dart           # Barrel export
+│           │   ├── demo_monsters.dart  # 15 demo monsters as JSON → Monster
+│           │   ├── demo_npcs.dart      # 8 demo NPCs as JSON → NPC
+│           │   └── demo_player_characters.dart  # 5 demo PCs as constructors
+│           └── models/       # D&D domain models
+│               ├── models.dart         # Barrel export (excludes encounter.dart)
+│               ├── enums.dart          # All enums (CreatureSize, CreatureType, etc.)
+│               ├── value_types.dart    # Composite value types (AbilityScores, etc.)
+│               ├── player_character.dart  # PlayerCharacter model
+│               ├── monster.dart        # Monster model
+│               ├── npc.dart            # NPC model
+│               ├── item.dart           # Item model
+│               └── encounter.dart      # EncounterState, EncounterEntry, DiceRoll (NOT exported)
 ├── apps/
-│   ├── dm_app/                     # Dungeon Master application
-│   │   ├── pubspec.yaml            # DM app manifest
-│   │   ├── .dart_tool/             # Dart tooling cache
-│   │   └── lib/                    # [NOT YET CREATED] App source
-│   │       ├── main.dart           # [PLANNED] Entry point
-│   │       ├── app.dart            # [PLANNED] App widget
-│   │       ├── screens/            # [PLANNED] Page/screen widgets
-│   │       ├── widgets/            # [PLANNED] Reusable UI components
-│   │       ├── providers/          # [PLANNED] Provider/state classes
-│   │       └── services/           # [PLANNED] DM-specific services
-│   │
-│   └── companion_app/              # Player companion application
-│       ├── pubspec.yaml            # Companion app manifest
-│       ├── .dart_tool/             # Dart tooling cache
-│       └── lib/                    # [NOT YET CREATED] App source
-│           ├── main.dart           # [PLANNED] Entry point
-│           ├── app.dart            # [PLANNED] App widget
-│           ├── screens/            # [PLANNED] Page/screen widgets
-│           ├── widgets/            # [PLANNED] Reusable UI components
-│           ├── providers/          # [PLANNED] Provider/state classes
-│           └── services/           # [PLANNED] Player-specific services
+│   ├── companion_app/        # Player companion Flutter app
+│   │   ├── pubspec.yaml      # name: companion_app, depends on core + provider
+│   │   ├── analysis_options.yaml  # Uses flutter_lints (default config)
+│   │   ├── lib/
+│   │   │   ├── main.dart     # Entry point + CompanionApp + HomeScreen (tab shell)
+│   │   │   └── widgets/
+│   │   │       └── generic_tab_view.dart  # Reusable tab bar widget
+│   │   └── test/
+│   │       └── widget_test.dart  # Default Flutter smoke test (references MyApp — broken)
+│   └── dm_app/               # Dungeon Master Flutter app
+│       ├── pubspec.yaml      # name: dm_app, depends on core + provider
+│       ├── analysis_options.yaml  # Uses flutter_lints (default config)
+│       ├── lib/
+│       │   ├── main.dart     # Entry point + DmApp + HomeScreen (sidebar + tracker + detail)
+│       │   └── widgets/
+│       │       ├── creature_detail_view.dart  # CreatureDetail + CreatureDetailView (757 lines)
+│       │       ├── initiative_tracker.dart    # InitiativeTracker + DTOs (481 lines)
+│       │       └── roll_history_panel.dart    # RollHistoryPanel drawer (111 lines)
+│       └── test/
+│           └── widget_test.dart  # Basic scaffold load test
 ```
 
 ## Directory Purposes
 
-### Workspace Root (`/`)
-- **Purpose:** Dart workspace definition and shared configuration
-- **Contains:** `pubspec.yaml` (workspace), `pubspec.lock`, top-level tooling
-- **Key files:** `pubspec.yaml` - defines workspace members and SDK constraint
+**`packages/core/lib/models/`:**
+- Purpose: All D&D domain models and supporting types
+- Contains: Model classes with `toJson`/`fromJson`, enums, value types
+- Key files: `player_character.dart`, `monster.dart`, `npc.dart`, `item.dart`, `encounter.dart`
+- Barrel: `models.dart` exports all except `encounter.dart`
 
-### Core Package (`packages/core/`)
-- **Purpose:** Shared code between DM and companion apps
-- **Contains:** Data models, network protocol, service abstractions, utilities
-- **Key files:** `pubspec.yaml` - declares `nsd` dependency
-- **Planned structure:**
-  - `lib/core.dart` - barrel export for all public APIs
-  - `lib/src/models/` - D&D game data models (characters, sessions, etc.)
-  - `lib/src/services/` - NSD discovery service, connection management
-  - `lib/src/protocol/` - message types for app-to-app communication
-  - `lib/src/utils/` - shared helper functions
+**`packages/core/lib/data/`:**
+- Purpose: Demo/fixture data for development and testing
+- Contains: Hardcoded monster/NPC/PC data as JSON maps or direct constructors
+- Barrel: `data.dart` exports all four demo files
 
-### DM App (`apps/dm_app/`)
-- **Purpose:** Dungeon Master-facing Flutter application
-- **Contains:** UI, DM-specific business logic, session hosting
-- **Key files:** `pubspec.yaml` - depends on `flutter` (sdk) and `core` (path)
-- **SDK constraint:** ^3.5.0
-- **Planned structure:**
-  - `lib/main.dart` - app entry point
-  - `lib/screens/` - full-page views (session setup, game management, etc.)
-  - `lib/widgets/` - reusable UI components
-  - `lib/providers/` - state management via Provider
-  - `lib/services/` - DM-specific services (hosting, game master tools)
+**`apps/companion_app/lib/`:**
+- Purpose: Player-facing Flutter UI
+- Contains: Entry point, screens, widgets
+- Current state: Skeleton with tab shell only
 
-### Companion App (`apps/companion_app/`)
-- **Purpose:** Player-facing Flutter companion application
-- **Contains:** UI, player-specific business logic, session joining
-- **Key files:** `pubspec.yaml` - depends on `flutter` (sdk) and `core` (path)
-- **SDK constraint:** ^3.11.5 (newer than dm_app)
-- **Planned structure:**
-  - `lib/main.dart` - app entry point
-  - `lib/screens/` - full-page views (session browser, character sheet, etc.)
-  - `lib/widgets/` - reusable UI components
-  - `lib/providers/` - state management via Provider
-  - `lib/services/` - player-specific services (discovery, joining)
+**`apps/dm_app/lib/`:**
+- Purpose: DM-facing Flutter UI
+- Contains: Entry point, combat tracker, creature detail, roll history
+- Current state: Functional initiative tracker with drag-and-drop
+
+**`apps/<app>/lib/widgets/`:**
+- Purpose: Reusable Flutter widget components
+- Contains: Self-contained widgets with their own state logic
+- Note: No `screens/` or `providers/` directories yet — all UI lives in `widgets/` or `main.dart`
 
 ## Key File Locations
 
-### Entry Points
-- `apps/dm_app/lib/main.dart` - DM app entry (not yet created)
-- `apps/companion_app/lib/main.dart` - Companion app entry (not yet created)
+**Entry Points:**
+- `apps/dm_app/lib/main.dart`: DM app root widget and stateful home screen
+- `apps/companion_app/lib/main.dart`: Companion app root widget and tab shell
 
-### Configuration
-- `pubspec.yaml` - Workspace root, defines 3 workspace members
-- `packages/core/pubspec.yaml` - Core package with `nsd ^5.0.1` dependency
-- `apps/dm_app/pubspec.yaml` - DM app, depends on flutter + core
-- `apps/companion_app/pubspec.yaml` - Companion app, depends on flutter + core
-- `pubspec.lock` - Resolved dependency versions (Flutter 3.41.9, Dart 3.11.5)
+**Configuration:**
+- `pubspec.yaml`: Workspace root — defines workspace members and SDK constraint
+- `packages/core/pubspec.yaml`: Core package — declares nsd, uuid, shelf, http
+- `apps/companion_app/pubspec.yaml`: Companion app — declares flutter, core, provider
+- `apps/dm_app/pubspec.yaml`: DM app — declares flutter, core, provider
 
-### Core Logic
-- `packages/core/lib/` - Shared package (not yet created)
+**Core Logic:**
+- `packages/core/lib/models/`: Domain models (immutable, JSON-serializable)
+- `packages/core/lib/data/`: Demo data factories
 
-### Testing
-- No test directories or test configuration detected
-- Expected: `packages/core/test/`, `apps/dm_app/test/`, `apps/companion_app/test/`
+**Testing:**
+- `apps/companion_app/test/widget_test.dart`: Default smoke test (broken — references `MyApp`)
+- `apps/dm_app/test/widget_test.dart`: Scaffold load test
 
 ## Naming Conventions
 
 **Files:**
-- Dart files: `snake_case.dart` (standard Dart convention)
-- Entry point: `main.dart`
-- Barrel exports: `<package_name>.dart` (e.g., `core.dart`)
+- Models: `snake_case.dart` (e.g., `player_character.dart`, `value_types.dart`)
+- Widgets: `snake_case.dart` (e.g., `creature_detail_view.dart`, `initiative_tracker.dart`)
+- Barrel exports: `plural.dart` (e.g., `models.dart`, `data.dart`)
+- Demo data: `demo_<plural>.dart` (e.g., `demo_monsters.dart`)
 
-**Directories:**
-- `snake_case` for all directories (e.g., `dm_app`, `companion_app`, `core`)
-- Feature directories: plural nouns (`screens/`, `widgets/`, `providers/`, `services/`)
+**Classes:**
+- Models: `PascalCase` (e.g., `PlayerCharacter`, `Monster`, `AbilityScores`)
+- Widgets: `PascalCase` ending in type (e.g., `CreatureDetailView`, `InitiativeTracker`)
+- Private widgets: `_PascalCase` (e.g., `_Sidebar`, `_SidebarSection`, `_AbilityCard`)
+- DTOs: `PascalCase` with `Data` suffix (e.g., `CombatantDragData`)
 
-**Packages:**
-- Package names: `snake_case` (`dm_app`, `companion_app`, `core`)
-
-## Dependency Resolution
-
-**Workspace pattern:** All packages use `resolution: workspace` for unified dependency resolution from the workspace root.
-
-**Path dependencies:**
-```yaml
-# In apps/dm_app/pubspec.yaml and apps/companion_app/pubspec.yaml
-dependencies:
-  core:
-    path: ../../packages/core
-```
+**Variables/Functions:**
+- camelCase for local variables and methods
+- `_leadingUnderscore` for private members
+- Factory constructors: `from<SourceType>` (e.g., `fromPlayerCharacter`, `fromMonster`)
 
 ## Where to Add New Code
 
-### New Shared Model/Type
-- **Location:** `packages/core/lib/src/models/<model_name>.dart`
-- **Export from:** `packages/core/lib/core.dart`
-- **Tests:** `packages/core/test/src/models/<model_name>_test.dart`
+**New Domain Model:**
+- Implementation: `packages/core/lib/models/<model_name>.dart`
+- Export: Add to `packages/core/lib/models/models.dart` barrel
+- Demo data: Add to `packages/core/lib/data/demo_<model_name>.dart` + export in `data.dart`
 
-### New Shared Service
-- **Location:** `packages/core/lib/src/services/<service_name>.dart`
-- **Export from:** `packages/core/lib/core.dart`
-- **Tests:** `packages/core/test/src/services/<service_name>_test.dart`
+**New DM App Feature (screen/widget):**
+- Implementation: `apps/dm_app/lib/widgets/<feature_name>.dart`
+- Integration: Import in `apps/dm_app/lib/main.dart` and wire into `HomeScreen`
 
-### New Screen (DM App)
-- **Location:** `apps/dm_app/lib/screens/<screen_name>_screen.dart`
-- **If needs state:** Add provider to `apps/dm_app/lib/providers/`
+**New Companion App Feature (screen/widget):**
+- Implementation: `apps/companion_app/lib/widgets/<feature_name>.dart`
+- Integration: Import in `apps/companion_app/lib/main.dart` and add as `TabData` to `GenericTabView`
 
-### New Screen (Companion App)
-- **Location:** `apps/companion_app/lib/screens/<screen_name>_screen.dart`
-- **If needs state:** Add provider to `apps/companion_app/lib/providers/`
+**New Shared Service (networking, storage):**
+- Implementation: `packages/core/lib/services/<service_name>.dart`
+- Export: Create `packages/core/lib/services/services.dart` barrel
 
-### New Reusable Widget
-- **App-specific:** `apps/<app_name>/lib/widgets/<widget_name>.dart`
-- **Shared between apps:** `packages/core/lib/src/widgets/<widget_name>.dart`
+**New State Management (Provider):**
+- Provider class: `apps/<app>/lib/providers/<feature>_provider.dart`
+- Integration: Wrap relevant subtree in `ChangeNotifierProvider`
 
-### New Protocol Message
-- **Location:** `packages/core/lib/src/protocol/<message_type>.dart`
-- **Export from:** `packages/core/lib/core.dart`
+**New Utility/Helper:**
+- Shared: `packages/core/lib/utils/<helper_name>.dart`
+- App-specific: `apps/<app>/lib/utils/<helper_name>.dart`
 
 ## Special Directories
 
-### `.dart_tool/`
-- **Purpose:** Dart SDK tooling cache (package resolution, build artifacts)
-- **Generated:** Yes, by `dart pub get` / `flutter pub get`
-- **Committed:** No (should be in `.gitignore`)
-- **Contains:** `pub/workspace_ref.json` per package, `package_config.json` at root
+**`apps/<app>/android/`, `ios/`, `linux/`, `macos/`, `web/`, `windows/`:**
+- Purpose: Platform-specific Flutter build configurations
+- Generated: Yes — by `flutter create`
+- Committed: Yes — standard Flutter project structure
+- Modification: Rarely touched directly; configured via Flutter tooling
 
-### `.planning/`
-- **Purpose:** GSD planning documents and codebase analysis
-- **Generated:** Yes, by GSD tooling
-- **Contains:** `codebase/` directory with architecture and structure docs
+**`.dart_tool/`:**
+- Purpose: Dart build cache and package resolution artifacts
+- Generated: Yes — by `dart pub get` and `flutter run`
+- Committed: No — in `.gitignore`
 
-## Platform-Sirectories (Expected for Flutter)
-
-When Flutter projects are fully initialized, each app will also contain:
-- `android/` - Android platform code
-- `ios/` - iOS platform code
-- `macos/` - macOS platform code
-- `windows/` - Windows platform code
-- `linux/` - Linux platform code (optional)
-- `web/` - Web platform code (optional)
-- `assets/` - Static assets (images, fonts, etc.)
-- `test/` - Test files
-
-These directories are not yet present - the apps are in pre-initialization state.
+**`packages/core/lib/models/encounter.dart`:**
+- Purpose: Encounter state and dice roll models
+- Status: **Not exported** in barrel file — currently orphaned
+- Contains: `EncounterEntry`, `EncounterState`, `DiceRoll`
 
 ---
 
