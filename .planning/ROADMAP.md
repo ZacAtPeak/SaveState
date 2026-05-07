@@ -49,11 +49,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 02-01: Full-screen slide-up modal shell with responsive layout branching (MediaQuery.sizeOf at 600dp breakpoint)
-- [ ] 02-02: WikiPageList sidebar with scrollable list, type icons, and search bar
-- [ ] 02-03: Search integration with title-prioritized filtering and debounce
-- [ ] 02-04: WikiPageDetail view with markdown rendering (flutter_markdown_plus) and tag chips
-- [ ] 02-05: Stat block widget for creature-type pages as formatted UI card
+- [ ] 02-01-PLAN.md — Modal shell with responsive layout branching (two-panel >=600dp, single-panel <600dp)
+- [ ] 02-02-PLAN.md — WikiPageList sidebar with scrollable list, type icons, and search bar
+- [ ] 02-03-PLAN.md — Search integration with title-prioritized filtering and 250ms debounce
+- [ ] 02-04-PLAN.md — WikiPageDetail view with markdown rendering (flutter_markdown) and tag chips
+- [ ] 02-05-PLAN.md — Stat block widget for creature-type pages as formatted UI card
 **UI hint**: yes
 
 ### Phase 3: Create Flow & Per-App Integration
