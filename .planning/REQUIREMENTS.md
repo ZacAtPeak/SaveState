@@ -35,10 +35,10 @@
 
 ### Core Infrastructure
 
-- [ ] **CORE-01**: WikiPage model in core package with all required fields
-- [ ] **CORE-02**: WikiPageType enum with per-type field schemas
-- [ ] **CORE-03**: File-based JSON persistence layer for wiki pages
-- [ ] **CORE-04**: In-memory search service with title-prioritized scoring
+- [x] **CORE-01**: WikiPage model in core package with all required fields
+- [x] **CORE-02**: WikiPageType enum with per-type field schemas
+- [x] **CORE-03**: File-based JSON persistence layer for wiki pages
+- [x] **CORE-04**: In-memory search service with title-prioritized scoring
 
 ## v2 Requirements
 
@@ -68,10 +68,10 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CORE-01 | Phase 1 | Pending |
-| CORE-02 | Phase 1 | Pending |
-| CORE-03 | Phase 1 | Pending |
-| CORE-04 | Phase 1 | Pending |
+| CORE-01 | Phase 1 | Complete |
+| CORE-02 | Phase 1 | Complete |
+| CORE-03 | Phase 1 | Complete |
+| CORE-04 | Phase 1 | Complete |
 | MODAL-01 | Phase 2 | Pending |
 | MODAL-02 | Phase 2 | Pending |
 | MODAL-03 | Phase 2 | Pending |
