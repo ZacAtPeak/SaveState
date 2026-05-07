@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-stopped_at: Completed 03-create-flow-per-app-integration-02-PLAN.md
-last_updated: "2026-05-07T18:38:00.000Z"
+stopped_at: Completed 03-create-flow-per-app-integration-03-PLAN.md
+last_updated: "2026-05-07T19:08:00.000Z"
 last_activity: 2026-05-07
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 14
-  completed_plans: 12
-  percent: 86
+  completed_plans: 13
+  percent: 93
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-05-07)
 ## Current Position
 
 Phase: 3
-Plan: 03-03 next
+Plan: 04-01 next
 Status: In progress
 Last activity: 2026-05-07
 
-Progress: [███████░░░] 67%
+Progress: [█████████░] 93%
 
 ## Performance Metrics
 
@@ -80,6 +80,8 @@ Recent decisions affecting current work:
 - [Phase 02-modal-ui-components]: Used VisualDensity.compact and MaterialTapTargetSize.shrinkWrap for type displayName chips to keep them small and non-dominant
 - [Phase 03-create-flow-per-app-integration]: Used a pure-Dart submit flow service so create-submit contracts can run under dart test without Flutter runtime dependencies.
 - [Phase 03-create-flow-per-app-integration]: Standardized post-save behavior through onPageCreated/onCreateComplete hooks for immediate list refresh and auto-select.
+- [Phase 03-create-flow-per-app-integration]: Use root-owned WikiProvider in both apps with one-time startup loadAll bootstrap.
+- [Phase 03-create-flow-per-app-integration]: Standardize wiki entry via AppBar book icon invoking shared WikiModalShell.show in both apps.
 
 ### Pending Todos
 
@@ -93,6 +95,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-07T18:38:00.000Z
-Stopped at: Completed 03-create-flow-per-app-integration-02-PLAN.md
+Last session: 2026-05-07T19:08:00.000Z
+Stopped at: Completed 03-create-flow-per-app-integration-03-PLAN.md
 Resume file: None

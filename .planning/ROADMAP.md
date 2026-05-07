@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Core Infrastructure** - WikiPage model, type enum, JSON persistence, and in-memory search service
 - [x] **Phase 2: Modal UI Components** - Responsive modal shell, searchable page list, and detail view with markdown + stat blocks (completed 2026-05-07)
-- [ ] **Phase 3: Create Flow & Per-App Integration** - Type-driven create form, book icon triggers, and modal wiring in both apps
+- [x] **Phase 3: Create Flow & Per-App Integration** - Type-driven create form, book icon triggers, and modal wiring in both apps (completed 2026-05-07)
 - [ ] **Phase 4: Polish & Testing** - Modal dismissal, search debounce, responsive verification, and core package tests
 
 ## Phase Details
@@ -70,9 +70,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: Page type picker and dynamic create form driven by WikiPageType schemas
+- [x] 03-01: Page type picker and dynamic create form driven by WikiPageType schemas
 - [x] 03-02: Form submission with validation and persistence integration
-- [ ] 03-03: Book icon trigger wired into both companion_app and dm_app AppBar
+- [x] 03-03: Book icon trigger wired into both companion_app and dm_app AppBar
 **UI hint**: yes
 
 ### Phase 4: Polish & Testing
@@ -101,5 +101,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Core Infrastructure | 0/4 | Not started | - |
 | 2. Modal UI Components | 7/7 | Complete   | 2026-05-07 |
-| 3. Create Flow & Per-App Integration | 1/3 | In Progress | - |
+| 3. Create Flow & Per-App Integration | 3/3 | Complete | 2026-05-07 |
 | 4. Polish & Testing | 0/3 | Not started | - |

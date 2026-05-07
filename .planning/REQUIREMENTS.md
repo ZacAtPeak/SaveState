@@ -28,7 +28,7 @@
 
 ### Create Page
 
-- [ ] **CREATE-01**: Plus button in modal opens page type picker
+- [x] **CREATE-01**: Plus button in modal opens page type picker
 - [ ] **CREATE-02**: Type picker presents available wiki page types
 - [x] **CREATE-03**: Form displays fields appropriate to selected page type
 - [x] **CREATE-04**: New page saves with title, tags, aliases, markdown body, and structured fields
@@ -84,7 +84,7 @@
 | DETAIL-02 | Phase 2 | Complete |
 | DETAIL-03 | Phase 2 | Complete |
 | DETAIL-04 | Phase 2 | Complete |
-| CREATE-01 | Phase 2 | Pending |
+| CREATE-01 | Phase 3 | Complete |
 | CREATE-02 | Phase 2 | Pending |
 | CREATE-03 | Phase 3 | Complete |
 | CREATE-04 | Phase 3 | Complete |
