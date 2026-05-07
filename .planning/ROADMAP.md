@@ -31,10 +31,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 4 plans
 
 Plans:
-- [ ] 01-01: WikiPage model and WikiPageType enum with per-type field schemas
-- [ ] 01-02: File-based JSON persistence layer (WikiStorageService)
-- [ ] 01-03: In-memory search service with title-prioritized scoring (WikiSearchService)
-- [ ] 01-04: Core package unit tests for models and search service
+- [x] 01-01-PLAN.md — WikiPage model and WikiPageType enum with per-type field schemas
+- [x] 01-02-PLAN.md — File-based JSON persistence layer (WikiStorageService)
+- [x] 01-03-PLAN.md — In-memory search service with title-prioritized scoring (WikiSearchService)
+- [x] 01-04-PLAN.md — Core package unit tests for models and search service
 
 ### Phase 2: Modal UI Components
 **Goal**: Users can browse, search, and view wiki pages through a responsive full-screen modal
