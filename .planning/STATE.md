@@ -93,6 +93,12 @@ None yet.
 - Existing monolithic view anti-pattern (757-line creature_detail_view.dart) — enforce <150 lines per widget
 - Missing core package tests — Phase 1 must include tests for models and search service
 
+## Quick Tasks Completed
+
+| Task | Date | Files Changed |
+|------|------|---------------|
+| Create 20 demo wiki entries | 2026-05-07 | packages/core/lib/data/demo_wiki_pages.dart, packages/core/lib/data/data.dart, packages/core/lib/wiki/wiki_provider.dart |
+
 ## Session Continuity
 
 Last session: 2026-05-07T19:26:51Z
