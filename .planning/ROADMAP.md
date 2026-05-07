@@ -71,7 +71,7 @@ Plans:
 
 Plans:
 - [ ] 03-01: Page type picker and dynamic create form driven by WikiPageType schemas
-- [ ] 03-02: Form submission with validation and persistence integration
+- [x] 03-02: Form submission with validation and persistence integration
 - [ ] 03-03: Book icon trigger wired into both companion_app and dm_app AppBar
 **UI hint**: yes
 
@@ -101,5 +101,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Core Infrastructure | 0/4 | Not started | - |
 | 2. Modal UI Components | 7/7 | Complete   | 2026-05-07 |
-| 3. Create Flow & Per-App Integration | 0/3 | Not started | - |
+| 3. Create Flow & Per-App Integration | 1/3 | In Progress | - |
 | 4. Polish & Testing | 0/3 | Not started | - |

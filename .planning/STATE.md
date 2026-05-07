@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 02-modal-ui-components-07-PLAN.md
-last_updated: "2026-05-07T18:06:24.178Z"
+status: in_progress
+stopped_at: Completed 03-create-flow-per-app-integration-02-PLAN.md
+last_updated: "2026-05-07T18:38:00.000Z"
 last_activity: 2026-05-07
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 11
-  completed_plans: 11
-  percent: 100
+  total_plans: 14
+  completed_plans: 12
+  percent: 86
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-07)
 
 **Core value:** Users can find and reference any game-related information instantly through a unified, searchable wiki with deep cross-linking from every part of the app.
-**Current focus:** Phase 02 — modal-ui-components
+**Current focus:** Phase 03 — create-flow-per-app-integration
 
 ## Current Position
 
 Phase: 3
-Plan: Not started
-Status: Phase complete — ready for verification
+Plan: 03-03 next
+Status: In progress
 Last activity: 2026-05-07
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [███████░░░] 67%
 
 ## Performance Metrics
 
@@ -78,6 +78,8 @@ Recent decisions affecting current work:
 - [Phase 02-modal-ui-components]: Created WikiPageDetail from scratch since plan 02-04 was not executed — included all required features (markdown rendering, tag chips, stat block integration) in a single widget under 150 lines
 - [Phase 02-modal-ui-components]: Wired WikiPageList and WikiPageDetail into WikiModalShell, replacing all placeholder Text widgets with functional child widgets
 - [Phase 02-modal-ui-components]: Used VisualDensity.compact and MaterialTapTargetSize.shrinkWrap for type displayName chips to keep them small and non-dominant
+- [Phase 03-create-flow-per-app-integration]: Used a pure-Dart submit flow service so create-submit contracts can run under dart test without Flutter runtime dependencies.
+- [Phase 03-create-flow-per-app-integration]: Standardized post-save behavior through onPageCreated/onCreateComplete hooks for immediate list refresh and auto-select.
 
 ### Pending Todos
 
@@ -91,6 +93,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-07T18:02:23.835Z
-Stopped at: Completed 02-modal-ui-components-07-PLAN.md
+Last session: 2026-05-07T18:38:00.000Z
+Stopped at: Completed 03-create-flow-per-app-integration-02-PLAN.md
 Resume file: None

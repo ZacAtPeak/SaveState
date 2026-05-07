@@ -30,8 +30,8 @@
 
 - [ ] **CREATE-01**: Plus button in modal opens page type picker
 - [ ] **CREATE-02**: Type picker presents available wiki page types
-- [ ] **CREATE-03**: Form displays fields appropriate to selected page type
-- [ ] **CREATE-04**: New page saves with title, tags, aliases, markdown body, and structured fields
+- [x] **CREATE-03**: Form displays fields appropriate to selected page type
+- [x] **CREATE-04**: New page saves with title, tags, aliases, markdown body, and structured fields
 
 ### Core Infrastructure
 
@@ -86,8 +86,8 @@
 | DETAIL-04 | Phase 2 | Complete |
 | CREATE-01 | Phase 2 | Pending |
 | CREATE-02 | Phase 2 | Pending |
-| CREATE-03 | Phase 2 | Pending |
-| CREATE-04 | Phase 2 | Pending |
+| CREATE-03 | Phase 3 | Complete |
+| CREATE-04 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 20 total
