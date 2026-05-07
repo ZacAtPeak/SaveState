@@ -22,18 +22,19 @@ Users can find and reference any game-related information instantly through a un
 ### Active
 
 - [ ] Wiki popup UI accessible via book icon in both apps
-- [ ] Page list sidebar with full-text search bar
-- [ ] Detail view renders markdown content
-- [ ] Typed page system with different field schemas per type (Item, Spell, Rule, Location, Creature, etc.)
+- [ ] Slide-up full-screen modal animation
+- [ ] Two-panel layout (sidebar + detail) on tablets/desktops
+- [ ] Single-panel list→detail navigation on phones
+- [ ] Page list sidebar with full-text search bar (title matches prioritized)
+- [ ] Detail view renders all page data (markdown, stat blocks, tags, metadata)
+- [ ] Plus button to create new wiki entries from modal
+- [ ] Responsive layout adapts to screen size
+- [ ] Typed page system with different field schemas per type
 - [ ] Each page has: title, tags, aliases, markdown body, structured stat block fields
-- [ ] Stat blocks render as formatted UI cards AND support inline markdown references
-- [ ] Tag-based page organization (flat, no hierarchy)
 - [ ] DM app is source of truth for wiki content
-- [ ] Companion app syncs wiki content from DM via NSD
-- [ ] Both apps can create, edit, and delete wiki pages
-- [ ] Aliases field on pages enables cross-linking variations (e.g., "action" → "Actions" page)
-- [ ] Cross-links from any app text (item descriptions, spell text, rules text) into wiki articles
-- [ ] Clickable word links in primary detail views route to wiki articles
+- [ ] Both apps can create wiki pages
+- [ ] Wiki models in core package shared between apps
+- [ ] Persistence layer for wiki content
 
 ### Out of Scope
 
@@ -43,6 +44,9 @@ Users can find and reference any game-related information instantly through a un
 - Mobile-responsive web version — this is a Flutter desktop/tablet app
 - External wiki import/export — content created in-app for v1
 - Real-time collaborative editing — single-author model per page
+- NSD sync from DM to companion — deferred to next milestone
+- Cross-linking from app text into wiki — deferred to next milestone
+- Edit/delete existing pages — create-only for this milestone
 
 ## Context
 
@@ -79,6 +83,19 @@ Users can find and reference any game-related information instantly through a un
 | Markdown + structured data hybrid | Freeform content plus queryable game stats | — Pending |
 | Tag-based organization | Simpler than hierarchy, supports multiple categorization | — Pending |
 
+## Current Milestone: v1.0 Wiki Popup UI
+
+**Goal:** Users can browse, search, create, and view wiki pages through a responsive full-screen modal accessible from both apps.
+
+**Target features:**
+- Book icon opens slide-up full-screen modal in both apps
+- Two-panel layout (sidebar list + detail view) on tablets/desktops
+- Single-panel list→detail navigation on phones (companion app only)
+- Search bar with full-text search, title matches prioritized
+- Plus button to create new wiki entries from within the modal
+- Detail view displays all page data (markdown body, stat blocks, tags, metadata)
+- Responsive layout adapts to screen size, not app identity
+
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
@@ -97,4 +114,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-07 after initialization*
+*Last updated: 2026-05-07 after milestone v1.0 started*
