@@ -1,8 +1,7 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:core/models/models.dart';
 import 'package:core/services/services.dart';
+import 'package:core/utils/utils.dart';
 
 class WikiPageList extends StatefulWidget {
   const WikiPageList({
@@ -22,7 +21,7 @@ class WikiPageList extends StatefulWidget {
 
 class _WikiPageListState extends State<WikiPageList> {
   late final WikiSearchService _searchService;
-  Timer? _debounceTimer;
+  late final DebounceUtil _debounce;
   String _currentQuery = '';
 
   @override
@@ -30,19 +29,19 @@ class _WikiPageListState extends State<WikiPageList> {
     super.initState();
     _searchService = WikiSearchService();
     _searchService.index(widget.pages);
+    _debounce = DebounceUtil(const Duration(milliseconds: 250));
   }
 
   @override
   void dispose() {
-    _debounceTimer?.cancel();
+    _debounce.dispose();
     super.dispose();
   }
 
   void _onQueryChanged(String query) {
-    widget.onQueryChanged?.call(query);
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 250), () {
+    _debounce.run(() {
       setState(() => _currentQuery = query);
+      widget.onQueryChanged?.call(query);
     });
   }
 

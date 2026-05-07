@@ -25,6 +25,7 @@
         "uuid"
       ],
       "devDependencies": [
+        "fake_async",
         "test"
       ]
     },
@@ -89,6 +90,14 @@
         "meta",
         "sky_engine",
         "vector_math"
+      ]
+    },
+    {
+      "name": "fake_async",
+      "version": "1.3.3",
+      "dependencies": [
+        "clock",
+        "collection"
       ]
     },
     {
@@ -223,14 +232,6 @@
       "name": "clock",
       "version": "1.1.2",
       "dependencies": []
-    },
-    {
-      "name": "fake_async",
-      "version": "1.3.3",
-      "dependencies": [
-        "clock",
-        "collection"
-      ]
     },
     {
       "name": "matcher",
