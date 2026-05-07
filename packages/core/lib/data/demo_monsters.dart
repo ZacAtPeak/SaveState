@@ -1,0 +1,523 @@
+import '../models/models.dart';
+
+final List<Map<String, dynamic>> _monsterJsonData = [
+  {
+    'name': 'Goblin',
+    'size': 'small',
+    'type': 'humanoid',
+    'alignment': 'neutralEvil',
+    'armorClass': 15,
+    'armorSource': 'Leather Armor, Shield',
+    'currentHP': 7,
+    'maxHP': 7,
+    'hitDice': '2d6',
+    'speed': {'walk': 30},
+    'abilityScores': {'strength': 8, 'dexterity': 14, 'constitution': 10, 'intelligence': 10, 'wisdom': 8, 'charisma': 8},
+    'proficiencyBonus': 2,
+    'savingThrowProficiencies': {},
+    'skills': [
+      {'skill': 'Stealth', 'isProficient': true, 'bonus': 6, 'abilityScore': 'DEX'}
+    ],
+    'damageVulnerabilities': [],
+    'damageResistances': [],
+    'damageImmunities': [],
+    'conditionImmunities': [],
+    'senses': {'darkvision': 60, 'passivePerception': 9},
+    'languages': ['Common', 'Goblin'],
+    'challengeRating': 0.25,
+    'xp': 50,
+    'specialAbilities': [
+      {'name': 'Nimble Escape', 'description': 'The goblin can take the Disengage or Hide bonus action on each of its turns.'}
+    ],
+    'actions': [
+      {'id': 'm1-a1', 'name': 'Scimitar', 'hitBonus': 4, 'reach': '5 ft.', 'damageRoll': '1d6+2', 'damageType': 'slashing'}
+    ],
+    'knownSpells': [],
+  },
+  {
+    'name': 'Skeleton',
+    'size': 'medium',
+    'type': 'undead',
+    'alignment': 'lawfulEvil',
+    'armorClass': 13,
+    'armorSource': 'Armor Scraps',
+    'currentHP': 13,
+    'maxHP': 13,
+    'hitDice': '2d8+4',
+    'speed': {'walk': 30},
+    'abilityScores': {'strength': 10, 'dexterity': 14, 'constitution': 15, 'intelligence': 6, 'wisdom': 8, 'charisma': 5},
+    'proficiencyBonus': 2,
+    'savingThrowProficiencies': {},
+    'skills': [],
+    'damageVulnerabilities': ['bludgeoning'],
+    'damageResistances': [],
+    'damageImmunities': ['poison'],
+    'conditionImmunities': ['exhaustion', 'poisoned'],
+    'senses': {'darkvision': 60, 'passivePerception': 9},
+    'languages': ['Understands Common'],
+    'challengeRating': 0.25,
+    'xp': 50,
+    'specialAbilities': [],
+    'actions': [
+      {'id': 'm2-a1', 'name': 'Shortsword', 'hitBonus': 4, 'reach': '5 ft.', 'damageRoll': '1d6+2', 'damageType': 'piercing'},
+      {'id': 'm2-a2', 'name': 'Shortbow', 'hitBonus': 4, 'reach': '80/320 ft.', 'damageRoll': '1d6+2', 'damageType': 'piercing'}
+    ],
+    'knownSpells': [],
+  },
+  {
+    'name': 'Wolf',
+    'size': 'medium',
+    'type': 'beast',
+    'alignment': 'unaligned',
+    'armorClass': 13,
+    'armorSource': 'Natural Armor',
+    'currentHP': 11,
+    'maxHP': 11,
+    'hitDice': '2d8+2',
+    'speed': {'walk': 40},
+    'abilityScores': {'strength': 12, 'dexterity': 15, 'constitution': 12, 'intelligence': 3, 'wisdom': 12, 'charisma': 6},
+    'proficiencyBonus': 2,
+    'savingThrowProficiencies': {},
+    'skills': [
+      {'skill': 'Perception', 'isProficient': true, 'bonus': 3, 'abilityScore': 'WIS'},
+      {'skill': 'Stealth', 'isProficient': true, 'bonus': 4, 'abilityScore': 'DEX'}
+    ],
+    'damageVulnerabilities': [],
+    'damageResistances': [],
+    'damageImmunities': [],
+    'conditionImmunities': [],
+    'senses': {'passivePerception': 13},
+    'languages': [],
+    'challengeRating': 0.25,
+    'xp': 50,
+    'specialAbilities': [
+      {'name': 'Pack Tactics', 'description': 'The wolf has advantage on attack rolls against a creature if at least one of the wolf\'s allies is within 5 feet of the creature and the ally isn\'t incapacitated.'}
+    ],
+    'actions': [
+      {'id': 'm3-a1', 'name': 'Bite', 'hitBonus': 4, 'reach': '5 ft.', 'damageRoll': '2d4+2', 'damageType': 'piercing'}
+    ],
+    'knownSpells': [],
+  },
+  {
+    'name': 'Ogre',
+    'size': 'large',
+    'type': 'giant',
+    'alignment': 'chaoticEvil',
+    'armorClass': 11,
+    'armorSource': 'Natural Armor',
+    'currentHP': 59,
+    'maxHP': 59,
+    'hitDice': '7d10+21',
+    'speed': {'walk': 40},
+    'abilityScores': {'strength': 19, 'dexterity': 8, 'constitution': 16, 'intelligence': 5, 'wisdom': 7, 'charisma': 7},
+    'proficiencyBonus': 2,
+    'savingThrowProficiencies': {},
+    'skills': [],
+    'damageVulnerabilities': [],
+    'damageResistances': [],
+    'damageImmunities': [],
+    'conditionImmunities': [],
+    'senses': {'darkvision': 60, 'passivePerception': 9},
+    'languages': ['Common', 'Giant'],
+    'challengeRating': 2,
+    'xp': 450,
+    'specialAbilities': [],
+    'actions': [
+      {'id': 'm4-a1', 'name': 'Greatclub', 'hitBonus': 6, 'reach': '5 ft.', 'damageRoll': '2d8+4', 'damageType': 'bludgeoning'},
+      {'id': 'm4-a2', 'name': 'Javelin', 'hitBonus': 6, 'reach': '30/120 ft.', 'damageRoll': '2d6+4', 'damageType': 'piercing'}
+    ],
+    'knownSpells': [],
+  },
+  {
+    'name': 'Young Red Dragon',
+    'size': 'large',
+    'type': 'dragon',
+    'alignment': 'chaoticEvil',
+    'armorClass': 18,
+    'armorSource': 'Natural Armor',
+    'currentHP': 178,
+    'maxHP': 178,
+    'hitDice': '17d10+85',
+    'speed': {'walk': 40, 'climb': 40, 'fly': 150},
+    'abilityScores': {'strength': 23, 'dexterity': 10, 'constitution': 21, 'intelligence': 14, 'wisdom': 11, 'charisma': 19},
+    'proficiencyBonus': 3,
+    'savingThrowProficiencies': {'dexterity': true, 'constitution': true, 'wisdom': true, 'charisma': true},
+    'skills': [
+      {'skill': 'Perception', 'isProficient': true, 'bonus': 8, 'abilityScore': 'WIS'},
+      {'skill': 'Stealth', 'isProficient': true, 'bonus': 4, 'abilityScore': 'DEX'}
+    ],
+    'damageVulnerabilities': [],
+    'damageResistances': [],
+    'damageImmunities': ['fire'],
+    'conditionImmunities': ['charmed', 'frightened'],
+    'senses': {'blindsight': 30, 'darkvision': 120, 'passivePerception': 18},
+    'languages': ['Common', 'Draconic'],
+    'challengeRating': 10,
+    'xp': 5900,
+    'specialAbilities': [
+      {'name': 'Legendary Resistance', 'description': 'If the dragon fails a saving throw, it can choose to succeed instead (3/day).'}
+    ],
+    'actions': [
+      {'id': 'm5-a1', 'name': 'Bite', 'hitBonus': 10, 'reach': '10 ft.', 'damageRoll': '2d10+6', 'damageType': 'piercing'},
+      {'id': 'm5-a2', 'name': 'Claw', 'hitBonus': 10, 'reach': '5 ft.', 'damageRoll': '2d6+6', 'damageType': 'slashing'},
+      {'id': 'm5-a3', 'name': 'Fire Breath', 'hitBonus': 0, 'reach': '30 ft. cone', 'damageRoll': '10d6', 'damageType': 'fire', 'saveDC': 17, 'description': 'Dexterity save for half damage.'}
+    ],
+    'knownSpells': [],
+  },
+  {
+    'name': 'Giant Spider',
+    'size': 'large',
+    'type': 'beast',
+    'alignment': 'unaligned',
+    'armorClass': 14,
+    'armorSource': 'Natural Armor',
+    'currentHP': 26,
+    'maxHP': 26,
+    'hitDice': '4d10+4',
+    'speed': {'walk': 30, 'climb': 30},
+    'abilityScores': {'strength': 14, 'dexterity': 16, 'constitution': 12, 'intelligence': 2, 'wisdom': 11, 'charisma': 4},
+    'proficiencyBonus': 2,
+    'savingThrowProficiencies': {},
+    'skills': [
+      {'skill': 'Stealth', 'isProficient': true, 'bonus': 7, 'abilityScore': 'DEX'},
+      {'skill': 'Perception', 'isProficient': true, 'bonus': 2, 'abilityScore': 'WIS'}
+    ],
+    'damageVulnerabilities': [],
+    'damageResistances': [],
+    'damageImmunities': [],
+    'conditionImmunities': [],
+    'senses': {'darkvision': 60, 'passivePerception': 12, 'tremorsense': 10},
+    'languages': [],
+    'challengeRating': 1,
+    'xp': 200,
+    'specialAbilities': [
+      {'name': 'Spider Climb', 'description': 'The spider can climb difficult surfaces, including upside down on ceilings, without needing to make an ability check.'},
+      {'name': 'Web Sense', 'description': 'While in contact with a web, the spider knows the exact location of any other creature in contact with the web.'},
+      {'name': 'Web Walker', 'description': 'The spider ignores movement restrictions caused by webbing.'}
+    ],
+    'actions': [
+      {'id': 'm6-a1', 'name': 'Bite', 'hitBonus': 5, 'reach': '5 ft.', 'damageRoll': '1d8+3', 'damageType': 'piercing', 'description': 'Target must succeed on a DC 11 Constitution saving throw or be poisoned for 1 hour.'},
+      {'id': 'm6-a2', 'name': 'Web', 'hitBonus': 5, 'reach': '30/60 ft.', 'damageRoll': '0', 'damageType': 'force', 'saveDC': 12, 'description': 'Restrained by webbing. Strength DC 12 to break free.'}
+    ],
+    'knownSpells': [],
+  },
+  {
+    'name': 'Hill Giant',
+    'size': 'huge',
+    'type': 'giant',
+    'alignment': 'chaoticEvil',
+    'armorClass': 13,
+    'armorSource': 'Natural Armor',
+    'currentHP': 105,
+    'maxHP': 105,
+    'hitDice': '10d12+40',
+    'speed': {'walk': 40},
+    'abilityScores': {'strength': 21, 'dexterity': 8, 'constitution': 19, 'intelligence': 5, 'wisdom': 9, 'charisma': 6},
+    'proficiencyBonus': 3,
+    'savingThrowProficiencies': {'strength': true, 'constitution': true},
+    'skills': [
+      {'skill': 'Perception', 'isProficient': true, 'bonus': 2, 'abilityScore': 'WIS'}
+    ],
+    'damageVulnerabilities': [],
+    'damageResistances': [],
+    'damageImmunities': [],
+    'conditionImmunities': [],
+    'senses': {'darkvision': 60, 'passivePerception': 12},
+    'languages': ['Giant'],
+    'challengeRating': 5,
+    'xp': 1800,
+    'specialAbilities': [],
+    'actions': [
+      {'id': 'm7-a1', 'name': 'Greatclub', 'hitBonus': 8, 'reach': '10 ft.', 'damageRoll': '3d8+5', 'damageType': 'bludgeoning'},
+      {'id': 'm7-a2', 'name': 'Rock', 'hitBonus': 8, 'reach': '60/240 ft.', 'damageRoll': '3d10+5', 'damageType': 'bludgeoning'}
+    ],
+    'knownSpells': [],
+  },
+  {
+    'name': 'Wraith',
+    'size': 'medium',
+    'type': 'undead',
+    'alignment': 'neutralEvil',
+    'armorClass': 13,
+    'armorSource': '',
+    'currentHP': 67,
+    'maxHP': 67,
+    'hitDice': '9d8+27',
+    'speed': {'walk': 0, 'fly': 60, 'hover': true},
+    'abilityScores': {'strength': 6, 'dexterity': 16, 'constitution': 16, 'intelligence': 12, 'wisdom': 14, 'charisma': 15},
+    'proficiencyBonus': 3,
+    'savingThrowProficiencies': {},
+    'skills': [],
+    'damageVulnerabilities': [],
+    'damageResistances': ['acid', 'cold', 'fire', 'necrotic', 'thunder'],
+    'damageImmunities': ['necrotic', 'poison'],
+    'conditionImmunities': ['charmed', 'exhaustion', 'grappled', 'paralyzed', 'poisoned', 'prone', 'restrained', 'unconscious'],
+    'senses': {'darkvision': 60, 'passivePerception': 12},
+    'languages': ['Common'],
+    'challengeRating': 5,
+    'xp': 1800,
+    'specialAbilities': [
+      {'name': 'Incorporeal Movement', 'description': 'The wraith can move through other creatures and objects as if they were difficult terrain. It takes 5 force damage if it ends its turn inside an object.'},
+      {'name': 'Sunlight Sensitivity', 'description': 'While in sunlight, the wraith has disadvantage on attack rolls and Wisdom (Perception) checks that rely on sight.'}
+    ],
+    'actions': [
+      {'id': 'm8-a1', 'name': 'Life Drain', 'hitBonus': 6, 'reach': '5 ft.', 'damageRoll': '4d6+3', 'damageType': 'necrotic', 'description': 'Target\'s hit point maximum is reduced by an amount equal to the damage taken. This reduction lasts until the target finishes a long rest.'}
+    ],
+    'knownSpells': [],
+  },
+  {
+    'name': 'Beholder',
+    'size': 'large',
+    'type': 'aberration',
+    'alignment': 'lawfulEvil',
+    'armorClass': 18,
+    'armorSource': 'Natural Armor',
+    'currentHP': 180,
+    'maxHP': 180,
+    'hitDice': '17d10+85',
+    'speed': {'walk': 0, 'fly': 20, 'hover': true},
+    'abilityScores': {'strength': 10, 'dexterity': 14, 'constitution': 20, 'intelligence': 17, 'wisdom': 15, 'charisma': 17},
+    'proficiencyBonus': 4,
+    'savingThrowProficiencies': {'intelligence': true, 'wisdom': true, 'charisma': true},
+    'skills': [
+      {'skill': 'Perception', 'isProficient': true, 'bonus': 13, 'abilityScore': 'WIS'},
+      {'skill': 'Insight', 'isProficient': true, 'bonus': 9, 'abilityScore': 'WIS'}
+    ],
+    'damageVulnerabilities': [],
+    'damageResistances': [],
+    'damageImmunities': [],
+    'conditionImmunities': ['prone'],
+    'senses': {'darkvision': 120, 'passivePerception': 23},
+    'languages': ['Deep Speech', 'Undercommon'],
+    'challengeRating': 13,
+    'xp': 10000,
+    'legendaryActions': [
+      {'name': 'Eye Ray', 'cost': 1, 'description': 'The beholder uses one random eye ray.'}
+    ],
+    'legendaryActionCount': 3,
+    'specialAbilities': [
+      {'name': 'Antimagic Cone', 'description': 'The beholder\'s central eye creates a 150-foot cone of antimagic. Within this cone, spells can\'t be cast, summoned creatures disappear, and magic items become mundane.'}
+    ],
+    'actions': [
+      {'id': 'm9-a1', 'name': 'Bite', 'hitBonus': 5, 'reach': '5 ft.', 'damageRoll': '2d6+2', 'damageType': 'piercing'}
+    ],
+    'knownSpells': [],
+  },
+  {
+    'name': 'Owlbear',
+    'size': 'large',
+    'type': 'monstrosity',
+    'alignment': 'unaligned',
+    'armorClass': 13,
+    'armorSource': 'Natural Armor',
+    'currentHP': 59,
+    'maxHP': 59,
+    'hitDice': '7d10+21',
+    'speed': {'walk': 40},
+    'abilityScores': {'strength': 20, 'dexterity': 12, 'constitution': 17, 'intelligence': 3, 'wisdom': 12, 'charisma': 7},
+    'proficiencyBonus': 2,
+    'savingThrowProficiencies': {},
+    'skills': [
+      {'skill': 'Perception', 'isProficient': true, 'bonus': 3, 'abilityScore': 'WIS'}
+    ],
+    'damageVulnerabilities': [],
+    'damageResistances': [],
+    'damageImmunities': [],
+    'conditionImmunities': [],
+    'senses': {'darkvision': 60, 'passivePerception': 13},
+    'languages': [],
+    'challengeRating': 3,
+    'xp': 700,
+    'specialAbilities': [
+      {'name': 'Keen Sight and Smell', 'description': 'The owlbear has advantage on Wisdom (Perception) checks that rely on sight or smell.'}
+    ],
+    'actions': [
+      {'id': 'm10-a1', 'name': 'Multiattack', 'hitBonus': 0, 'reach': '5 ft.', 'damageRoll': '0', 'damageType': 'slashing', 'description': 'The owlbear makes two attacks: one with its beak and one with its claws.'},
+      {'id': 'm10-a2', 'name': 'Beak', 'hitBonus': 7, 'reach': '5 ft.', 'damageRoll': '1d10+5', 'damageType': 'piercing'},
+      {'id': 'm10-a3', 'name': 'Claws', 'hitBonus': 7, 'reach': '5 ft.', 'damageRoll': '2d8+5', 'damageType': 'slashing'}
+    ],
+    'knownSpells': [],
+  },
+  {
+    'name': 'Gelatinous Cube',
+    'size': 'large',
+    'type': 'ooze',
+    'alignment': 'unaligned',
+    'armorClass': 6,
+    'armorSource': '',
+    'currentHP': 84,
+    'maxHP': 84,
+    'hitDice': '8d10+40',
+    'speed': {'walk': 15},
+    'abilityScores': {'strength': 14, 'dexterity': 3, 'constitution': 20, 'intelligence': 1, 'wisdom': 6, 'charisma': 1},
+    'proficiencyBonus': 2,
+    'savingThrowProficiencies': {},
+    'skills': [
+      {'skill': 'Stealth', 'isProficient': true, 'bonus': 2, 'abilityScore': 'DEX'}
+    ],
+    'damageVulnerabilities': [],
+    'damageResistances': [],
+    'damageImmunities': ['cold', 'lightning'],
+    'conditionImmunities': ['blinded', 'charmed', 'deafened', 'exhaustion', 'frightened', 'prone'],
+    'senses': {'blindsight': 60, 'passivePerception': 8},
+    'languages': [],
+    'challengeRating': 2,
+    'xp': 450,
+    'specialAbilities': [
+      {'name': 'Transparent', 'description': 'When the cube is still, there is a 75 percent chance that it cannot be seen. A creature that can see the cube automatically succeeds on initiative.'}
+    ],
+    'actions': [
+      {'id': 'm11-a1', 'name': 'Pseudopod', 'hitBonus': 4, 'reach': '5 ft.', 'damageRoll': '3d6+2', 'damageType': 'acid', 'description': 'Target must succeed on a DC 12 Constitution saving throw or be engulfed.'}
+    ],
+    'knownSpells': [],
+  },
+  {
+    'name': 'Mimic',
+    'size': 'medium',
+    'type': 'monstrosity',
+    'alignment': 'trueNeutral',
+    'armorClass': 12,
+    'armorSource': 'Natural Armor',
+    'currentHP': 58,
+    'maxHP': 58,
+    'hitDice': '9d8+18',
+    'speed': {'walk': 15},
+    'abilityScores': {'strength': 17, 'dexterity': 12, 'constitution': 15, 'intelligence': 5, 'wisdom': 13, 'charisma': 8},
+    'proficiencyBonus': 2,
+    'savingThrowProficiencies': {},
+    'skills': [
+      {'skill': 'Stealth', 'isProficient': true, 'bonus': 5, 'abilityScore': 'DEX'}
+    ],
+    'damageVulnerabilities': [],
+    'damageResistances': [],
+    'damageImmunities': ['acid'],
+    'conditionImmunities': ['prone'],
+    'senses': {'darkvision': 60, 'passivePerception': 11},
+    'languages': [],
+    'challengeRating': 2,
+    'xp': 450,
+    'specialAbilities': [
+      {'name': 'Shapechanger', 'description': 'The mimic can use its action to polymorph into an object or back into its true form. Its statistics are the same in each form.'},
+      {'name': 'Adhesive', 'description': 'The mimic\'s body is covered in a sticky adhesive. A creature that touches it or hits it with a melee attack must succeed on a DC 13 Strength saving throw or be grappled.'}
+    ],
+    'actions': [
+      {'id': 'm12-a1', 'name': 'Bite', 'hitBonus': 5, 'reach': '5 ft.', 'damageRoll': '1d8+3', 'damageType': 'piercing', 'description': 'Target is grappled (escape DC 13) and takes 1d6 acid damage at the start of each turn while grappled.'}
+    ],
+    'knownSpells': [],
+  },
+  {
+    'name': 'Treant',
+    'size': 'huge',
+    'type': 'plant',
+    'alignment': 'chaoticGood',
+    'armorClass': 16,
+    'armorSource': 'Natural Armor',
+    'currentHP': 149,
+    'maxHP': 149,
+    'hitDice': '14d12+56',
+    'speed': {'walk': 30},
+    'abilityScores': {'strength': 23, 'dexterity': 8, 'constitution': 17, 'intelligence': 12, 'wisdom': 16, 'charisma': 12},
+    'proficiencyBonus': 4,
+    'savingThrowProficiencies': {},
+    'skills': [],
+    'damageVulnerabilities': ['fire'],
+    'damageResistances': ['bludgeoning', 'piercing'],
+    'damageImmunities': [],
+    'conditionImmunities': [],
+    'senses': {'darkvision': 60, 'passivePerception': 13},
+    'languages': ['Common', 'Druidic', 'Elvish', 'Giant', 'Gnomish', 'Sylvan'],
+    'challengeRating': 9,
+    'xp': 5000,
+    'specialAbilities': [
+      {'name': 'False Appearance', 'description': 'While the treant remains motionless, it is indistinguishable from a normal tree.'},
+      {'name': 'Siege Monster', 'description': 'The treant deals double damage to objects and structures.'}
+    ],
+    'actions': [
+      {'id': 'm13-a1', 'name': 'Multiattack', 'hitBonus': 0, 'reach': '10 ft.', 'damageRoll': '0', 'damageType': 'bludgeoning', 'description': 'The treant makes two slam attacks.'},
+      {'id': 'm13-a2', 'name': 'Slam', 'hitBonus': 10, 'reach': '10 ft.', 'damageRoll': '3d10+6', 'damageType': 'bludgeoning'}
+    ],
+    'knownSpells': [],
+  },
+  {
+    'name': 'Air Elemental',
+    'size': 'large',
+    'type': 'elemental',
+    'alignment': 'trueNeutral',
+    'armorClass': 15,
+    'armorSource': 'Natural Armor',
+    'currentHP': 90,
+    'maxHP': 90,
+    'hitDice': '12d10+24',
+    'speed': {'walk': 0, 'fly': 90, 'hover': true},
+    'abilityScores': {'strength': 14, 'dexterity': 20, 'constitution': 14, 'intelligence': 6, 'wisdom': 10, 'charisma': 6},
+    'proficiencyBonus': 3,
+    'savingThrowProficiencies': {},
+    'skills': [],
+    'damageVulnerabilities': [],
+    'damageResistances': ['lightning', 'thunder'],
+    'damageImmunities': ['poison'],
+    'conditionImmunities': ['exhaustion', 'grappled', 'paralyzed', 'petrified', 'poisoned', 'prone', 'restrained', 'unconscious'],
+    'senses': {'darkvision': 60, 'passivePerception': 10},
+    'languages': ['Auran'],
+    'challengeRating': 5,
+    'xp': 1800,
+    'specialAbilities': [
+      {'name': 'Air Form', 'description': 'The elemental can enter a hostile creature\'s space and stop there. It can move through a space as narrow as 1 inch wide without squeezing.'}
+    ],
+    'actions': [
+      {'id': 'm14-a1', 'name': 'Slam', 'hitBonus': 8, 'reach': '10 ft.', 'damageRoll': '2d8+5', 'damageType': 'bludgeoning'},
+      {'id': 'm14-a2', 'name': 'Whirlwind', 'hitBonus': 0, 'reach': '10 ft.', 'damageRoll': '0', 'damageType': 'bludgeoning', 'saveDC': 13, 'description': 'Each creature in the elemental\'s space must make a DC 13 Strength saving throw. On a failure, take 15d8 bludgeoning damage and be flung up to 20 feet.'}
+    ],
+    'knownSpells': [],
+  },
+  {
+    'name': 'Lich',
+    'size': 'medium',
+    'type': 'undead',
+    'alignment': 'neutralEvil',
+    'armorClass': 17,
+    'armorSource': 'Natural Armor',
+    'currentHP': 135,
+    'maxHP': 135,
+    'hitDice': '18d8+54',
+    'speed': {'walk': 30},
+    'abilityScores': {'strength': 11, 'dexterity': 16, 'constitution': 16, 'intelligence': 20, 'wisdom': 14, 'charisma': 16},
+    'proficiencyBonus': 5,
+    'savingThrowProficiencies': {'constitution': true, 'intelligence': true, 'wisdom': true},
+    'skills': [
+      {'skill': 'Arcana', 'isProficient': true, 'bonus': 15, 'abilityScore': 'INT'},
+      {'skill': 'History', 'isProficient': true, 'bonus': 15, 'abilityScore': 'INT'},
+      {'skill': 'Insight', 'isProficient': true, 'bonus': 7, 'abilityScore': 'WIS'},
+      {'skill': 'Perception', 'isProficient': true, 'bonus': 7, 'abilityScore': 'WIS'}
+    ],
+    'damageVulnerabilities': [],
+    'damageResistances': ['cold', 'lightning', 'necrotic'],
+    'damageImmunities': ['poison'],
+    'conditionImmunities': ['charmed', 'exhaustion', 'frightened', 'paralyzed', 'poisoned'],
+    'senses': {'truesight': 120, 'passivePerception': 17},
+    'languages': ['Common', 'Draconic', 'Abyssal', 'Infernal'],
+    'challengeRating': 21,
+    'xp': 33000,
+    'legendaryActions': [
+      {'name': 'Cantrip', 'cost': 1, 'description': 'The lich casts a cantrip.'},
+      {'name': 'Paralyzing Touch', 'cost': 2, 'description': 'The lich uses its Paralyzing Touch.'},
+      {'name': 'Frightening Gaze', 'cost': 3, 'description': 'The lich fixes its baleful gaze on a creature.'}
+    ],
+    'legendaryActionCount': 3,
+    'specialAbilities': [
+      {'name': 'Legendary Resistance', 'description': 'If the lich fails a saving throw, it can choose to succeed instead (3/day).'},
+      {'name': 'Rejuvenation', 'description': 'If destroyed, the lich gains a new body in 1d10 days, regaining all hit points and becoming active again.'},
+      {'name': 'Spellcasting', 'description': 'The lich is an 18th-level spellcaster. Its spellcasting ability is Intelligence (DC 18).'}
+    ],
+    'actions': [
+      {'id': 'm15-a1', 'name': 'Paralyzing Touch', 'hitBonus': 12, 'reach': '5 ft.', 'damageRoll': '10d6', 'damageType': 'cold', 'description': 'Target must succeed on a DC 18 Constitution saving throw or be paralyzed for 1 minute.'}
+    ],
+    'knownSpells': ['Power Word Kill', 'Time Stop', 'Finger of Death', 'Cloudkill', 'Counterspell', 'Fireball', 'Magic Missile', 'Shield'],
+  },
+];
+
+List<Monster> get demoMonsters {
+  return _monsterJsonData.map((json) {
+    return Monster.fromJson(json);
+  }).toList();
+}

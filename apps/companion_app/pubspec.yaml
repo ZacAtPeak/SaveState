@@ -9,3 +9,4 @@ dependencies:
     sdk: flutter
   core:
     path: ../../packages/core
+  provider: ^6.1.2
