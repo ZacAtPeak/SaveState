@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 1: Core Infrastructure** - WikiPage model, type enum, JSON persistence, and in-memory search service
 - [x] **Phase 2: Modal UI Components** - Responsive modal shell, searchable page list, and detail view with markdown + stat blocks (completed 2026-05-07)
 - [x] **Phase 3: Create Flow & Per-App Integration** - Type-driven create form, book icon triggers, and modal wiring in both apps (completed 2026-05-07)
-- [ ] **Phase 4: Polish & Testing** - Modal dismissal, search debounce, responsive verification, and core package tests
+- [x] **Phase 4: Polish & Testing** - Modal dismissal, search debounce, responsive verification, and core package tests (completed 2026-05-07)
 
 ## Phase Details
 
@@ -87,9 +87,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Modal dismissal behavior (close button + tap-outside with create-flow protection)
-- [ ] 04-02-PLAN.md — Debounce extraction to shared utility + unit tests with fake_async
-- [ ] 04-03-PLAN.md — App-level widget tests for responsive breakpoints and dismissal in both apps
+- [x] 04-01-PLAN.md — Modal dismissal behavior (close button + tap-outside with create-flow protection)
+- [x] 04-02-PLAN.md — Debounce extraction to shared utility + unit tests with fake_async
+- [x] 04-03-PLAN.md — App-level widget tests for responsive breakpoints and dismissal in both apps
 **UI hint**: yes
 
 ## Progress
@@ -102,4 +102,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Core Infrastructure | 0/4 | Not started | - |
 | 2. Modal UI Components | 7/7 | Complete   | 2026-05-07 |
 | 3. Create Flow & Per-App Integration | 3/3 | Complete | 2026-05-07 |
-| 4. Polish & Testing | 0/3 | Not started | - |
+| 4. Polish & Testing | 3/3 | Complete   | 2026-05-07 |
