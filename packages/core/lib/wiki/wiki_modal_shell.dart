@@ -52,7 +52,13 @@ class _WikiModalShellState extends State<WikiModalShell> {
       value: widget.provider,
       child: Consumer<WikiModalProvider>(
         builder: (context, modal, _) {
-          modal.setLayoutMode(isTwoPanel);
+          if (modal.isTwoPanel != isTwoPanel) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                widget.provider.setLayoutMode(isTwoPanel);
+              }
+            });
+          }
           if (modal.pages.isEmpty && widget.pages.isNotEmpty) {
             modal.setPages(widget.pages);
           }

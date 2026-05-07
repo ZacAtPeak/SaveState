@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:core/data/data.dart';
+import 'package:core/services/services.dart';
+import 'package:core/wiki/wiki.dart';
+import 'package:provider/provider.dart';
+import 'dart:io';
 import 'widgets/creature_detail_view.dart';
 import 'widgets/initiative_tracker.dart';
 import 'widgets/roll_history_panel.dart';
@@ -8,18 +12,43 @@ void main() {
   runApp(const DmApp());
 }
 
-class DmApp extends StatelessWidget {
+class DmApp extends StatefulWidget {
   const DmApp({super.key});
 
   @override
+  State<DmApp> createState() => _DmAppState();
+}
+
+class _DmAppState extends State<DmApp> {
+  late final WikiProvider _wikiProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    _wikiProvider = WikiProvider(
+      storage: WikiStorageService(baseDirectory: Directory.current),
+    );
+    _wikiProvider.loadAll();
+  }
+
+  @override
+  void dispose() {
+    _wikiProvider.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'SaveState DM',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
-        useMaterial3: true,
+    return ChangeNotifierProvider<WikiProvider>.value(
+      value: _wikiProvider,
+      child: MaterialApp(
+        title: 'SaveState DM',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
+          useMaterial3: true,
+        ),
+        home: const HomeScreen(),
       ),
-      home: const HomeScreen(),
     );
   }
 }
@@ -141,7 +170,14 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.menu_book),
             tooltip: 'Wiki',
-            onPressed: () {},
+            onPressed: () {
+              final wikiProvider = context.read<WikiProvider>();
+              WikiModalShell.show(
+                context,
+                provider: WikiModalProvider(),
+                pages: wikiProvider.pages,
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Icons.settings),
