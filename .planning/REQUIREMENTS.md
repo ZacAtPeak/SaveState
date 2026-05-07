@@ -23,7 +23,7 @@
 
 - [ ] **DETAIL-01**: Selecting a page in the list displays its full content in the detail panel
 - [ ] **DETAIL-02**: Markdown body renders with proper formatting (headers, lists, tables, code blocks)
-- [ ] **DETAIL-03**: Tags displayed as chips in detail header
+- [x] **DETAIL-03**: Tags displayed as chips in detail header
 - [ ] **DETAIL-04**: Stat block renders as formatted UI card for creature-type pages
 
 ### Create Page
@@ -82,7 +82,7 @@
 | LIST-04 | Phase 2 | Complete |
 | DETAIL-01 | Phase 2 | Pending |
 | DETAIL-02 | Phase 2 | Pending |
-| DETAIL-03 | Phase 2 | Pending |
+| DETAIL-03 | Phase 2 | Complete |
 | DETAIL-04 | Phase 2 | Pending |
 | CREATE-01 | Phase 2 | Pending |
 | CREATE-02 | Phase 2 | Pending |

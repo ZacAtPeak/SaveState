@@ -53,7 +53,7 @@ Plans:
 - [ ] 02-02-PLAN.md — WikiPageList sidebar with scrollable list, type icons, and search bar
 - [x] 02-03-PLAN.md — Search integration with title-prioritized filtering and 250ms debounce
 - [ ] 02-04-PLAN.md — WikiPageDetail view with markdown rendering (flutter_markdown) and tag chips
-- [ ] 02-05-PLAN.md — Stat block widget for creature-type pages as formatted UI card
+- [x] 02-05-PLAN.md — Stat block widget for creature-type pages as formatted UI card
 **UI hint**: yes
 
 ### Phase 3: Create Flow & Per-App Integration
