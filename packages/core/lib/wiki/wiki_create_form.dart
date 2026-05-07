@@ -27,7 +27,7 @@ class WikiCreateForm extends StatefulWidget {
 
   final WikiPageType selectedType;
   final VoidCallback onCancel;
-  final ValueChanged<WikiCreateDraft> onSubmit;
+  final Future<void> Function(WikiCreateDraft) onSubmit;
 
   @override
   State<WikiCreateForm> createState() => _WikiCreateFormState();
@@ -40,6 +40,7 @@ class _WikiCreateFormState extends State<WikiCreateForm> {
   final _tags = TextEditingController();
   final _aliases = TextEditingController();
   final Map<String, TextEditingController> _structured = {};
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -91,7 +92,10 @@ class _WikiCreateFormState extends State<WikiCreateForm> {
               const SizedBox(height: 8),
               ...widget.selectedType.fields.map(_buildStructuredField),
               const SizedBox(height: 16),
-              FilledButton(onPressed: _submit, child: const Text('Create page')),
+              FilledButton(
+                onPressed: _isSubmitting ? null : _submit,
+                child: Text(_isSubmitting ? 'Saving...' : 'Create page'),
+              ),
             ],
           ),
         ),
@@ -131,8 +135,10 @@ class _WikiCreateFormState extends State<WikiCreateForm> {
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSubmitting = true);
 
     final statBlock = <String, dynamic>{};
     for (final field in widget.selectedType.fields) {
@@ -141,15 +147,26 @@ class _WikiCreateFormState extends State<WikiCreateForm> {
       statBlock[field.key] = field.inputType == WikiFieldInputType.number ? num.parse(raw) : raw;
     }
 
-    widget.onSubmit(
-      WikiCreateDraft(
-        title: _title.text.trim(),
-        body: _body.text.trim(),
-        tags: _splitCsv(_tags.text),
-        aliases: _splitCsv(_aliases.text),
-        statBlock: statBlock,
-      ),
-    );
+    try {
+      await widget.onSubmit(
+        WikiCreateDraft(
+          title: _title.text.trim(),
+          body: _body.text.trim(),
+          tags: _splitCsv(_tags.text),
+          aliases: _splitCsv(_aliases.text),
+          statBlock: statBlock,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to save page. Please try again.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   List<String> _splitCsv(String value) {

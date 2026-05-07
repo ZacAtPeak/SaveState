@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'wiki_modal_provider.dart';
@@ -6,6 +8,7 @@ import 'wiki_page_detail.dart';
 import 'wiki_type_picker.dart';
 import 'wiki_create_form.dart';
 import 'package:core/models/models.dart';
+import 'package:core/services/services.dart';
 
 class WikiModalShell extends StatefulWidget {
   const WikiModalShell({super.key, this.onClose, required this.provider, required this.pages});
@@ -32,6 +35,14 @@ class WikiModalShell extends StatefulWidget {
 }
 
 class _WikiModalShellState extends State<WikiModalShell> {
+  late final WikiStorageService _storage;
+
+  @override
+  void initState() {
+    super.initState();
+    _storage = WikiStorageService(baseDirectory: Directory.current);
+  }
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
@@ -115,8 +126,18 @@ class _WikiModalShellState extends State<WikiModalShell> {
       return WikiCreateForm(
         selectedType: modal.pendingType!,
         onCancel: widget.provider.cancelCreate,
-        onSubmit: (_) {
-          widget.provider.cancelCreate();
+        onSubmit: (draft) async {
+          final flow = WikiCreateSubmitFlow(storage: _storage, target: widget.provider);
+          await flow.submit(
+            selectedType: modal.pendingType!,
+            draft: WikiCreateSubmission(
+              title: draft.title,
+              body: draft.body,
+              tags: draft.tags,
+              aliases: draft.aliases,
+              statBlock: draft.statBlock,
+            ),
+          );
         },
       );
     }
@@ -148,8 +169,18 @@ class _WikiModalShellState extends State<WikiModalShell> {
                   widget.provider.cancelCreate();
                   Navigator.of(context).pop();
                 },
-                onSubmit: (_) {
-                  widget.provider.cancelCreate();
+                onSubmit: (draft) async {
+                  final flow = WikiCreateSubmitFlow(storage: _storage, target: widget.provider);
+                  await flow.submit(
+                    selectedType: modal.pendingType!,
+                    draft: WikiCreateSubmission(
+                      title: draft.title,
+                      body: draft.body,
+                      tags: draft.tags,
+                      aliases: draft.aliases,
+                      statBlock: draft.statBlock,
+                    ),
+                  );
                   Navigator.of(context).pop();
                 },
               );

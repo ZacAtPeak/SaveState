@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:core/models/models.dart';
+import 'package:core/services/services.dart';
 
-class WikiModalProvider extends ChangeNotifier {
+class WikiModalProvider extends ChangeNotifier implements WikiCreateTarget {
   WikiPage? _selectedPage;
   bool _isTwoPanel = false;
   bool _isCreating = false;
@@ -30,6 +31,12 @@ class WikiModalProvider extends ChangeNotifier {
     _selectedPage = page;
     notifyListeners();
   }
+
+  @override
+  void onPageCreated(WikiPage page) => addPage(page);
+
+  @override
+  void onCreateComplete() => cancelCreate();
 
   void selectPage(WikiPage? page) {
     _selectedPage = page;
