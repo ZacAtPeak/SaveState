@@ -49,9 +49,9 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Modal shell with responsive layout branching (two-panel >=600dp, single-panel <600dp)
+- [x] 02-01-PLAN.md — Modal shell with responsive layout branching (two-panel >=600dp, single-panel <600dp)
 - [ ] 02-02-PLAN.md — WikiPageList sidebar with scrollable list, type icons, and search bar
-- [ ] 02-03-PLAN.md — Search integration with title-prioritized filtering and 250ms debounce
+- [x] 02-03-PLAN.md — Search integration with title-prioritized filtering and 250ms debounce
 - [ ] 02-04-PLAN.md — WikiPageDetail view with markdown rendering (flutter_markdown) and tag chips
 - [ ] 02-05-PLAN.md — Stat block widget for creature-type pages as formatted UI card
 **UI hint**: yes
@@ -98,6 +98,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Core Infrastructure | 0/4 | Not started | - |
-| 2. Modal UI Components | 0/5 | Not started | - |
+| 2. Modal UI Components | 2/5 | In Progress|  |
 | 3. Create Flow & Per-App Integration | 0/3 | Not started | - |
 | 4. Polish & Testing | 0/3 | Not started | - |

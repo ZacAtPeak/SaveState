@@ -7,17 +7,17 @@
 
 ### Modal & Layout
 
-- [ ] **MODAL-01**: Book icon opens full-screen slide-up modal in both apps
-- [ ] **MODAL-02**: Two-panel layout (sidebar + detail) on windows >=600dp wide
+- [x] **MODAL-01**: Book icon opens full-screen slide-up modal in both apps
+- [x] **MODAL-02**: Two-panel layout (sidebar + detail) on windows >=600dp wide
 - [ ] **MODAL-03**: Single-panel list→detail navigation on windows <600dp
 - [ ] **MODAL-04**: Modal dismissible via close button and tap outside
 
 ### Page List & Search
 
-- [ ] **LIST-01**: Sidebar displays scrollable list of wiki pages with type icon and title
+- [x] **LIST-01**: Sidebar displays scrollable list of wiki pages with type icon and title
 - [ ] **LIST-02**: Search bar at top of sidebar filters pages by full-text content
 - [ ] **LIST-03**: Search results prioritize title matches over body matches
-- [ ] **LIST-04**: Page type indicator shown as icon or chip in list items
+- [x] **LIST-04**: Page type indicator shown as icon or chip in list items
 
 ### Detail View
 
@@ -72,14 +72,14 @@
 | CORE-02 | Phase 1 | Complete |
 | CORE-03 | Phase 1 | Complete |
 | CORE-04 | Phase 1 | Complete |
-| MODAL-01 | Phase 2 | Pending |
-| MODAL-02 | Phase 2 | Pending |
+| MODAL-01 | Phase 2 | Complete |
+| MODAL-02 | Phase 2 | Complete |
 | MODAL-03 | Phase 2 | Pending |
 | MODAL-04 | Phase 4 | Pending |
-| LIST-01 | Phase 2 | Pending |
+| LIST-01 | Phase 2 | Complete |
 | LIST-02 | Phase 2 | Pending |
 | LIST-03 | Phase 2 | Pending |
-| LIST-04 | Phase 2 | Pending |
+| LIST-04 | Phase 2 | Complete |
 | DETAIL-01 | Phase 2 | Pending |
 | DETAIL-02 | Phase 2 | Pending |
 | DETAIL-03 | Phase 2 | Pending |
