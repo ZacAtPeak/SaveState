@@ -1,22 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'wiki_modal_provider.dart';
+import 'wiki_page_list.dart';
+import 'package:core/models/models.dart';
 
 class WikiModalShell extends StatefulWidget {
-  const WikiModalShell({super.key, this.onClose, required this.provider});
+  const WikiModalShell({super.key, this.onClose, required this.provider, required this.pages});
   final VoidCallback? onClose;
   final WikiModalProvider provider;
+  final List<WikiPage> pages;
 
   static Future<void> show(
     BuildContext context, {
     VoidCallback? onClose,
     required WikiModalProvider provider,
+    required List<WikiPage> pages,
   }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => WikiModalShell(onClose: onClose, provider: provider),
+      builder: (_) => WikiModalShell(onClose: onClose, provider: provider, pages: pages),
     );
   }
 
@@ -50,7 +54,12 @@ class _WikiModalShellState extends State<WikiModalShell> {
                     children: [
                       SizedBox(
                         width: 300,
-                        child: _buildListPlaceholder(),
+                        child: WikiPageList(
+                          pages: widget.pages,
+                          onPageSelected: (page) {
+                            widget.provider.selectPage(page);
+                          },
+                        ),
                       ),
                       const Expanded(child: Center(child: Text('WikiPageDetail (coming soon)'))),
                     ],
@@ -64,12 +73,13 @@ class _WikiModalShellState extends State<WikiModalShell> {
 
   Widget _buildSinglePanel(WikiModalProvider modal) {
     return modal.selectedPage == null
-        ? _buildListPlaceholder()
+        ? WikiPageList(
+            pages: widget.pages,
+            onPageSelected: (page) {
+              widget.provider.selectPage(page);
+            },
+          )
         : _buildDetailPlaceholder();
-  }
-
-  Widget _buildListPlaceholder() {
-    return const Center(child: Text('WikiPageList (coming soon)'));
   }
 }
 
