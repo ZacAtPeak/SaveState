@@ -16,6 +16,7 @@ void main() {
 
       final wikiButton = find.byIcon(Icons.menu_book);
       expect(wikiButton, findsOneWidget);
+      expect(find.byTooltip('Wiki'), findsOneWidget);
 
       await tester.tap(wikiButton);
       await tester.pumpAndSettle();
