@@ -50,11 +50,11 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md — Modal shell with responsive layout branching (two-panel >=600dp, single-panel <600dp)
-- [ ] 02-02-PLAN.md — WikiPageList sidebar with scrollable list, type icons, and search bar
+- [x] 02-02-PLAN.md — WikiPageList sidebar with scrollable list, type icons, and search bar
 - [x] 02-03-PLAN.md — Search integration with title-prioritized filtering and 250ms debounce
-- [ ] 02-04-PLAN.md — WikiPageDetail view with markdown rendering (flutter_markdown) and tag chips
+- [x] 02-04-PLAN.md — WikiPageDetail view with markdown rendering (flutter_markdown) and tag chips
 - [x] 02-05-PLAN.md — Stat block widget for creature-type pages as formatted UI card
-- [ ] 02-06-PLAN.md — Gap closure: Wire WikiPageList and WikiPageDetail into WikiModalShell
+- [x] 02-06-PLAN.md — Gap closure: Wire WikiPageList and WikiPageDetail into WikiModalShell
 - [ ] 02-07-PLAN.md — Gap closure: Add type displayName chips to WikiPageList list items
 **UI hint**: yes
 
@@ -100,6 +100,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Core Infrastructure | 0/4 | Not started | - |
-| 2. Modal UI Components | 2/5 | In Progress|  |
+| 2. Modal UI Components | 6/7 | In Progress|  |
 | 3. Create Flow & Per-App Integration | 0/3 | Not started | - |
 | 4. Polish & Testing | 0/3 | Not started | - |
