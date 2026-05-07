@@ -75,7 +75,7 @@
 | MODAL-01 | Phase 2 | Pending |
 | MODAL-02 | Phase 2 | Pending |
 | MODAL-03 | Phase 2 | Pending |
-| MODAL-04 | Phase 2 | Pending |
+| MODAL-04 | Phase 4 | Pending |
 | LIST-01 | Phase 2 | Pending |
 | LIST-02 | Phase 2 | Pending |
 | LIST-03 | Phase 2 | Pending |
