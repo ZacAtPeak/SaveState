@@ -46,7 +46,7 @@ Plans:
   3. Sidebar shows scrollable page list with type indicators (icon or chip) and filters results as user types in search bar
   4. Search results prioritize title matches over body matches
   5. Selecting a page renders markdown content with proper formatting, tags as chips in header, and stat block as formatted card for creature-type pages
-**Plans**: 5 plans
+**Plans**: 7 plans
 
 Plans:
 - [x] 02-01-PLAN.md — Modal shell with responsive layout branching (two-panel >=600dp, single-panel <600dp)
@@ -54,6 +54,8 @@ Plans:
 - [x] 02-03-PLAN.md — Search integration with title-prioritized filtering and 250ms debounce
 - [ ] 02-04-PLAN.md — WikiPageDetail view with markdown rendering (flutter_markdown) and tag chips
 - [x] 02-05-PLAN.md — Stat block widget for creature-type pages as formatted UI card
+- [ ] 02-06-PLAN.md — Gap closure: Wire WikiPageList and WikiPageDetail into WikiModalShell
+- [ ] 02-07-PLAN.md — Gap closure: Add type displayName chips to WikiPageList list items
 **UI hint**: yes
 
 ### Phase 3: Create Flow & Per-App Integration
