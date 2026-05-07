@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'wiki_modal_provider.dart';
 import 'wiki_page_list.dart';
+import 'wiki_page_detail.dart';
 import 'package:core/models/models.dart';
 
 class WikiModalShell extends StatefulWidget {
@@ -61,7 +62,11 @@ class _WikiModalShellState extends State<WikiModalShell> {
                           },
                         ),
                       ),
-                      const Expanded(child: Center(child: Text('WikiPageDetail (coming soon)'))),
+                      Expanded(
+                        child: modal.selectedPage != null
+                            ? WikiPageDetail(page: modal.selectedPage!)
+                            : const Center(child: Text('Select a page to view details')),
+                      ),
                     ],
                   )
                 : _buildSinglePanel(modal),
@@ -79,10 +84,6 @@ class _WikiModalShellState extends State<WikiModalShell> {
               widget.provider.selectPage(page);
             },
           )
-        : _buildDetailPlaceholder();
+        : WikiPageDetail(page: modal.selectedPage!);
   }
-}
-
-Widget _buildDetailPlaceholder() {
-  return Center(child: Text('WikiPageDetail (coming soon)'));
 }
