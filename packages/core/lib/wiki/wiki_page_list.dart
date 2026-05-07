@@ -77,6 +77,11 @@ class _WikiPageListState extends State<WikiPageList> {
                 subtitle: page.tags.isNotEmpty
                     ? Text(page.tags.join(', '))
                     : null,
+                trailing: Chip(
+                  label: Text(page.pageType.displayName),
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
                 onTap: () => widget.onPageSelected?.call(page),
               );
             },
