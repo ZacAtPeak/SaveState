@@ -13,7 +13,7 @@ Build a shared wiki popup UI accessible from both the companion and DM apps via 
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Core Infrastructure** - WikiPage model, type enum, JSON persistence, and in-memory search service
-- [ ] **Phase 2: Modal UI Components** - Responsive modal shell, searchable page list, and detail view with markdown + stat blocks
+- [x] **Phase 2: Modal UI Components** - Responsive modal shell, searchable page list, and detail view with markdown + stat blocks (completed 2026-05-07)
 - [ ] **Phase 3: Create Flow & Per-App Integration** - Type-driven create form, book icon triggers, and modal wiring in both apps
 - [ ] **Phase 4: Polish & Testing** - Modal dismissal, search debounce, responsive verification, and core package tests
 
@@ -55,7 +55,7 @@ Plans:
 - [x] 02-04-PLAN.md — WikiPageDetail view with markdown rendering (flutter_markdown) and tag chips
 - [x] 02-05-PLAN.md — Stat block widget for creature-type pages as formatted UI card
 - [x] 02-06-PLAN.md — Gap closure: Wire WikiPageList and WikiPageDetail into WikiModalShell
-- [ ] 02-07-PLAN.md — Gap closure: Add type displayName chips to WikiPageList list items
+- [x] 02-07-PLAN.md — Gap closure: Add type displayName chips to WikiPageList list items
 **UI hint**: yes
 
 ### Phase 3: Create Flow & Per-App Integration
@@ -100,6 +100,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Core Infrastructure | 0/4 | Not started | - |
-| 2. Modal UI Components | 6/7 | In Progress|  |
+| 2. Modal UI Components | 7/7 | Complete   | 2026-05-07 |
 | 3. Create Flow & Per-App Integration | 0/3 | Not started | - |
 | 4. Polish & Testing | 0/3 | Not started | - |
