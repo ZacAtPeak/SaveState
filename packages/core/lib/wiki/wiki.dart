@@ -6,3 +6,4 @@ export 'wiki_page_detail.dart';
 export 'wiki_stat_block.dart';
 export 'wiki_type_picker.dart';
 export 'wiki_create_form.dart';
+export 'wiki_provider.dart';
