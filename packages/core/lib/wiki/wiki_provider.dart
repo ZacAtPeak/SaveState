@@ -1,3 +1,4 @@
+import 'package:core/data/data.dart';
 import 'package:core/models/models.dart';
 import 'package:core/services/services.dart';
 import 'package:flutter/foundation.dart';
@@ -29,9 +30,14 @@ class WikiProvider extends ChangeNotifier implements WikiCreateTarget {
   Future<void> loadAll() async {
     if (_isLoaded) return;
     final loaded = await _storage.loadAllPages();
-    _pages
-      ..clear()
-      ..addAll(loaded);
+    if (loaded.isEmpty) {
+      for (final page in demoWikiPages) {
+        await _storage.savePage(page);
+      }
+      _pages.addAll(demoWikiPages);
+    } else {
+      _pages.addAll(loaded);
+    }
     _isLoaded = true;
     notifyListeners();
   }
