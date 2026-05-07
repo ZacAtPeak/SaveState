@@ -87,9 +87,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 04-01: Modal dismissal behavior (close button + tap outside) with state preservation
-- [ ] 04-02: Search debounce and responsive breakpoint verification
-- [ ] 04-03: Widget tests for WikiPageList filtering and WikiPageDetail rendering
+- [ ] 04-01-PLAN.md — Modal dismissal behavior (close button + tap-outside with create-flow protection)
+- [ ] 04-02-PLAN.md — Debounce extraction to shared utility + unit tests with fake_async
+- [ ] 04-03-PLAN.md — App-level widget tests for responsive breakpoints and dismissal in both apps
 **UI hint**: yes
 
 ## Progress
