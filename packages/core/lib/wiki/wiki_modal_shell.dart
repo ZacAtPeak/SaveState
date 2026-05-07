@@ -26,8 +26,23 @@ class WikiModalShell extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => WikiModalShell(onClose: onClose, provider: provider, pages: pages),
-    );
+      enableDrag: !provider.isCreating,
+      builder: (_) => ChangeNotifierProvider.value(
+        value: provider,
+        child: Consumer<WikiModalProvider>(
+          builder: (context, modal, _) => GestureDetector(
+            onTap: modal.isCreating ? null : () => Navigator.of(context).pop(),
+            behavior: HitTestBehavior.translucent,
+            child: Material(
+              type: MaterialType.transparency,
+              child: WikiModalShell(onClose: onClose, provider: provider, pages: pages),
+            ),
+          ),
+        ),
+      ),
+    ).then((_) {
+      provider.cancelCreate();
+    });
   }
 
   @override
@@ -62,48 +77,52 @@ class _WikiModalShellState extends State<WikiModalShell> {
           if (modal.pages.isEmpty && widget.pages.isNotEmpty) {
             modal.setPages(widget.pages);
           }
-          return Scaffold(
-            appBar: AppBar(
-              leading: IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  widget.onClose?.call();
-                },
-              ),
-              title: const Text('Wiki'),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  tooltip: 'Create page',
+          return PopScope(
+            canPop: !modal.isCreating,
+            child: Scaffold(
+              appBar: AppBar(
+                leading: IconButton(
+                  icon: const Icon(Icons.close),
                   onPressed: () {
-                    if (isTwoPanel) {
-                      widget.provider.startCreate();
-                    } else {
-                      _openSinglePanelCreateFlow(context);
-                    }
+                    widget.provider.cancelCreate();
+                    Navigator.of(context).pop();
+                    widget.onClose?.call();
                   },
                 ),
-              ],
-            ),
-            body: isTwoPanel
-                ? Row(
-                    children: [
-                      SizedBox(
-                        width: 300,
-                        child: WikiPageList(
-                          pages: modal.pages,
-                          onPageSelected: (page) {
-                            widget.provider.selectPage(page);
-                          },
+                title: const Text('Wiki'),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.add),
+                    tooltip: 'Create page',
+                    onPressed: () {
+                      if (isTwoPanel) {
+                        widget.provider.startCreate();
+                      } else {
+                        _openSinglePanelCreateFlow(context);
+                      }
+                    },
+                  ),
+                ],
+              ),
+              body: isTwoPanel
+                  ? Row(
+                      children: [
+                        SizedBox(
+                          width: 300,
+                          child: WikiPageList(
+                            pages: modal.pages,
+                            onPageSelected: (page) {
+                              widget.provider.selectPage(page);
+                            },
+                          ),
                         ),
-                      ),
-                      Expanded(
-                        child: _buildTwoPanelRight(modal),
-                      ),
-                    ],
-                  )
-                : _buildSinglePanel(modal),
+                        Expanded(
+                          child: _buildTwoPanelRight(modal),
+                        ),
+                      ],
+                    )
+                  : _buildSinglePanel(modal),
+            ),
           );
         },
       ),
