@@ -5,6 +5,7 @@ import 'package:core/services/services.dart';
 import 'package:core/wiki/wiki.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
+import 'package:core/models/game_entity.dart';
 import 'widgets/creature_detail_view.dart';
 import 'widgets/initiative_tracker.dart';
 import 'widgets/roll_history_panel.dart';
@@ -76,8 +77,9 @@ class _DmAppState extends State<DmApp> {
 class _SidebarEntry {
   final CombatantDragData drag;
   final CreatureDetail detail;
+  final GameEntity entity;
 
-  const _SidebarEntry({required this.drag, required this.detail});
+  const _SidebarEntry({required this.drag, required this.detail, required this.entity});
 
   String get id => drag.id;
 }
@@ -99,6 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
       .map((e) => _SidebarEntry(
             drag: CombatantDragData.fromGameEntity(e),
             detail: CreatureDetail.fromGameEntity(e),
+            entity: e,
           ))
       .toList();
 
@@ -106,6 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
       .map((e) => _SidebarEntry(
             drag: CombatantDragData.fromGameEntity(e),
             detail: CreatureDetail.fromGameEntity(e),
+            entity: e,
           ))
       .toList();
 
@@ -113,15 +117,16 @@ class _HomeScreenState extends State<HomeScreen> {
       .map((e) => _SidebarEntry(
             drag: CombatantDragData.fromGameEntity(e),
             detail: CreatureDetail.fromGameEntity(e),
+            entity: e,
           ))
       .toList();
 
-  late final Map<String, CreatureDetail> _detailById = {
+  late final Map<String, GameEntity> _detailById = {
     for (final e in [..._characters, ..._monsters, ..._npcs])
-      e.id: e.detail,
+      e.drag.id: e.entity,
   };
 
-  CreatureDetail? _selectedDetail;
+  GameEntity? _selectedDetail;
   final List<RollHistoryEntry> _rollHistory = [];
   int _unreadRolls = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -143,13 +148,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onSelect(_SidebarEntry entry) {
-    setState(() => _selectedDetail = entry.detail);
+    setState(() => _selectedDetail = entry.entity);
   }
 
   void _onTrackerEntryTap(InitiativeEntry entry) {
-    final detail = _detailById[entry.sourceId];
-    if (detail != null) {
-      setState(() => _selectedDetail = detail);
+    final entity = _detailById[entry.sourceId];
+    if (entity != null) {
+      setState(() => _selectedDetail = entity);
     }
   }
 
@@ -226,7 +231,7 @@ class _HomeScreenState extends State<HomeScreen> {
             monsters: _monsters,
             npcs: _npcs,
             assets: const [],
-            selectedId: _selectedDetail?.id,
+            selectedId: _selectedDetail?.getString('id'),
             onSelect: _onSelect,
           ),
           Expanded(
@@ -241,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   activeIndex: _activeIndex,
                 ),
                 Expanded(
-                  child: CreatureDetailView(detail: _selectedDetail),
+                  child: CreatureDetailView(entity: _selectedDetail),
                 ),
               ],
             ),
