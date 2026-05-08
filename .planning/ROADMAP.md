@@ -106,9 +106,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — FieldSchema, EntityTypeSchema, and GameModel data classes (pure Dart)
-- [ ] 05-02-PLAN.md — GameEntity wrapper with toJson/fromJson and typed accessor helpers
-- [ ] 05-03-PLAN.md — GameModelParser with schemaVersion validation and unit tests
+- [x] 05-01-PLAN.md — FieldSchema, EntityTypeSchema, and GameModel data classes (pure Dart)
+- [x] 05-02-PLAN.md — GameEntity wrapper with toJson/fromJson and typed accessor helpers
+- [x] 05-03-PLAN.md — GameModelParser with schemaVersion validation and unit tests
 
 ### Phase 6: Service Layer + D&D 5e Asset
 **Goal**: The app can load and broadcast the active D&D 5e GameModel at startup — existing wiki and app behavior is unchanged
