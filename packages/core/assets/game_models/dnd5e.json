@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "name": "D&D 5e",
+  "entityTypes": [
+    {
+      "key": "creature",
+      "displayName": "Creature",
+      "isWikiPageType": true,
+      "sortOrder": 0,
+      "fields": [
+        {"key": "size", "label": "Size", "inputType": "select", "required": true, "enumOptions": ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"]},
+        {"key": "creatureType", "label": "Creature Type", "inputType": "text", "required": true, "hint": "Humanoid, Beast, Fiend..."},
+        {"key": "armorClass", "label": "Armor Class", "inputType": "number", "required": true},
+        {"key": "hitPoints", "label": "Hit Points", "inputType": "number", "required": true},
+        {"key": "speed", "label": "Speed", "inputType": "text", "hint": "30 ft., fly 60 ft."},
+        {"key": "challengeRating", "label": "Challenge Rating", "inputType": "text", "hint": "e.g. 1/4, 5, 12"}
+      ]
+    },
+    {
+      "key": "spell",
+      "displayName": "Spell",
+      "isWikiPageType": true,
+      "sortOrder": 1,
+      "fields": [
+        {"key": "level", "label": "Level", "inputType": "number", "required": true},
+        {"key": "school", "label": "School", "inputType": "select", "required": true, "enumOptions": ["Abjuration", "Conjuration", "Divination", "Enchantment", "Evocation", "Illusion", "Necromancy", "Transmutation"]},
+        {"key": "castingTime", "label": "Casting Time", "inputType": "text", "required": true},
+        {"key": "range", "label": "Range", "inputType": "text", "required": true},
+        {"key": "duration", "label": "Duration", "inputType": "text", "required": true},
+        {"key": "components", "label": "Components", "inputType": "text", "hint": "V, S, M (material)"}
+      ]
+    },
+    {
+      "key": "item",
+      "displayName": "Item",
+      "isWikiPageType": true,
+      "sortOrder": 2,
+      "fields": [
+        {"key": "rarity", "label": "Rarity", "inputType": "select", "required": true, "enumOptions": ["Common", "Uncommon", "Rare", "Very Rare", "Legendary", "Artifact"]},
+        {"key": "itemType", "label": "Item Type", "inputType": "text", "required": true, "hint": "Weapon, Armor, Wondrous Item..."},
+        {"key": "attunement", "label": "Requires Attunement", "inputType": "select", "required": true, "enumOptions": ["No", "Yes"]},
+        {"key": "weight", "label": "Weight (lb)", "inputType": "number"},
+        {"key": "value", "label": "Value", "inputType": "text", "hint": "e.g. 250 gp"},
+        {"key": "properties", "label": "Properties", "inputType": "multiline", "hint": "Special properties and effects"}
+      ]
+    },
+    {
+      "key": "rule",
+      "displayName": "Rule",
+      "isWikiPageType": true,
+      "sortOrder": 3,
+      "fields": [
+        {"key": "ruleCategory", "label": "Rule Category", "inputType": "select", "required": true, "enumOptions": ["Combat", "Exploration", "Social", "Magic", "Downtime", "Optional"]},
+        {"key": "appliesTo", "label": "Applies To", "inputType": "text", "hint": "Classes, creatures, situations..."},
+        {"key": "sourcebook", "label": "Sourcebook", "inputType": "text"},
+        {"key": "pageNumber", "label": "Page Number", "inputType": "number"},
+        {"key": "summary", "label": "Quick Summary", "inputType": "multiline", "required": true}
+      ]
+    },
+    {
+      "key": "location",
+      "displayName": "Location",
+      "isWikiPageType": true,
+      "sortOrder": 4,
+      "fields": [
+        {"key": "region", "label": "Region", "inputType": "text", "required": true},
+        {"key": "locationType", "label": "Location Type", "inputType": "select", "required": true, "enumOptions": ["City", "Town", "Dungeon", "Wilderness", "Building", "Plane"]},
+        {"key": "population", "label": "Population", "inputType": "number"},
+        {"key": "factionControl", "label": "Faction Control", "inputType": "text"},
+        {"key": "notableFeatures", "label": "Notable Features", "inputType": "multiline"}
+      ]
+    },
+    {
+      "key": "npc",
+      "displayName": "NPC",
+      "isWikiPageType": true,
+      "sortOrder": 5,
+      "fields": [
+        {"key": "race", "label": "Race", "inputType": "text", "required": true},
+        {"key": "classOrRole", "label": "Class / Role", "inputType": "text", "required": true},
+        {"key": "alignment", "label": "Alignment", "inputType": "select", "required": true, "enumOptions": ["Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", "True Neutral", "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil"]},
+        {"key": "goals", "label": "Goals", "inputType": "multiline"},
+        {"key": "secrets", "label": "Secrets", "inputType": "multiline"}
+      ]
+    },
+    {
+      "key": "other",
+      "displayName": "Other",
+      "isWikiPageType": true,
+      "sortOrder": 6,
+      "fields": [
+        {"key": "category", "label": "Category", "inputType": "text", "required": true},
+        {"key": "reference", "label": "Reference", "inputType": "text"},
+        {"key": "notes", "label": "Notes", "inputType": "multiline"}
+      ]
+    }
+  ],
+  "rulesConfig": {
+    "abilityScores": {
+      "STR": "Strength",
+      "DEX": "Dexterity",
+      "CON": "Constitution",
+      "INT": "Intelligence",
+      "WIS": "Wisdom",
+      "CHA": "Charisma"
+    },
+    "initiativeConfig": {
+      "formula": "1d20+DEX",
+      "label": "Initiative"
+    }
+  }
+}
