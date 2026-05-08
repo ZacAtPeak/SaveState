@@ -1,4 +1,4 @@
-// Wiki UI components — shared between companion_app and dm_app
+export 'game_model_form_builder.dart';
 export 'wiki_modal_shell.dart';
 export 'wiki_modal_provider.dart';
 export 'wiki_page_list.dart';
