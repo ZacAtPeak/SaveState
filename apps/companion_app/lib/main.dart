@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:core/models/models.dart';
 import 'package:core/services/services.dart';
 import 'package:core/wiki/wiki.dart';
 import 'package:companion_app/widgets/generic_tab_view.dart';
+import 'package:companion_app/screens/character_sheet_screen.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -101,7 +103,7 @@ class HomeScreen extends StatelessWidget {
           TabData(
             label: 'Characters',
             icon: const Icon(Icons.people),
-            content: const Center(child: Text('Characters Screen')),
+            content: const _CharacterListScreen(),
           ),
           TabData(
             label: 'Inventory',
@@ -114,6 +116,96 @@ class HomeScreen extends StatelessWidget {
             content: const Center(child: Text('Spells Screen')),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CharacterListScreen extends StatefulWidget {
+  const _CharacterListScreen();
+
+  @override
+  State<_CharacterListScreen> createState() => _CharacterListScreenState();
+}
+
+class _CharacterListScreenState extends State<_CharacterListScreen> {
+  final List<GameEntity> _characters = [];
+
+  void _createCharacter() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CharacterSheetScreen(
+          character: null,
+          onSave: (entity) {
+            setState(() => _characters.add(entity));
+            Navigator.of(context).pop();
+          },
+          onCancel: () => Navigator.of(context).pop(),
+        ),
+      ),
+    );
+  }
+
+  void _editCharacter(GameEntity character) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CharacterSheetScreen(
+          character: character,
+          onSave: (entity) {
+            setState(() {
+              final index = _characters.indexWhere(
+                (c) => c.getString('id') == entity.getString('id'),
+              );
+              if (index >= 0) _characters[index] = entity;
+            });
+            Navigator.of(context).pop();
+          },
+          onCancel: () => Navigator.of(context).pop(),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      body: _characters.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('No characters yet', style: theme.textTheme.bodyLarge),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tap + to create your first character',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              itemCount: _characters.length,
+              itemBuilder: (context, index) {
+                final char = _characters[index];
+                return ListTile(
+                  leading: const Icon(Icons.person),
+                  title: Text(
+                    char.getString('name', fallback: 'Unnamed Character'),
+                  ),
+                  subtitle: Text(
+                    char.getString(
+                      'playerClass',
+                      fallback: char.getString('race', fallback: ''),
+                    ),
+                  ),
+                  onTap: () => _editCharacter(char),
+                );
+              },
+            ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _createCharacter,
+        child: const Icon(Icons.add),
       ),
     );
   }

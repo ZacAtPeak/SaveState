@@ -18,4 +18,10 @@ class GameModelService extends ChangeNotifier {
       debugPrint('GameModelService: failed to parse $assetPath: $e');
     }
   }
+
+  /// Sets the active model directly (for testing).
+  void setActiveModelForTesting(GameModel model) {
+    _activeModel = model;
+    notifyListeners();
+  }
 }
