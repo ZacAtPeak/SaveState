@@ -1,5 +1,6 @@
 import 'package:core/models/models.dart';
 import 'package:flutter/material.dart';
+import 'game_model_form_builder.dart';
 
 class WikiCreateDraft {
   const WikiCreateDraft({
@@ -20,12 +21,12 @@ class WikiCreateDraft {
 class WikiCreateForm extends StatefulWidget {
   const WikiCreateForm({
     super.key,
-    required this.selectedType,
+    required this.entitySchema,
     required this.onCancel,
     required this.onSubmit,
   });
 
-  final WikiPageType selectedType;
+  final EntityTypeSchema entitySchema;
   final VoidCallback onCancel;
   final Future<void> Function(WikiCreateDraft) onSubmit;
 
@@ -45,7 +46,7 @@ class _WikiCreateFormState extends State<WikiCreateForm> {
   @override
   void initState() {
     super.initState();
-    for (final field in widget.selectedType.fields) {
+    for (final field in widget.entitySchema.fields) {
       _structured[field.key] = TextEditingController();
     }
   }
@@ -76,7 +77,7 @@ class _WikiCreateFormState extends State<WikiCreateForm> {
                 children: [
                   IconButton(onPressed: widget.onCancel, icon: const Icon(Icons.arrow_back)),
                   const SizedBox(width: 8),
-                  Text('Create ${widget.selectedType.displayName}', style: Theme.of(context).textTheme.titleLarge),
+                  Text('Create ${widget.entitySchema.displayName}', style: Theme.of(context).textTheme.titleLarge),
                 ],
               ),
               TextFormField(
@@ -90,7 +91,7 @@ class _WikiCreateFormState extends State<WikiCreateForm> {
               const SizedBox(height: 16),
               Text('Structured fields', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
-              ...widget.selectedType.fields.map(_buildStructuredField),
+              GameModelFormBuilder(fields: widget.entitySchema.fields, controllers: _structured),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: _isSubmitting ? null : _submit,
@@ -103,48 +104,16 @@ class _WikiCreateFormState extends State<WikiCreateForm> {
     );
   }
 
-  Widget _buildStructuredField(WikiPageFieldDefinition field) {
-    if (field.inputType == WikiFieldInputType.select) {
-      final options = field.options ?? const <String>[];
-      return DropdownButtonFormField<String>(
-        initialValue: _structured[field.key]!.text.isEmpty ? null : _structured[field.key]!.text,
-        decoration: InputDecoration(labelText: field.label, hintText: field.hint),
-        items: options.map((option) => DropdownMenuItem(value: option, child: Text(option))).toList(),
-        validator: field.required ? (value) => (value == null || value.isEmpty) ? '${field.label} is required' : null : null,
-        onChanged: (value) => _structured[field.key]!.text = value ?? '',
-      );
-    }
-
-    final isNumber = field.inputType == WikiFieldInputType.number;
-    final isMultiline = field.inputType == WikiFieldInputType.multiline;
-    return TextFormField(
-      controller: _structured[field.key],
-      decoration: InputDecoration(labelText: field.label, hintText: field.hint),
-      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-      minLines: isMultiline ? 3 : 1,
-      maxLines: isMultiline ? 5 : 1,
-      validator: (value) {
-        if (field.required && (value == null || value.trim().isEmpty)) {
-          return '${field.label} is required';
-        }
-        if (isNumber && value != null && value.trim().isNotEmpty && num.tryParse(value.trim()) == null) {
-          return '${field.label} must be a number';
-        }
-        return null;
-      },
-    );
-  }
-
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSubmitting = true);
 
     final statBlock = <String, dynamic>{};
-    for (final field in widget.selectedType.fields) {
+    for (final field in widget.entitySchema.fields) {
       final raw = _structured[field.key]!.text.trim();
       if (raw.isEmpty) continue;
-      statBlock[field.key] = field.inputType == WikiFieldInputType.number ? num.parse(raw) : raw;
+      statBlock[field.key] = field.inputType == FieldInputType.number ? num.parse(raw) : raw;
     }
 
     try {
