@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-05-08T04:25:38Z",
+  "phase": null,
+  "phase_name": "project-initialization",
+  "phase_dir": null,
+  "plan": null,
+  "task": null,
+  "total_tasks": null,
+  "status": "paused",
+  "completed_tasks": [
+    {"id": 1, "name": "Deep questioning — GameModel vision", "status": "done", "commit": "a29fc6d"},
+    {"id": 2, "name": "Write PROJECT.md (GameModel)", "status": "done", "commit": "a29fc6d"},
+    {"id": 3, "name": "4-agent parallel research (stack, features, architecture, pitfalls)", "status": "done", "commit": "e017e66"},
+    {"id": 4, "name": "Write SUMMARY.md from synthesizer output", "status": "done", "commit": "e017e66"},
+    {"id": 5, "name": "Define 20 v1 requirements in REQUIREMENTS.md", "status": "done", "commit": "e017e66"},
+    {"id": 6, "name": "Create ROADMAP.md (Phases 5–10, 20 requirements mapped)", "status": "done", "commit": "0ef2947"},
+    {"id": 7, "name": "Reset STATE.md for v2.0 GameModel milestone", "status": "done", "commit": "0ef2947"}
+  ],
+  "remaining_tasks": [
+    {"id": 8, "name": "Run /gsd-discuss-phase 5 or /gsd-plan-phase 5 to begin execution", "status": "not_started"}
+  ],
+  "blockers": [],
+  "human_actions_pending": [],
+  "decisions": [
+    {"decision": "Replace all typed D&D Dart models with generic GameEntity (Map<String,dynamic> wrapper)", "rationale": "Typed classes encode D&D assumptions at the type level — can't extend for other TTRPGs without forking", "phase": "init"},
+    {"decision": "JSON as GameModel schema format", "rationale": "Human-readable, importable, matches existing wiki persistence format", "phase": "init"},
+    {"decision": "Call of Cthulhu 7e as second bundled model (agnosticism proof)", "rationale": "Structurally very different from D&D — percentile skills, Sanity, no CR/XP — validates true agnosticism", "phase": "init"},
+    {"decision": "WikiPageType enum replaced by runtime isWikiPageType flag in GameModel entityTypes", "rationale": "Enum is compile-time D&D only; runtime registry supports any set of page types a GameModel defines", "phase": "init"},
+    {"decision": "No new core dependencies — rootBundle + provider + dart:convert only", "rationale": "file_picker goes in apps only; all pub.dev form-gen packages are dead (9–54 downloads)", "phase": "init"}
+  ],
+  "uncommitted_files": [],
+  "next_action": "Run /clear then /gsd-discuss-phase 5 to begin Phase 5: Core Data Layer (GameModel, GameEntity, FieldSchema pure-Dart data classes)",
+  "context_notes": "Project initialization complete. All planning artifacts committed. Phase 5 is pure-Dart work (no Flutter deps) — GameModel, EntityTypeSchema, FieldSchema, GameEntity, GameModelParser, typed accessor helpers. schemaVersion validation must be in Phase 5 from the first commit. Initiative formula grammar (is CoC DEX-rank sort a special token or isRolled:false flag?) is an open design question to resolve during Phase 5 or 6 planning."
+}
