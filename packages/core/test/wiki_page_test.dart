@@ -2,7 +2,7 @@ import 'package:test/test.dart';
 import 'package:core/models/models.dart';
 
 void main() {
-  group('WikiPageType', () {
+  group('WikiPageType enum (backward compat)', () {
     test('has 7 values', () {
       expect(WikiPageType.values.length, equals(7));
     });
@@ -38,7 +38,7 @@ void main() {
 
   group('WikiPage creation', () {
     test('generates UUID when id not provided', () {
-      final page = WikiPage(title: 'Test', pageType: WikiPageType.spell);
+      final page = WikiPage(title: 'Test', entityTypeKey: 'spell');
       expect(page.id.isNotEmpty, isTrue);
       expect(page.id, hasLength(36));
     });
@@ -47,13 +47,13 @@ void main() {
       final page = WikiPage(
         id: 'test-123',
         title: 'Test',
-        pageType: WikiPageType.spell,
+        entityTypeKey: 'spell',
       );
       expect(page.id, equals('test-123'));
     });
 
     test('sets default values', () {
-      final page = WikiPage(title: 'Test', pageType: WikiPageType.spell);
+      final page = WikiPage(title: 'Test', entityTypeKey: 'spell');
       expect(page.body, equals(''));
       expect(page.tags, isEmpty);
       expect(page.aliases, isEmpty);
@@ -68,7 +68,7 @@ void main() {
       final page = WikiPage(
         id: 'test-id',
         title: 'Fireball',
-        pageType: WikiPageType.spell,
+        entityTypeKey: 'spell',
         body: 'A fiery explosion',
         tags: ['evocation', 'damage'],
         aliases: ['Fire Ball'],
@@ -95,7 +95,7 @@ void main() {
       final original = WikiPage(
         id: 'test-id',
         title: 'Fireball',
-        pageType: WikiPageType.spell,
+        entityTypeKey: 'spell',
         body: 'A fiery explosion',
         tags: ['evocation', 'damage'],
         aliases: ['Fire Ball'],
@@ -107,6 +107,7 @@ void main() {
       final restored = WikiPage.fromJson(original.toJson());
       expect(restored.id, equals(original.id));
       expect(restored.title, equals(original.title));
+      expect(restored.entityTypeKey, equals(original.entityTypeKey));
       expect(restored.pageType, equals(original.pageType));
       expect(restored.body, equals(original.body));
       expect(restored.tags, equals(original.tags));
@@ -117,8 +118,8 @@ void main() {
       expect(restored.statBlock, equals(original.statBlock));
     });
 
-    test('serializes entityTypeKey as enum name', () {
-      final page = WikiPage(title: 'Test', pageType: WikiPageType.creature);
+    test('serializes entityTypeKey as string key', () {
+      final page = WikiPage(title: 'Test', entityTypeKey: 'creature');
       final json = page.toJson();
       expect(json['entityTypeKey'], equals('creature'));
     });
@@ -127,7 +128,7 @@ void main() {
       final now = DateTime.utc(2026, 1, 1, 12, 0, 0);
       final page = WikiPage(
         title: 'Test',
-        pageType: WikiPageType.spell,
+        entityTypeKey: 'spell',
         createdAt: now,
         updatedAt: now,
       );
@@ -136,7 +137,7 @@ void main() {
       expect(json['updatedAt'], equals(now.toIso8601String()));
     });
 
-    test('deserializes entityTypeKey from enum name', () {
+    test('deserializes entityTypeKey from string', () {
       final json = {
         'id': 'test-id',
         'title': 'Test',
@@ -150,6 +151,7 @@ void main() {
         'statBlock': {},
       };
       final page = WikiPage.fromJson(json);
+      expect(page.entityTypeKey, equals('spell'));
       expect(page.pageType, equals(WikiPageType.spell));
     });
 
@@ -173,7 +175,7 @@ void main() {
     });
 
     test('handles nullable referenceId', () {
-      final page = WikiPage(title: 'Test', pageType: WikiPageType.spell);
+      final page = WikiPage(title: 'Test', entityTypeKey: 'spell');
       final json = page.toJson();
       expect(json['referenceId'], isNull);
 
@@ -184,7 +186,7 @@ void main() {
     test('handles referenceId for creature pages', () {
       final page = WikiPage(
         title: 'Goblin',
-        pageType: WikiPageType.creature,
+        entityTypeKey: 'creature',
         referenceId: 'monster-123',
       );
       final json = page.toJson();
@@ -197,7 +199,7 @@ void main() {
     test('handles statBlock map', () {
       final page = WikiPage(
         title: 'Fireball',
-        pageType: WikiPageType.spell,
+        entityTypeKey: 'spell',
         statBlock: {'level': 3, 'school': 'evocation'},
       );
       final json = page.toJson();

@@ -4,7 +4,7 @@ final demoWikiPages = <WikiPage>[
   // ── Creatures ──────────────────────────────────────────────────────────────
   WikiPage(
     title: 'Goblin Scout',
-    pageType: WikiPageType.creature,
+    entityTypeKey: 'creature',
     body:
         'A scrappy goblin who serves as an advance lookout for larger raiding parties. '
         'Cowardly alone but dangerous in numbers, it relies on hit-and-run tactics and '
@@ -22,7 +22,7 @@ final demoWikiPages = <WikiPage>[
   ),
   WikiPage(
     title: 'Vampire Spawn',
-    pageType: WikiPageType.creature,
+    entityTypeKey: 'creature',
     body:
         'Slaves to their vampire masters, these creatures retain just enough of their '
         'former humanity to feel the horror of what they have become. They hunger for '
@@ -40,7 +40,7 @@ final demoWikiPages = <WikiPage>[
   ),
   WikiPage(
     title: 'Ancient Red Dragon',
-    pageType: WikiPageType.creature,
+    entityTypeKey: 'creature',
     body:
         'The most covetous of all true dragons, ancient reds are arrogant tyrants '
         'that consider themselves the apex predators of the world. Their breath weapon '
@@ -60,7 +60,7 @@ final demoWikiPages = <WikiPage>[
   // ── Spells ─────────────────────────────────────────────────────────────────
   WikiPage(
     title: 'Fireball',
-    pageType: WikiPageType.spell,
+    entityTypeKey: 'spell',
     body:
         'A bright streak flashes from your pointing finger to a point you choose and '
         'then blossoms with a low roar into an explosion of flame. Each creature in a '
@@ -79,7 +79,7 @@ final demoWikiPages = <WikiPage>[
   ),
   WikiPage(
     title: 'Shield',
-    pageType: WikiPageType.spell,
+    entityTypeKey: 'spell',
     body:
         'An invisible barrier of magical force appears and protects you. Until the '
         'start of your next turn, you have a +5 bonus to AC, including against the '
@@ -97,7 +97,7 @@ final demoWikiPages = <WikiPage>[
   ),
   WikiPage(
     title: 'Misty Step',
-    pageType: WikiPageType.spell,
+    entityTypeKey: 'spell',
     body:
         'Briefly surrounded by silvery mist, you teleport up to 30 feet to an '
         'unoccupied space that you can see. A popular escape and repositioning tool '
@@ -117,7 +117,7 @@ final demoWikiPages = <WikiPage>[
   // ── Items ──────────────────────────────────────────────────────────────────
   WikiPage(
     title: 'Sword of Wounding',
-    pageType: WikiPageType.item,
+    entityTypeKey: 'item',
     body:
         'Hit points lost to this magic weapon can be regained only through a short or '
         'long rest, rather than by regeneration, magic, or any other means. Once per '
@@ -135,7 +135,7 @@ final demoWikiPages = <WikiPage>[
   ),
   WikiPage(
     title: 'Cloak of Protection',
-    pageType: WikiPageType.item,
+    entityTypeKey: 'item',
     body:
         'You gain a +1 bonus to AC and saving throws while you wear this cloak. '
         'A simple but highly sought-after defensive item, favored by scouts and '
@@ -153,7 +153,7 @@ final demoWikiPages = <WikiPage>[
   ),
   WikiPage(
     title: 'Potion of Speed',
-    pageType: WikiPageType.item,
+    entityTypeKey: 'item',
     body:
         'When you drink this potion, you gain the effect of the haste spell for '
         '1 minute (no concentration required). The potion\'s golden liquid looks '
@@ -173,7 +173,7 @@ final demoWikiPages = <WikiPage>[
   // ── Rules ──────────────────────────────────────────────────────────────────
   WikiPage(
     title: 'Concentration',
-    pageType: WikiPageType.rule,
+    entityTypeKey: 'rule',
     body:
         'Some spells require concentration to maintain their effect. If you cast '
         'another concentration spell or take damage (DC 10 or half damage, whichever '
@@ -192,7 +192,7 @@ final demoWikiPages = <WikiPage>[
   ),
   WikiPage(
     title: 'Advantage and Disadvantage',
-    pageType: WikiPageType.rule,
+    entityTypeKey: 'rule',
     body:
         'When you have advantage, roll two d20s and take the higher result. '
         'With disadvantage, roll two d20s and take the lower. Multiple sources of '
@@ -210,7 +210,7 @@ final demoWikiPages = <WikiPage>[
   ),
   WikiPage(
     title: 'Death Saving Throws',
-    pageType: WikiPageType.rule,
+    entityTypeKey: 'rule',
     body:
         'When you drop to 0 HP you are unconscious and must make death saving throws '
         'each turn. Three successes = stable. Three failures = dead. A natural 20 '
@@ -230,7 +230,7 @@ final demoWikiPages = <WikiPage>[
   // ── Locations ──────────────────────────────────────────────────────────────
   WikiPage(
     title: 'Neverwinter',
-    pageType: WikiPageType.location,
+    entityTypeKey: 'location',
     body:
         'Known as the City of Skilled Hands and the Jewel of the North, Neverwinter '
         'sits on the Sword Coast and is famed for its warm river and the resilience '
@@ -248,7 +248,7 @@ final demoWikiPages = <WikiPage>[
   ),
   WikiPage(
     title: 'Undermountain',
-    pageType: WikiPageType.location,
+    entityTypeKey: 'location',
     body:
         'The largest dungeon in Faerûn, Undermountain sprawls beneath Waterdeep. '
         'Created by the Mad Mage Halaster Blackcloak, it contains over twenty levels '
@@ -265,7 +265,7 @@ final demoWikiPages = <WikiPage>[
   ),
   WikiPage(
     title: 'The Moonlit Forest',
-    pageType: WikiPageType.location,
+    entityTypeKey: 'location',
     body:
         'An ancient woodland said to be touched by the Feywild. Trees here glow '
         'faintly silver at night and the stars seem closer. Eladrin and fey creatures '
@@ -285,7 +285,7 @@ final demoWikiPages = <WikiPage>[
   // ── NPCs ───────────────────────────────────────────────────────────────────
   WikiPage(
     title: 'Lady Seraphine Ashvale',
-    pageType: WikiPageType.npc,
+    entityTypeKey: 'npc',
     body:
         'Proprietor of the Gilded Anchor trading company, Lady Ashvale is impeccably '
         'dressed and unfailingly polite. She knows the value of everything and the '
@@ -303,7 +303,7 @@ final demoWikiPages = <WikiPage>[
   ),
   WikiPage(
     title: 'Korrax Ironteeth',
-    pageType: WikiPageType.npc,
+    entityTypeKey: 'npc',
     body:
         'Korrax runs the Broken Fang thieves\' guild from the sewers beneath the '
         'market district. Half-orc and twice as clever as anyone gives him credit '
@@ -321,7 +321,7 @@ final demoWikiPages = <WikiPage>[
   ),
   WikiPage(
     title: 'Elder Miriam of the Amber Circle',
-    pageType: WikiPageType.npc,
+    entityTypeKey: 'npc',
     body:
         'A gnome archivist and retired adventurer, Elder Miriam is the de facto '
         'keeper of lore for the region. She has three cats, seventeen apprentices, '
@@ -341,7 +341,7 @@ final demoWikiPages = <WikiPage>[
   // ── Other ──────────────────────────────────────────────────────────────────
   WikiPage(
     title: 'The Draconic Prophecy',
-    pageType: WikiPageType.other,
+    entityTypeKey: 'other',
     body:
         'An ancient and ever-shifting set of prophecies recorded in Draconic script '
         'across thousands of stone tablets, cave walls, and dragonscale journals. '
@@ -359,7 +359,7 @@ final demoWikiPages = <WikiPage>[
   ),
   WikiPage(
     title: 'The Order of the Silver Hand',
-    pageType: WikiPageType.other,
+    entityTypeKey: 'other',
     body:
         'A knightly order dedicated to combating undead and fiends. Headquartered '
         'in the Sunspire Citadel, they accept members of any class but require a '

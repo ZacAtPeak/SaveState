@@ -7,12 +7,12 @@ WikiPage _page({
   required String title,
   String body = '',
   List<String> tags = const [],
-  WikiPageType pageType = WikiPageType.spell,
+  String entityTypeKey = 'spell',
 }) {
   return WikiPage(
     id: id,
     title: title,
-    pageType: pageType,
+    entityTypeKey: entityTypeKey,
     body: body,
     tags: tags,
   );

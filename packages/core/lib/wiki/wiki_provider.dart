@@ -27,10 +27,6 @@ class WikiProvider extends ChangeNotifier implements WikiCreateTarget {
   @override
   String? get pendingEntityKey => _pendingEntityKey;
 
-  @override
-  @Deprecated('Use pendingEntityKey instead')
-  WikiPageType? get pendingType => null;
-
   bool get isLoaded => _isLoaded;
 
   GameModel? _activeGameModel;
@@ -76,14 +72,6 @@ class WikiProvider extends ChangeNotifier implements WikiCreateTarget {
     } catch (error) {
       debugPrint('Wiki migration failed non-blocking: $error');
     }
-  }
-
-  Future<WikiPage> addPageFromSubmission({
-    required WikiPageType selectedType,
-    required WikiCreateSubmission draft,
-  }) async {
-    final flow = WikiCreateSubmitFlow(storage: _storage, target: this);
-    return flow.submit(selectedType: selectedType, draft: draft);
   }
 
   void selectPage(WikiPage? page) {

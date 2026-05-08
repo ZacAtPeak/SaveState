@@ -15,16 +15,10 @@ class WikiTypePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<EntityTypeSchema> wikiTypes;
-    if (entityTypes != null) {
-      wikiTypes = entityTypes!
-          .where((e) => e.isWikiPageType)
-          .toList()
-        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-    } else {
-      // Fallback: derive from WikiPageType enum for backward compatibility
-      wikiTypes = WikiPageType.values.map(_entityFromPageType).toList();
-    }
+    final wikiTypes = (entityTypes ?? const <EntityTypeSchema>[])
+        .where((e) => e.isWikiPageType)
+        .toList()
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -97,16 +91,5 @@ class WikiTypePicker extends StatelessWidget {
       default:
         return Icons.help_outline;
     }
-  }
-
-  /// Creates a synthetic EntityTypeSchema from a WikiPageType for backward compatibility.
-  static EntityTypeSchema _entityFromPageType(WikiPageType type) {
-    return EntityTypeSchema(
-      key: type.name,
-      displayName: type.displayName,
-      isWikiPageType: true,
-      fields: const [],
-      sortOrder: type.index,
-    );
   }
 }

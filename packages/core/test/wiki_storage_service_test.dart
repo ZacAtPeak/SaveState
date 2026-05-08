@@ -21,14 +21,14 @@ void main() {
   WikiPage _createPage({
     String? id,
     required String title,
-    WikiPageType pageType = WikiPageType.spell,
+    String entityTypeKey = 'spell',
     String body = '',
     List<String> tags = const [],
   }) {
     return WikiPage(
       id: id,
       title: title,
-      pageType: pageType,
+      entityTypeKey: entityTypeKey,
       body: body,
       tags: tags,
     );
@@ -59,7 +59,7 @@ void main() {
       final original = _createPage(
         id: 'test-789',
         title: 'Shield',
-        pageType: WikiPageType.spell,
+        entityTypeKey: 'spell',
         body: 'An invisible barrier',
         tags: ['abjuration'],
       );
@@ -68,7 +68,7 @@ void main() {
       final loaded = await service.loadPage('test-789');
       expect(loaded, isNotNull);
       expect(loaded!.title, equals('Shield'));
-      expect(loaded.pageType, equals(WikiPageType.spell));
+      expect(loaded.entityTypeKey, equals('spell'));
       expect(loaded.body, equals('An invisible barrier'));
       expect(loaded.tags, equals(['abjuration']));
       expect(loaded.id, equals('test-789'));

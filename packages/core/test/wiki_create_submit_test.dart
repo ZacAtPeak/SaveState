@@ -23,8 +23,24 @@ void main() {
     test('persists a created page with expected common fields', () async {
       final flow = WikiCreateSubmitFlow(storage: storage, target: target);
 
-      await flow.submit(
-        selectedType: WikiPageType.spell,
+      await flow.submitFromSchema(
+        entitySchema: const EntityTypeSchema(
+          key: 'spell',
+          displayName: 'Spell',
+          isWikiPageType: true,
+          fields: [
+            FieldSchema(
+              key: 'level',
+              label: 'Level',
+              inputType: FieldInputType.number,
+            ),
+            FieldSchema(
+              key: 'school',
+              label: 'School',
+              inputType: FieldInputType.text,
+            ),
+          ],
+        ),
         draft: const WikiCreateSubmission(
           title: 'Magic Missile',
           body: 'A dart of magical force',
@@ -41,14 +57,40 @@ void main() {
       expect(saved.body, 'A dart of magical force');
       expect(saved.tags, ['evocation', 'damage']);
       expect(saved.aliases, ['MM']);
-      expect(saved.pageType, WikiPageType.spell);
+      expect(saved.entityTypeKey, 'spell');
     });
 
     test('maps structured fields into statBlock keys', () async {
       final flow = WikiCreateSubmitFlow(storage: storage, target: target);
 
-      await flow.submit(
-        selectedType: WikiPageType.creature,
+      await flow.submitFromSchema(
+        entitySchema: const EntityTypeSchema(
+          key: 'creature',
+          displayName: 'Creature',
+          isWikiPageType: true,
+          fields: [
+            FieldSchema(
+              key: 'size',
+              label: 'Size',
+              inputType: FieldInputType.text,
+            ),
+            FieldSchema(
+              key: 'armorClass',
+              label: 'Armor Class',
+              inputType: FieldInputType.number,
+            ),
+            FieldSchema(
+              key: 'hitPoints',
+              label: 'Hit Points',
+              inputType: FieldInputType.number,
+            ),
+            FieldSchema(
+              key: 'speed',
+              label: 'Speed',
+              inputType: FieldInputType.text,
+            ),
+          ],
+        ),
         draft: const WikiCreateSubmission(
           title: 'Goblin',
           body: 'Small green humanoid',
@@ -73,8 +115,19 @@ void main() {
     test('updates modal pages and auto-selects the newly created page', () async {
       final flow = WikiCreateSubmitFlow(storage: storage, target: target);
 
-      await flow.submit(
-        selectedType: WikiPageType.item,
+      await flow.submitFromSchema(
+        entitySchema: const EntityTypeSchema(
+          key: 'item',
+          displayName: 'Item',
+          isWikiPageType: true,
+          fields: [
+            FieldSchema(
+              key: 'rarity',
+              label: 'Rarity',
+              inputType: FieldInputType.text,
+            ),
+          ],
+        ),
         draft: const WikiCreateSubmission(
           title: 'Bag of Holding',
           body: 'A magical storage item',
@@ -89,7 +142,7 @@ void main() {
       expect(target.selectedPage!.title, 'Bag of Holding');
       expect(target.selectedPage!.id, target.pages.single.id);
       expect(target.isCreating, isFalse);
-      expect(target.pendingType, isNull);
+      expect(target.pendingEntityKey, isNull);
     });
   });
 }

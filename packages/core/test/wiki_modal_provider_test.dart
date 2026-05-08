@@ -3,7 +3,7 @@ import 'package:core/models/models.dart';
 import 'package:core/wiki/wiki_modal_provider.dart';
 
 WikiPage _page({String? id, required String title}) {
-  return WikiPage(id: id ?? 'test-$title', title: title, pageType: WikiPageType.spell);
+  return WikiPage(id: id ?? 'test-$title', title: title, entityTypeKey: 'spell');
 }
 
 void main() {

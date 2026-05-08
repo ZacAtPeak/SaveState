@@ -13,12 +13,6 @@ class WikiModalProvider extends ChangeNotifier implements WikiCreateTarget {
   bool get isTwoPanel => _isTwoPanel;
   bool get isCreating => _isCreating;
   String? get pendingEntityKey => _pendingEntityKey;
-  /// Alias for clarity — same as pendingEntityKey.
-  String? get pendingTypeKey => _pendingEntityKey;
-  /// Deprecated: returns null. The interface is transitioning to entity keys.
-  /// Will be removed in Phase 8 when WikiPageType enum is deleted.
-  @Deprecated('Use pendingEntityKey instead')
-  WikiPageType? get pendingType => null;
   List<WikiPage> get pages => List.unmodifiable(_pages);
 
   void setPages(List<WikiPage> pages) {

@@ -8,7 +8,7 @@ void main() {
       final page = WikiPage(
         id: 'wiki-1',
         title: 'Goblin',
-        pageType: WikiPageType.creature,
+        entityTypeKey: 'creature',
         statBlock: {'armorClass': 15},
       );
 

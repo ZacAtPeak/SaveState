@@ -5,7 +5,7 @@ import 'wiki_page_type.dart';
 class WikiPage {
   final String id;
   final String title;
-  final WikiPageType pageType;
+  final String entityTypeKey;
   final String body;
   final List<String> tags;
   final List<String> aliases;
@@ -17,7 +17,7 @@ class WikiPage {
   WikiPage({
     String? id,
     required this.title,
-    required this.pageType,
+    required this.entityTypeKey,
     this.body = '',
     this.tags = const [],
     this.aliases = const [],
@@ -29,11 +29,14 @@ class WikiPage {
         createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now();
 
+  /// Backward-compat getter for code still using typed page type.
+  WikiPageType get pageType => WikiPageType.values.byName(entityTypeKey);
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'title': title,
-      'entityTypeKey': pageType.name,
+      'entityTypeKey': entityTypeKey,
       'body': body,
       'tags': tags,
       'aliases': aliases,
@@ -55,7 +58,7 @@ class WikiPage {
     return WikiPage(
       id: json['id'] as String,
       title: json['title'] as String,
-      pageType: WikiPageType.values.byName(entityTypeKey),
+      entityTypeKey: entityTypeKey,
       body: json['body'] as String? ?? '',
       tags: (json['tags'] as List<dynamic>?)
               ?.map((e) => e as String)
