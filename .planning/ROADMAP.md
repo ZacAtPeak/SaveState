@@ -119,12 +119,11 @@ Plans:
   1. dnd5e.json ships as a bundled asset and is parsed into a valid GameModel at startup with no console errors
   2. The D&D 5e GameModel includes all existing page types (creature, spell, item, rule, location, npc, other) with their field schemas, D&D ability score display names, and a 1d20+DEX initiative formula
   3. WikiProvider receives the active GameModel through ChangeNotifierProxyProvider and re-derives its available page types when the model changes — existing wiki pages still load and display correctly after the rewire
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 06-01: dnd5e.json asset — entity types, field schemas, rulesConfig, initiative formula
-- [ ] 06-02: GameModelService ChangeNotifier with rootBundle loading and notifyListeners on switch
-- [ ] 06-03: ChangeNotifierProxyProvider wiring in both app main.dart files; WikiProvider.updateGameModel adapter
+- [ ] 06-01-PLAN.md — dnd5e.json asset: entity types, field schemas, rulesConfig, initiative formula
+- [ ] 06-02-PLAN.md — GameModelService + ChangeNotifierProxyProvider wiring in both apps
 
 ### Phase 7: Provider Rewiring
 **Goal**: WikiProvider is driven by the active GameModel — hardcoded WikiPageType enum references replaced with runtime GameModel lookups, with no regression to existing create flow
