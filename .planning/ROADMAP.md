@@ -58,7 +58,7 @@ Plans:
   2. Selecting a type displays a form with fields appropriate to that page type
   3. Submitting the form saves a new page with title, tags, aliases, markdown body, and structured fields
   4. New page appears immediately in the sidebar list after creation
-**Plans**: 3 plans
+**Plans**: 4 plans
 
 Plans:
 - [x] 03-01: Page type picker and dynamic create form driven by WikiPageType schemas
@@ -151,12 +151,13 @@ Plans:
   2. Existing persisted wiki page JSON files (containing legacy "pageType" enum name strings) are rewritten by WikiMigrationRunner to D&D 5e GameModel entity type keys before the WikiPageType enum is removed
   3. enums.dart is deleted; all former enum references in app code compile cleanly using the String or GameModel-derived replacements
   4. Both apps launch, display demo data, and the wiki create flow works end-to-end after all deletions
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 08-01: WikiMigrationRunner — rewrites legacy pageType enum strings to GameModel entity type keys
-- [ ] 08-02: Demo data migration — demo_player_characters, demo_monsters, demo_npcs to List<GameEntity>
-- [ ] 08-03: Delete PlayerCharacter, Monster, NPC, WikiPageType enum, enums.dart; fix all compile errors
+- [ ] 08-01-PLAN.md — WikiMigrationRunner + strict entityTypeKey migration at startup
+- [ ] 08-02-PLAN.md — Unified demoEntities migration + core schema contract tests
+- [ ] 08-03-PLAN.md — Remove enum-era wiki fallbacks + DM GameEntity bridge rewiring and acceptance
+- [ ] 08-04-PLAN.md — Delete legacy typed model/enum files and complete MIGRATE-03 cleanup
 
 ### Phase 9: Character Sheet & Encounter Tracker Generalization
 **Goal**: Character sheet and encounter tracker read all mechanical params from the active GameModel — no hardcoded D&D field names remain in UI or tracker logic
