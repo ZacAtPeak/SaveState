@@ -33,7 +33,7 @@ class WikiPage {
     return {
       'id': id,
       'title': title,
-      'pageType': pageType.name,
+      'entityTypeKey': pageType.name,
       'body': body,
       'tags': tags,
       'aliases': aliases,
@@ -45,10 +45,17 @@ class WikiPage {
   }
 
   factory WikiPage.fromJson(Map<String, dynamic> json) {
+    final entityTypeKey = json['entityTypeKey'];
+    if (entityTypeKey is! String || entityTypeKey.trim().isEmpty) {
+      throw const FormatException(
+        'WikiPage JSON missing required string key: entityTypeKey',
+      );
+    }
+
     return WikiPage(
       id: json['id'] as String,
       title: json['title'] as String,
-      pageType: WikiPageType.values.byName(json['pageType'] as String),
+      pageType: WikiPageType.values.byName(entityTypeKey),
       body: json['body'] as String? ?? '',
       tags: (json['tags'] as List<dynamic>?)
               ?.map((e) => e as String)

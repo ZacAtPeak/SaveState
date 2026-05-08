@@ -80,7 +80,7 @@ void main() {
       final json = page.toJson();
       expect(json['id'], equals('test-id'));
       expect(json['title'], equals('Fireball'));
-      expect(json['pageType'], equals('spell'));
+      expect(json['entityTypeKey'], equals('spell'));
       expect(json['body'], equals('A fiery explosion'));
       expect(json['tags'], equals(['evocation', 'damage']));
       expect(json['aliases'], equals(['Fire Ball']));
@@ -117,10 +117,10 @@ void main() {
       expect(restored.statBlock, equals(original.statBlock));
     });
 
-    test('serializes pageType as enum name', () {
+    test('serializes entityTypeKey as enum name', () {
       final page = WikiPage(title: 'Test', pageType: WikiPageType.creature);
       final json = page.toJson();
-      expect(json['pageType'], equals('creature'));
+      expect(json['entityTypeKey'], equals('creature'));
     });
 
     test('serializes DateTime as ISO string', () {
@@ -136,11 +136,11 @@ void main() {
       expect(json['updatedAt'], equals(now.toIso8601String()));
     });
 
-    test('deserializes pageType from enum name', () {
+    test('deserializes entityTypeKey from enum name', () {
       final json = {
         'id': 'test-id',
         'title': 'Test',
-        'pageType': 'spell',
+        'entityTypeKey': 'spell',
         'body': '',
         'tags': [],
         'aliases': [],
@@ -151,6 +151,25 @@ void main() {
       };
       final page = WikiPage.fromJson(json);
       expect(page.pageType, equals(WikiPageType.spell));
+    });
+
+    test('throws FormatException when entityTypeKey is missing', () {
+      final json = {
+        'id': 'test-id',
+        'title': 'Test',
+        'body': '',
+        'tags': [],
+        'aliases': [],
+        'createdAt': '2026-01-01T12:00:00.000Z',
+        'updatedAt': '2026-01-01T12:00:00.000Z',
+        'referenceId': null,
+        'statBlock': {},
+      };
+
+      expect(
+        () => WikiPage.fromJson(json),
+        throwsA(isA<FormatException>()),
+      );
     });
 
     test('handles nullable referenceId', () {
