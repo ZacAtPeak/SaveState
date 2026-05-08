@@ -10,6 +10,8 @@ class WikiProvider extends ChangeNotifier implements WikiCreateTarget {
   final List<WikiPage> _pages = [];
   WikiPage? _selectedPage;
   bool _isLoaded = false;
+  bool _migrationAttempted = false;
+  bool _isDisposed = false;
   bool _isCreating = false;
   String? _pendingEntityKey;
 
@@ -44,6 +46,7 @@ class WikiProvider extends ChangeNotifier implements WikiCreateTarget {
 
   Future<void> loadAll() async {
     if (_isLoaded) return;
+    await runStartupMigration();
     final loaded = await _storage.loadAllPages();
     if (loaded.isEmpty) {
       for (final page in demoWikiPages) {
@@ -54,7 +57,25 @@ class WikiProvider extends ChangeNotifier implements WikiCreateTarget {
       _pages.addAll(loaded);
     }
     _isLoaded = true;
-    notifyListeners();
+    if (!_isDisposed) {
+      notifyListeners();
+    }
+  }
+
+  Future<void> runStartupMigration() async {
+    if (_migrationAttempted) return;
+    _migrationAttempted = true;
+    try {
+      final result = await _storage.runStartupMigration();
+      if (result.warningCount > 0) {
+        debugPrint(
+          'Wiki migration warnings: ${result.warningCount} '
+          '(migrated: ${result.migratedCount})',
+        );
+      }
+    } catch (error) {
+      debugPrint('Wiki migration failed non-blocking: $error');
+    }
   }
 
   Future<WikiPage> addPageFromSubmission({
@@ -67,20 +88,32 @@ class WikiProvider extends ChangeNotifier implements WikiCreateTarget {
 
   void selectPage(WikiPage? page) {
     _selectedPage = page;
-    notifyListeners();
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
   @override
   void onPageCreated(WikiPage page) {
     _pages.add(page);
     _selectedPage = page;
-    notifyListeners();
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
   @override
   void onCreateComplete() {
     _isCreating = false;
     _pendingEntityKey = null;
-    notifyListeners();
+    if (!_isDisposed) {
+      notifyListeners();
+    }
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -29,7 +30,13 @@ class _CompanionAppState extends State<CompanionApp> {
     _wikiProvider = WikiProvider(
       storage: WikiStorageService(baseDirectory: Directory.current),
     );
-    _wikiProvider.loadAll();
+    unawaited(_initializeWiki());
+  }
+
+  Future<void> _initializeWiki() async {
+    // Run startup migration before first wiki load.
+    await _wikiProvider.runStartupMigration();
+    await _wikiProvider.loadAll();
   }
 
   @override

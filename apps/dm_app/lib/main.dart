@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:core/data/data.dart';
 import 'package:core/services/services.dart';
@@ -31,7 +32,13 @@ class _DmAppState extends State<DmApp> {
     _wikiProvider = WikiProvider(
       storage: WikiStorageService(baseDirectory: Directory.current),
     );
-    _wikiProvider.loadAll();
+    unawaited(_initializeWiki());
+  }
+
+  Future<void> _initializeWiki() async {
+    // Run startup migration before first wiki load.
+    await _wikiProvider.runStartupMigration();
+    await _wikiProvider.loadAll();
   }
 
   @override

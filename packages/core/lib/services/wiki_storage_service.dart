@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:core/migrations/wiki_migration_runner.dart';
 import 'package:path/path.dart' as path;
 import 'package:core/models/models.dart';
 
@@ -169,6 +170,11 @@ class WikiStorageService {
 
   void _ensureDirectory() {
     _pagesDir.createSync(recursive: true);
+  }
+
+  Future<MigrationResult> runStartupMigration() async {
+    final runner = WikiMigrationRunner(pagesDirectory: _pagesDir);
+    return runner.run();
   }
 
   Future<void> savePage(WikiPage page) async {
