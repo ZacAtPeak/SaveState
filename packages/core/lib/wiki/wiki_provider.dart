@@ -27,6 +27,17 @@ class WikiProvider extends ChangeNotifier implements WikiCreateTarget {
 
   bool get isLoaded => _isLoaded;
 
+  GameModel? _activeGameModel;
+  GameModel? get activeGameModel => _activeGameModel;
+
+  void updateGameModel(GameModel? model) {
+    if (_activeGameModel == model) return;
+    _activeGameModel = model;
+    // Do NOT call notifyListeners() here — the ChangeNotifierProxyProvider
+    // handles notification. WikiProvider's own listeners are notified by
+    // the proxy provider's update callback.
+  }
+
   Future<void> loadAll() async {
     if (_isLoaded) return;
     final loaded = await _storage.loadAllPages();
