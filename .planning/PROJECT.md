@@ -1,100 +1,91 @@
-# SaveState Wiki
+# SaveState — GameModel
 
 ## What This Is
 
-A shared wiki system for the SaveState D&D companion and DM apps that serves as the central knowledge base for all game content — rules, items, spells, locations, creatures, and more. Users access it by tapping a book icon, which opens a popup with a searchable page list and detail view. The wiki supports typed pages with structured stat blocks, markdown content, tag-based organization, and cross-linking from anywhere in both apps.
+SaveState is a TTRPG companion and DM app suite where game system rules, entity types, and field schemas are defined by a swappable `GameModel` — a JSON schema file that tells the app what entities exist (characters, adversaries, wiki pages, etc.), what fields they have, and how core rules like initiative and dice work. Users can switch between bundled systems (D&D 5e ships built-in) or import their own `.json` game model files. The app adapts: wiki page types change, character sheet fields change, encounter rules change.
 
 ## Core Value
 
-Users can find and reference any game-related information instantly through a unified, searchable wiki with deep cross-linking from every part of the app.
+Any TTRPG group can open SaveState, pick or import their game system, and immediately have a properly structured wiki, character sheet, and encounter tracker — no hardcoded D&D assumptions.
 
 ## Requirements
 
 ### Validated
 
-- ✓ D&D character management — existing companion app
-- ✓ Encounter and initiative tracking — existing
-- ✓ Creature detail views — existing
-- ✓ Local device discovery via NSD — existing core service
+- ✓ Wiki popup UI accessible via book icon in both apps — v1.0 Wiki milestone
+- ✓ Schema-driven wiki page types with per-type field definitions — v1.0 Wiki milestone
+- ✓ Full-text search with title-prioritized scoring — v1.0 Wiki milestone
+- ✓ Create flow with type-driven forms — v1.0 Wiki milestone
+- ✓ Responsive two-panel / single-panel modal — v1.0 Wiki milestone
+- ✓ File-based JSON persistence for wiki pages — v1.0 Wiki milestone
 - ✓ Dart workspace monorepo with shared core package — existing
-- ✓ Two Flutter apps (companion + DM) sharing models — existing
+- ✓ Encounter and initiative tracking (DM app) — existing
+- ✓ Provider-based state management wired in both apps — existing
 
 ### Active
 
-- [ ] Wiki popup UI accessible via book icon in both apps
-- [ ] Slide-up full-screen modal animation
-- [ ] Two-panel layout (sidebar + detail) on tablets/desktops
-- [ ] Single-panel list→detail navigation on phones
-- [ ] Page list sidebar with full-text search bar (title matches prioritized)
-- [ ] Detail view renders all page data (markdown, stat blocks, tags, metadata)
-- [ ] Plus button to create new wiki entries from modal
-- [ ] Responsive layout adapts to screen size
-- [ ] Typed page system with different field schemas per type
-- [ ] Each page has: title, tags, aliases, markdown body, structured stat block fields
-- [ ] DM app is source of truth for wiki content
-- [ ] Both apps can create wiki pages
-- [ ] Wiki models in core package shared between apps
-- [ ] Persistence layer for wiki content
+- [ ] `GameModel` data structure: defines entity types, field schemas per entity type, wiki page types, and game rules config (dice notation, initiative formula, ability score display names)
+- [ ] D&D 5e GameModel bundled as a JSON asset — replaces hardcoded D&D enum values
+- [ ] Call of Cthulhu 7e GameModel bundled as a second JSON asset — proof of true agnosticism
+- [ ] External GameModel import: user can load a `.json` game model file from disk
+- [ ] In-app game system selector: user can switch the active GameModel
+- [ ] `GameEntity` replaces typed `PlayerCharacter`, `Monster`, `NPC` Dart classes — schema-driven `Map<String, dynamic>` data with a type key pointing into the active GameModel's entity schemas
+- [ ] Wiki page types driven by active GameModel — `WikiPageType` enum replaced by runtime-loaded type registry
+- [ ] Character sheet UI generated from active GameModel's character entity schema
+- [ ] Encounter tracker uses active GameModel's initiative config (formula, turn order rules)
+- [ ] All existing D&D demo data migrated to `GameEntity` format against the D&D 5e GameModel
+- [ ] Both apps reflect the active GameModel without restart
 
 ### Out of Scope
 
-- Hierarchical page organization — tag-based is simpler and sufficient for v1
-- Separate alias management UI — aliases managed as a page field like tags
-- Peer-to-peer sync — DM is the single source of truth to avoid merge conflicts
-- Mobile-responsive web version — this is a Flutter desktop/tablet app
-- External wiki import/export — content created in-app for v1
-- Real-time collaborative editing — single-author model per page
-- NSD sync from DM to companion — deferred to next milestone
-- Cross-linking from app text into wiki — deferred to next milestone
-- Edit/delete existing pages — create-only for this milestone
+- Cloud sync of GameModel files — local-only for this milestone
+- User-authored schema editor (build a game model in-app) — import/bundled only for v1
+- Multiplayer/networked GameModel switching — single-user switch, NSD sync deferred
+- Per-page custom fields beyond what the GameModel schema defines — schema is authoritative
+- Backwards compatibility shims for old typed Dart models — clean replacement, no bridge
 
 ## Context
 
-**Technical environment:**
-- Dart workspace monorepo with shared `core` package
-- Two Flutter apps: `companion_app` and `dm_app`
-- Core package contains domain models, NSD service, shared utilities
-- Existing NSD (Network Service Discovery) infrastructure for local device communication
-- Codebase map available at `.planning/codebase/`
+**Existing schema pattern to extend:**
+`WikiPageType.fields` already returns `List<WikiPageFieldDefinition>` per type — this exact pattern is the blueprint. GameModel externalizes that into JSON so it's runtime-configurable rather than compile-time Dart.
 
-**Existing concerns to address:**
-- Model duplication (`EncounterEntry` vs `InitiativeEntry`) — avoid adding more duplication in wiki models
-- SDK constraint inconsistencies between core and apps — align during wiki implementation
-- Missing persistence layer — wiki needs proper storage solution
-- No core package tests — wiki models in core should include tests
-- Monolithic view files (757-line `creature_detail_view.dart`) — wiki views should be modular
+**Models being replaced:**
+- `packages/core/lib/models/player_character.dart` — ~200 hardcoded D&D5e fields
+- `packages/core/lib/models/monster.dart` — CR, XP, legendary actions, lair actions
+- `packages/core/lib/models/npc.dart` — role, biography, no CR
+- `packages/core/lib/models/wiki_page_type.dart` — hardcoded D&D-centric page types and field schemas
+- `packages/core/lib/models/enums.dart` — ability scores, alignment, size, damage types (all D&D)
+
+**Call of Cthulhu is the agnosticism test because:**
+- Skills are percentile (10–100), not D&D ability modifiers
+- Characters have Sanity, Luck, Build — no HP as D&D knows it
+- No spell levels; no alignment; no class/subclass
+- Adversaries are "monsters" but lack CR/XP/legendary actions
+- This means if CoC works, the schema is truly flexible
+
+**Tech stack constraints:**
+- Flutter/Dart, shared `core` package, workspace monorepo
+- JSON assets loaded via `rootBundle` at app startup
+- File import via `file_picker` (to be added) for external GameModel files
+- Provider pattern for `GameModelService` (active model + switch)
 
 ## Constraints
 
-- **Tech stack**: Must use existing Dart/Flutter workspace — no external frameworks
-- **Networking**: Must integrate with existing NSD service for local sync — no cloud dependencies
-- **Architecture**: Wiki models belong in `packages/core/lib/models/`, UI in each app's `lib/`
-- **Performance**: Full-text search must work on-device without network calls
-- **Compatibility**: Wiki content must be accessible in both companion and DM apps with consistent rendering
+- **No cloud**: Game model files are local assets or imported from disk — no network fetch
+- **No restart required**: Switching the active GameModel must update all Provider consumers live
+- **Backward compat**: D&D 5e GameModel must reproduce the exact field experience users have today
+- **Core package only**: GameModel, GameEntity, and GameModelService live in `packages/core/` — apps are UI only
+- **Performance**: GameModel JSON files must load synchronously at startup (<50ms parse time target)
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Typed pages with different field schemas | Different content types (items, spells, rules) need different structured data | — Pending |
-| DM as single source of truth | Avoids merge conflicts in local-only sync scenario | — Pending |
-| Aliases as page field | Simpler than separate UI, managed like tags | — Pending |
-| Stat blocks as both UI cards and inline refs | Supports both quick scanning and detailed reading | — Pending |
-| Markdown + structured data hybrid | Freeform content plus queryable game stats | — Pending |
-| Tag-based organization | Simpler than hierarchy, supports multiple categorization | — Pending |
-
-## Current Milestone: v1.0 Wiki Popup UI
-
-**Goal:** Users can browse, search, create, and view wiki pages through a responsive full-screen modal accessible from both apps.
-
-**Target features:**
-- Book icon opens slide-up full-screen modal in both apps
-- Two-panel layout (sidebar list + detail view) on tablets/desktops
-- Single-panel list→detail navigation on phones (companion app only)
-- Search bar with full-text search, title matches prioritized
-- Plus button to create new wiki entries from within the modal
-- Detail view displays all page data (markdown body, stat blocks, tags, metadata)
-- Responsive layout adapts to screen size, not app identity
+| Replace typed Dart models with generic GameEntity | Typed classes (PlayerCharacter, Monster) encode D&D assumptions at the type level — can't be extended for other TTRPGs without forking | — Pending |
+| JSON as schema format | Human-readable, easily authored outside the app, supports import workflow, matches existing wiki persistence format | — Pending |
+| `WikiPageType` enum replaced by GameModel registry | Enum is compile-time D&D-only; runtime registry supports any set of page types a GameModel defines | — Pending |
+| CoC 7e as second bundled model | Structurally very different from D&D (percentile skills, Sanity, no CR/XP) — validates that the schema is genuinely agnostic | — Pending |
+| Provider for active GameModel | Already the pattern in use; `GameModelService` as a ChangeNotifier drives live UI updates on system switch | — Pending |
 
 ## Evolution
 
@@ -114,4 +105,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-07 after milestone v1.0 started*
+*Last updated: 2026-05-07 after GameModel project initialization*
