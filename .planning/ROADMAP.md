@@ -155,7 +155,7 @@ Plans:
 
 Plans:
 - [x] 08-01-PLAN.md — WikiMigrationRunner + strict entityTypeKey migration at startup
-- [ ] 08-02-PLAN.md — Unified demoEntities migration + core schema contract tests
+- [x] 08-02-PLAN.md — Unified demoEntities migration + core schema contract tests
 - [ ] 08-03-PLAN.md — Remove enum-era wiki fallbacks + DM GameEntity bridge rewiring and acceptance
 - [ ] 08-04-PLAN.md — Delete legacy typed model/enum files and complete MIGRATE-03 cleanup
 
