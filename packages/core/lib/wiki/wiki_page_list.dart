@@ -71,13 +71,13 @@ class _WikiPageListState extends State<WikiPageList> {
             itemBuilder: (context, index) {
               final page = _displayedPages[index];
               return ListTile(
-                leading: Icon(_iconForType(page.pageType)),
+                leading: Icon(_iconForType(page.entityTypeKey)),
                 title: Text(page.title),
                 subtitle: page.tags.isNotEmpty
                     ? Text(page.tags.join(', '))
                     : null,
                 trailing: Chip(
-                  label: Text(page.pageType.displayName),
+                  label: Text(_displayNameForType(page.entityTypeKey)),
                   visualDensity: VisualDensity.compact,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
@@ -90,22 +90,27 @@ class _WikiPageListState extends State<WikiPageList> {
     );
   }
 
-  IconData _iconForType(WikiPageType type) {
-    switch (type) {
-      case WikiPageType.creature:
-        return Icons.pets;
-      case WikiPageType.spell:
-        return Icons.auto_awesome;
-      case WikiPageType.item:
-        return Icons.gavel;
-      case WikiPageType.rule:
-        return Icons.menu_book;
-      case WikiPageType.location:
-        return Icons.location_on;
-      case WikiPageType.npc:
-        return Icons.person;
-      case WikiPageType.other:
-        return Icons.article;
-    }
+  IconData _iconForType(String type) {
+    return switch (type) {
+      'creature' => Icons.pets,
+      'spell' => Icons.auto_awesome,
+      'item' => Icons.gavel,
+      'rule' => Icons.menu_book,
+      'location' => Icons.location_on,
+      'npc' => Icons.person,
+      _ => Icons.article,
+    };
   }
+}
+
+String _displayNameForType(String type) {
+  return switch (type) {
+    'creature' => 'Creature',
+    'spell' => 'Spell',
+    'item' => 'Item',
+    'rule' => 'Rule',
+    'location' => 'Location',
+    'npc' => 'NPC',
+    _ => 'Other',
+  };
 }

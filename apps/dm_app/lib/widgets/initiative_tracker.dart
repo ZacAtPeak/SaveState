@@ -38,35 +38,6 @@ class CombatantDragData {
     this.isPlayer = false,
   });
 
-  factory CombatantDragData.fromPlayerCharacter(PlayerCharacter pc) =>
-      CombatantDragData(
-        id: pc.id,
-        name: pc.name,
-        initiativeModifier: pc.abilityScores.dexMod,
-        currentHP: pc.currentHP,
-        maxHP: pc.maxHP,
-        statusConditions: pc.status?.map((s) => s.name).toList() ?? const [],
-        isPlayer: true,
-      );
-
-  factory CombatantDragData.fromMonster(Monster m) => CombatantDragData(
-        id: m.id,
-        name: m.name,
-        initiativeModifier: m.abilityScores.dexMod,
-        currentHP: m.currentHP,
-        maxHP: m.maxHP,
-        statusConditions: m.status?.map((s) => s.name).toList() ?? const [],
-      );
-
-  factory CombatantDragData.fromNPC(NPC npc) => CombatantDragData(
-        id: npc.id,
-        name: npc.name,
-        initiativeModifier: npc.abilityScores.dexMod,
-        currentHP: npc.currentHP,
-        maxHP: npc.maxHP,
-        statusConditions: npc.status?.map((s) => s.name).toList() ?? const [],
-      );
-
   /// Create from a GameEntity map with safe fallback defaults (per D-16).
   factory CombatantDragData.fromGameEntity(GameEntity entity) {
     final isPlayer = entity.entityTypeKey == 'creature' &&
@@ -112,37 +83,6 @@ class InitiativeEntry {
     this.statusConditions = const [],
     this.isPlayer = false,
   });
-
-  factory InitiativeEntry.fromPlayerCharacter(PlayerCharacter pc) => InitiativeEntry(
-        id: pc.id,
-        sourceId: pc.id,
-        name: pc.name,
-        initiative: pc.initiative,
-        currentHP: pc.currentHP,
-        maxHP: pc.maxHP,
-        statusConditions: pc.status?.map((s) => s.name).toList() ?? [],
-        isPlayer: true,
-      );
-
-  factory InitiativeEntry.fromNPC(NPC npc) => InitiativeEntry(
-        id: npc.id,
-        sourceId: npc.id,
-        name: npc.name,
-        initiative: npc.initiative,
-        currentHP: npc.currentHP,
-        maxHP: npc.maxHP,
-        statusConditions: npc.status?.map((s) => s.name).toList() ?? [],
-      );
-
-  factory InitiativeEntry.fromMonster(Monster m) => InitiativeEntry(
-        id: m.id,
-        sourceId: m.id,
-        name: m.name,
-        initiative: m.initiative,
-        currentHP: m.currentHP,
-        maxHP: m.maxHP,
-        statusConditions: m.status?.map((s) => s.name).toList() ?? [],
-      );
 
   /// Create from a GameEntity map with safe fallback defaults (per D-16).
   factory InitiativeEntry.fromGameEntity(GameEntity entity,

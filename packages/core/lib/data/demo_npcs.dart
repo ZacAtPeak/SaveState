@@ -267,8 +267,11 @@ final List<Map<String, dynamic>> _npcJsonData = [
   },
 ];
 
-List<NPC> get demoNPCs {
+List<GameEntity> get demoNpcEntities {
   return _npcJsonData.map((json) {
-    return NPC.fromJson(json);
+    return GameEntity(
+      entityTypeKey: 'npc',
+      data: json,
+    );
   }).toList();
 }

@@ -28,7 +28,7 @@ class WikiPageDetail extends StatelessWidget {
                     .toList(),
               ),
             ],
-            if (page.pageType.isReferenceType && page.statBlock.isNotEmpty)
+            if (_isReferenceType(page.entityTypeKey) && page.statBlock.isNotEmpty)
               WikiStatBlock(statBlock: page.statBlock),
             if (page.body.isNotEmpty) ...[
               const SizedBox(height: 8),
@@ -40,3 +40,6 @@ class WikiPageDetail extends StatelessWidget {
     );
   }
 }
+
+bool _isReferenceType(String entityTypeKey) =>
+    entityTypeKey == 'creature' || entityTypeKey == 'npc';

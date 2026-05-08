@@ -1,7 +1,5 @@
 import 'package:uuid/uuid.dart';
 
-import 'wiki_page_type.dart';
-
 class WikiPage {
   final String id;
   final String title;
@@ -28,9 +26,6 @@ class WikiPage {
   })  : id = id ?? const Uuid().v4(),
         createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now();
-
-  /// Backward-compat getter for code still using typed page type.
-  WikiPageType get pageType => WikiPageType.values.byName(entityTypeKey);
 
   Map<String, dynamic> toJson() {
     return {

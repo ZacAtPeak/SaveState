@@ -1,5 +1,3 @@
-import 'enums.dart';
-
 class AbilityScores {
   final int strength;
   final int dexterity;
@@ -224,7 +222,7 @@ class Attack {
   final int hitBonus;
   final String reach;
   final String damageRoll;
-  final DamageType damageType;
+  final String damageType;
   final int? saveDC;
   final String? description;
   final int? maxUses;
@@ -249,7 +247,7 @@ class Attack {
         'hitBonus': hitBonus,
         'reach': reach,
         'damageRoll': damageRoll,
-        'damageType': damageType.name,
+        'damageType': damageType,
         'saveDC': saveDC,
         'description': description,
         'maxUses': maxUses,
@@ -262,7 +260,7 @@ class Attack {
         hitBonus: json['hitBonus'] as int,
         reach: json['reach'] as String,
         damageRoll: json['damageRoll'] as String,
-        damageType: DamageType.values.byName(json['damageType'] as String),
+        damageType: json['damageType'] as String? ?? 'slashing',
         saveDC: json['saveDC'] as int?,
         description: json['description'] as String?,
         maxUses: json['maxUses'] as int?,

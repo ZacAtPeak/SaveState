@@ -4,39 +4,24 @@ import 'demo_npcs.dart';
 import 'demo_player_characters.dart';
 
 final demoEntities = <GameEntity>[
-  ...demoPlayerCharacters.map(
-    (character) => GameEntity(
-      entityTypeKey: 'creature',
-      data: character.toJson(),
-    ),
-  ),
-  ...demoMonsters.map(
-    (monster) => GameEntity(
-      entityTypeKey: 'creature',
-      data: monster.toJson(),
-    ),
-  ),
-  ...demoNPCs.map(
-    (npc) => GameEntity(
-      entityTypeKey: 'npc',
-      data: npc.toJson(),
-    ),
-  ),
+  ...demoCharacterEntities,
+  ...demoMonsterEntities,
+  ...demoNpcEntities,
 ];
 
-final demoCharacterEntities = demoEntities
+final demoCharacterEntitiesFiltered = demoEntities
     .where((entity) =>
         entity.entityTypeKey == 'creature' &&
         entity.getString('playerClass').isNotEmpty)
     .toList(growable: false);
 
-final demoMonsterEntities = demoEntities
+final demoMonsterEntitiesFiltered = demoEntities
     .where((entity) =>
         entity.entityTypeKey == 'creature' &&
         entity.getDouble('challengeRating') > 0 &&
         entity.getString('playerClass').isEmpty)
     .toList(growable: false);
 
-final demoNpcEntities = demoEntities
+final demoNpcEntitiesFiltered = demoEntities
     .where((entity) => entity.entityTypeKey == 'npc')
     .toList(growable: false);

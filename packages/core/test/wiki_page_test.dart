@@ -2,40 +2,6 @@ import 'package:test/test.dart';
 import 'package:core/models/models.dart';
 
 void main() {
-  group('WikiPageType enum (backward compat)', () {
-    test('has 7 values', () {
-      expect(WikiPageType.values.length, equals(7));
-    });
-
-    test('creature isReferenceType is true', () {
-      expect(WikiPageType.creature.isReferenceType, isTrue);
-    });
-
-    test('npc isReferenceType is true', () {
-      expect(WikiPageType.npc.isReferenceType, isTrue);
-    });
-
-    test('spell isReferenceType is false', () {
-      expect(WikiPageType.spell.isReferenceType, isFalse);
-    });
-
-    test('serialization round-trip', () {
-      final name = WikiPageType.spell.name;
-      final restored = WikiPageType.values.byName(name);
-      expect(restored, equals(WikiPageType.spell));
-    });
-
-    test('displayName returns readable labels', () {
-      expect(WikiPageType.creature.displayName, equals('Creature'));
-      expect(WikiPageType.spell.displayName, equals('Spell'));
-      expect(WikiPageType.item.displayName, equals('Item'));
-      expect(WikiPageType.rule.displayName, equals('Rule'));
-      expect(WikiPageType.location.displayName, equals('Location'));
-      expect(WikiPageType.npc.displayName, equals('NPC'));
-      expect(WikiPageType.other.displayName, equals('Other'));
-    });
-  });
-
   group('WikiPage creation', () {
     test('generates UUID when id not provided', () {
       final page = WikiPage(title: 'Test', entityTypeKey: 'spell');
@@ -108,7 +74,6 @@ void main() {
       expect(restored.id, equals(original.id));
       expect(restored.title, equals(original.title));
       expect(restored.entityTypeKey, equals(original.entityTypeKey));
-      expect(restored.pageType, equals(original.pageType));
       expect(restored.body, equals(original.body));
       expect(restored.tags, equals(original.tags));
       expect(restored.aliases, equals(original.aliases));
@@ -152,7 +117,6 @@ void main() {
       };
       final page = WikiPage.fromJson(json);
       expect(page.entityTypeKey, equals('spell'));
-      expect(page.pageType, equals(WikiPageType.spell));
     });
 
     test('throws FormatException when entityTypeKey is missing', () {

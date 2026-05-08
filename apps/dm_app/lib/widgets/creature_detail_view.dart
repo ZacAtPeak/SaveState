@@ -38,61 +38,6 @@ class CreatureDetail {
     this.isPlayer = false,
   });
 
-  factory CreatureDetail.fromPlayerCharacter(PlayerCharacter pc) =>
-      CreatureDetail(
-        id: pc.id,
-        name: pc.name,
-        typeLabel: '${pc.race} ${pc.playerClass}',
-        levelLabel: 'Level ${pc.level}',
-        armorClass: pc.armorClass,
-        armorSource: pc.armorSource,
-        speed: pc.speed,
-        senses: pc.senses,
-        abilityScores: pc.abilityScores,
-        skills: pc.skills,
-        actions: pc.actions,
-        spellSlots: pc.spellSlots,
-        knownSpells: pc.knownSpells,
-        loreText: pc.background,
-        specialAbilities: pc.specialAbilities,
-      );
-
-  factory CreatureDetail.fromMonster(Monster m) => CreatureDetail(
-        id: m.id,
-        name: m.name,
-        typeLabel: '${_titleCase(m.size.name)} ${_titleCase(m.type.name)}',
-        levelLabel: 'CR ${_formatCR(m.challengeRating)}',
-        armorClass: m.armorClass,
-        armorSource: m.armorSource,
-        speed: m.speed,
-        senses: m.senses,
-        abilityScores: m.abilityScores,
-        skills: m.skills,
-        actions: m.actions,
-        spellSlots: const [],
-        knownSpells: m.knownSpells,
-        loreText: null,
-        specialAbilities: m.specialAbilities,
-      );
-
-  factory CreatureDetail.fromNPC(NPC npc) => CreatureDetail(
-        id: npc.id,
-        name: npc.name,
-        typeLabel: npc.role,
-        levelLabel: null,
-        armorClass: npc.armorClass,
-        armorSource: npc.armorSource,
-        speed: npc.speed,
-        senses: npc.senses,
-        abilityScores: npc.abilityScores,
-        skills: npc.skills,
-        actions: npc.actions,
-        spellSlots: npc.spellSlots,
-        knownSpells: npc.knownSpells,
-        loreText: npc.biography,
-        specialAbilities: npc.specialAbilities,
-      );
-
   /// Create from a GameEntity map with safe fallback defaults (per D-16).
   factory CreatureDetail.fromGameEntity(GameEntity entity) {
     final isPlayer = entity.entityTypeKey == 'creature' &&
@@ -711,7 +656,7 @@ class _ActionsTab extends StatelessWidget {
           dense: true,
           title: Text(a.name),
           subtitle: Text(
-            '$hit to hit • ${a.reach} • ${a.damageRoll} ${a.damageType.name}'
+            '$hit to hit • ${a.reach} • ${a.damageRoll} ${a.damageType}'
             '${a.saveDC != null ? ' • DC ${a.saveDC}' : ''}',
             style: theme.textTheme.bodySmall,
           ),
