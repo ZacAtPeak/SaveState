@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: executing
-stopped_at: Phase 4 UI-SPEC approved
-last_updated: "2026-05-07T20:25:00.016Z"
-last_activity: 2026-05-07 -- Phase 4 execution started
+milestone: v2.0
+milestone_name: gamemodel
+status: not_started
+stopped_at: Roadmap created, ready to plan Phase 5
+last_updated: "2026-05-07"
+last_activity: 2026-05-07 -- GameModel milestone roadmap created
 progress:
-  total_phases: 4
-  completed_phases: 3
-  total_plans: 17
-  completed_plans: 14
-  percent: 82
+  total_phases: 6
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -20,23 +20,22 @@ progress:
 
 See: .planning/PROJECT.md (updated 2026-05-07)
 
-**Core value:** Users can find and reference any game-related information instantly through a unified, searchable wiki with deep cross-linking from every part of the app.
-**Current focus:** Phase 4 — polish-testing
+**Core value:** Any TTRPG group can open SaveState, pick or import their game system, and immediately have a properly structured wiki, character sheet, and encounter tracker — no hardcoded D&D assumptions.
+**Current focus:** Phase 5 — core-data-layer
 
 ## Current Position
 
-Phase: 4 (polish-testing) — EXECUTING
-Plan: 1 of 3
-Status: Executing Phase 4
-Last activity: 2026-05-07 -- Phase 4 execution started
+Phase: 5 of 10 ([Phase 5] Core Data Layer)
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-05-07 -- GameModel milestone roadmap created
 
-Progress: [█████████░] 93%
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
 **Velocity:**
-
-- Total plans completed: 7
+- Total plans completed: 0
 - Average duration: N/A
 - Total execution time: 0 hours
 
@@ -44,20 +43,13 @@ Progress: [█████████░] 93%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 02 | 7 | - | - |
+| - | - | - | - |
 
 **Recent Trend:**
-
 - Last 5 plans: N/A
 - Trend: N/A
 
 *Updated after each plan completion*
-| Phase 01 P01-01 | 3min | 2 tasks | 3 files |
-| Phase 02-modal-ui-components P01 | 5min | 3 tasks | 4 files |
-| Phase 02-modal-ui-components P03 | 2min | 1 tasks | 1 files |
-| Phase 02-modal-ui-components P05 | 2min | 2 tasks | 2 files |
-| Phase 02-modal-ui-components P06 | 3min | 2 tasks | 1 files |
-| Phase 02-modal-ui-components P07 | 1min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -66,22 +58,10 @@ Progress: [█████████░] 93%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- Typed pages with different field schemas per content type (creature, spell, item, etc.)
-- DM app as single source of truth for wiki content
-- Aliases managed as page field (like tags), not separate UI
-- Markdown + structured data hybrid for page content
-- Tag-based organization (no hierarchy for v1)
-- [Phase 02-modal-ui-components]: Used placeholder Text widgets for WikiPageList/WikiPageDetail since they are created by parallel tasks
-- [Phase 02-modal-ui-components]: Added provider ^6.1.2 to core pubspec.yaml (missing critical dependency for ChangeNotifierProvider)
-- [Phase 02-modal-ui-components]: Created static show() factory method on WikiModalShell for ergonomic modal invocation
-- [Phase 02-modal-ui-components]: Used Timer-based debounce (250ms) instead of stream-based debounce for simplicity
-- [Phase 02-modal-ui-components]: Created WikiPageDetail from scratch since plan 02-04 was not executed — included all required features (markdown rendering, tag chips, stat block integration) in a single widget under 150 lines
-- [Phase 02-modal-ui-components]: Wired WikiPageList and WikiPageDetail into WikiModalShell, replacing all placeholder Text widgets with functional child widgets
-- [Phase 02-modal-ui-components]: Used VisualDensity.compact and MaterialTapTargetSize.shrinkWrap for type displayName chips to keep them small and non-dominant
-- [Phase 03-create-flow-per-app-integration]: Used a pure-Dart submit flow service so create-submit contracts can run under dart test without Flutter runtime dependencies.
-- [Phase 03-create-flow-per-app-integration]: Standardized post-save behavior through onPageCreated/onCreateComplete hooks for immediate list refresh and auto-select.
-- [Phase 03-create-flow-per-app-integration]: Use root-owned WikiProvider in both apps with one-time startup loadAll bootstrap.
-- [Phase 03-create-flow-per-app-integration]: Standardize wiki entry via AppBar book icon invoking shared WikiModalShell.show in both apps.
+- [Roadmap]: Research identified ChangeNotifierProxyProvider rewire (Phase 6) as highest regression risk — test WikiProvider round-trip before and after
+- [Roadmap]: WikiMigrationRunner must run before WikiPageType enum deletion — Phase 8 order is migration first, then delete
+- [Roadmap]: Use Selector not Consumer at all GameModelService downstream widgets to prevent cascade rebuilds on system switch
+- [Roadmap]: schemaVersion required in every GameModel JSON from Phase 5 first commit — cannot be retrofitted
 
 ### Pending Todos
 
@@ -89,18 +69,11 @@ None yet.
 
 ### Blockers/Concerns
 
-- Stat block field schema: exact structured fields per page type need definition during Phase 1 implementation
-- Existing monolithic view anti-pattern (757-line creature_detail_view.dart) — enforce <150 lines per widget
-- Missing core package tests — Phase 1 must include tests for models and search service
-
-## Quick Tasks Completed
-
-| Task | Date | Files Changed |
-|------|------|---------------|
-| Create 20 demo wiki entries | 2026-05-07 | packages/core/lib/data/demo_wiki_pages.dart, packages/core/lib/data/data.dart, packages/core/lib/wiki/wiki_provider.dart |
+- Initiative formula grammar: define whether CoC DEX-rank sort is a special token or an isRolled: false flag in rulesConfig — must resolve in Phase 5 or 6 before Phase 9 encounter tracker work
+- file_picker dependency must be added to apps only (not core) when implementing Phase 10 import
 
 ## Session Continuity
 
-Last session: 2026-05-07T19:26:51Z
-Stopped at: Phase 4 UI-SPEC approved
-Resume file: .planning/phases/04-polish-testing/04-UI-SPEC.md
+Last session: 2026-05-07
+Stopped at: Roadmap written, Phase 5 not yet planned
+Resume file: None

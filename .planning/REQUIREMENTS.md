@@ -68,13 +68,25 @@
 
 ## Traceability
 
-| REQ-ID | Phase |
-|--------|-------|
-| SCHEMA-01 – SCHEMA-04 | Phase 1 |
-| SYSTEM-01 – SYSTEM-02 | Phase 2 |
-| MIGRATE-01 – MIGRATE-03 | Phase 5 |
-| WIKI-01 – WIKI-03 | Phase 3–4 |
-| CHAR-01 – CHAR-02 | Phase 4 |
-| ENCTR-01 – ENCTR-02 | Phase 5 |
-| UX-01 – UX-03 | Phase 6 |
-| SYSTEM-03 | Phase 6 |
+| REQ-ID | Phase | Status |
+|--------|-------|--------|
+| SCHEMA-01 | Phase 5 — Core Data Layer | Pending |
+| SCHEMA-02 | Phase 5 — Core Data Layer | Pending |
+| SCHEMA-03 | Phase 5 — Core Data Layer | Pending |
+| SCHEMA-04 | Phase 5 — Core Data Layer | Pending |
+| SYSTEM-01 | Phase 6 — Service Layer + D&D 5e Asset | Pending |
+| WIKI-03 | Phase 6 — Service Layer + D&D 5e Asset | Pending |
+| WIKI-01 | Phase 7 — Provider Rewiring | Pending |
+| WIKI-02 | Phase 7 — Provider Rewiring | Pending |
+| MIGRATE-01 | Phase 8 — Typed Model Replacement & Migration | Pending |
+| MIGRATE-02 | Phase 8 — Typed Model Replacement & Migration | Pending |
+| MIGRATE-03 | Phase 8 — Typed Model Replacement & Migration | Pending |
+| CHAR-01 | Phase 9 — Character Sheet & Encounter Tracker Generalization | Pending |
+| CHAR-02 | Phase 9 — Character Sheet & Encounter Tracker Generalization | Pending |
+| ENCTR-01 | Phase 9 — Character Sheet & Encounter Tracker Generalization | Pending |
+| ENCTR-02 | Phase 9 — Character Sheet & Encounter Tracker Generalization | Pending |
+| SYSTEM-02 | Phase 10 — CoC 7e, System Picker & File Import | Pending |
+| SYSTEM-03 | Phase 10 — CoC 7e, System Picker & File Import | Pending |
+| UX-01 | Phase 10 — CoC 7e, System Picker & File Import | Pending |
+| UX-02 | Phase 10 — CoC 7e, System Picker & File Import | Pending |
+| UX-03 | Phase 10 — CoC 7e, System Picker & File Import | Pending |
