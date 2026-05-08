@@ -21,10 +21,13 @@ class DmApp extends StatefulWidget {
 
 class _DmAppState extends State<DmApp> {
   late final WikiProvider _wikiProvider;
+  late final GameModelService _gameModelService;
 
   @override
   void initState() {
     super.initState();
+    _gameModelService = GameModelService();
+    _gameModelService.loadFromAsset('packages/core/assets/game_models/dnd5e.json');
     _wikiProvider = WikiProvider(
       storage: WikiStorageService(baseDirectory: Directory.current),
     );
@@ -33,14 +36,24 @@ class _DmAppState extends State<DmApp> {
 
   @override
   void dispose() {
+    _gameModelService.dispose();
     _wikiProvider.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<WikiProvider>.value(
-      value: _wikiProvider,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: _gameModelService),
+        ChangeNotifierProxyProvider<GameModelService, WikiProvider>(
+          create: (_) => _wikiProvider,
+          update: (_, gameModelService, wikiProvider) {
+            wikiProvider!.updateGameModel(gameModelService.activeModel);
+            return wikiProvider;
+          },
+        ),
+      ],
       child: MaterialApp(
         title: 'SaveState DM',
         theme: ThemeData(
