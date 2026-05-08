@@ -23,7 +23,7 @@ class FieldRenderer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Derived fields are read-only
-    if (field.derivedFrom != null && gameModel != null) {
+    if (field.derivedFrom != null) {
       return _buildDerivedField(context);
     }
 
