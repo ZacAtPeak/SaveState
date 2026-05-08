@@ -185,10 +185,12 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: 'Wiki',
             onPressed: () {
               final wikiProvider = context.read<WikiProvider>();
+              final gameModel = context.read<GameModelService>().activeModel;
               WikiModalShell.show(
                 context,
                 provider: WikiModalProvider(),
                 pages: wikiProvider.pages,
+                gameModel: gameModel,
               );
             },
           ),

@@ -11,16 +11,24 @@ import 'package:core/models/models.dart';
 import 'package:core/services/services.dart';
 
 class WikiModalShell extends StatefulWidget {
-  const WikiModalShell({super.key, this.onClose, required this.provider, required this.pages});
+  const WikiModalShell({
+    super.key,
+    this.onClose,
+    required this.provider,
+    required this.pages,
+    required this.gameModel,
+  });
   final VoidCallback? onClose;
   final WikiModalProvider provider;
   final List<WikiPage> pages;
+  final GameModel? gameModel;
 
   static Future<void> show(
     BuildContext context, {
     VoidCallback? onClose,
     required WikiModalProvider provider,
     required List<WikiPage> pages,
+    GameModel? gameModel,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -35,7 +43,7 @@ class WikiModalShell extends StatefulWidget {
             behavior: HitTestBehavior.translucent,
             child: Material(
               type: MaterialType.transparency,
-              child: WikiModalShell(onClose: onClose, provider: provider, pages: pages),
+              child: WikiModalShell(onClose: onClose, provider: provider, pages: pages, gameModel: gameModel),
             ),
           ),
         ),
@@ -141,23 +149,27 @@ class _WikiModalShellState extends State<WikiModalShell> {
   }
 
   Widget _buildTwoPanelRight(WikiModalProvider modal) {
-    if (modal.isCreating && modal.pendingType == null) {
+    if (modal.isCreating && modal.pendingEntityKey == null) {
       return WikiTypePicker(
+        entityTypes: widget.gameModel?.entityTypes ?? [],
         onTypeSelected: (entity) {
-          final pageType = WikiPageType.values.byName(entity.key);
-          widget.provider.selectCreateType(pageType);
+          widget.provider.selectCreateType(entity);
         },
         onCancel: widget.provider.cancelCreate,
       );
     }
-    if (modal.isCreating && modal.pendingType != null) {
+    if (modal.isCreating && modal.pendingEntityKey != null) {
+      final entitySchema = widget.gameModel?.entityTypes.where((e) => e.key == modal.pendingEntityKey).firstOrNull;
+      if (entitySchema == null) {
+        return const Center(child: Text('Error: entity type not found'));
+      }
       return WikiCreateForm(
-        selectedType: modal.pendingType!,
+        entitySchema: entitySchema,
         onCancel: widget.provider.cancelCreate,
         onSubmit: (draft) async {
           final flow = WikiCreateSubmitFlow(storage: _storage, target: widget.provider);
-          await flow.submit(
-            selectedType: modal.pendingType!,
+          await flow.submitFromSchema(
+            entitySchema: entitySchema,
             draft: WikiCreateSubmission(
               title: draft.title,
               body: draft.body,
@@ -182,11 +194,11 @@ class _WikiModalShellState extends State<WikiModalShell> {
           appBar: AppBar(title: const Text('Create page')),
           body: Consumer<WikiModalProvider>(
             builder: (context, modal, _) {
-              if (modal.pendingType == null) {
+              if (modal.pendingEntityKey == null) {
                 return WikiTypePicker(
+                  entityTypes: widget.gameModel?.entityTypes ?? [],
                   onTypeSelected: (entity) {
-                    final pageType = WikiPageType.values.byName(entity.key);
-                    widget.provider.selectCreateType(pageType);
+                    widget.provider.selectCreateType(entity);
                   },
                   onCancel: () {
                     widget.provider.cancelCreate();
@@ -194,16 +206,20 @@ class _WikiModalShellState extends State<WikiModalShell> {
                   },
                 );
               }
+              final entitySchema = widget.gameModel?.entityTypes.where((e) => e.key == modal.pendingEntityKey).firstOrNull;
+              if (entitySchema == null) {
+                return const Center(child: Text('Error: entity type not found'));
+              }
               return WikiCreateForm(
-                selectedType: modal.pendingType!,
+                entitySchema: entitySchema,
                 onCancel: () {
                   widget.provider.cancelCreate();
                   Navigator.of(context).pop();
                 },
                 onSubmit: (draft) async {
                   final flow = WikiCreateSubmitFlow(storage: _storage, target: widget.provider);
-                  await flow.submit(
-                    selectedType: modal.pendingType!,
+                  await flow.submitFromSchema(
+                    entitySchema: entitySchema,
                     draft: WikiCreateSubmission(
                       title: draft.title,
                       body: draft.body,
