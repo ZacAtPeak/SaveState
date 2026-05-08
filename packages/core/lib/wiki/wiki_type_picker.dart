@@ -4,16 +4,22 @@ import 'package:flutter/material.dart';
 class WikiTypePicker extends StatelessWidget {
   const WikiTypePicker({
     super.key,
+    required this.entityTypes,
     required this.onTypeSelected,
     required this.onCancel,
   });
 
-  final ValueChanged<WikiPageType> onTypeSelected;
+  final List<EntityTypeSchema> entityTypes;
+  final ValueChanged<EntityTypeSchema> onTypeSelected;
   final VoidCallback onCancel;
 
   @override
   Widget build(BuildContext context) {
-    final types = WikiPageType.values;
+    final wikiTypes = entityTypes
+        .where((e) => e.isWikiPageType)
+        .toList()
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -40,21 +46,20 @@ class WikiTypePicker extends StatelessWidget {
               mainAxisSpacing: 12,
               childAspectRatio: 1.5,
             ),
-            itemCount: 8,
+            itemCount: wikiTypes.length,
             itemBuilder: (context, index) {
-              if (index >= types.length) return const SizedBox.shrink();
-              final type = types[index];
+              final entity = wikiTypes[index];
               return Card(
                 child: InkWell(
-                  onTap: () => onTypeSelected(type),
+                  onTap: () => onTypeSelected(entity),
                   child: Padding(
                     padding: const EdgeInsets.all(12),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(_iconForType(type), size: 24),
+                        Icon(_iconForEntity(entity), size: 24),
                         const SizedBox(height: 8),
-                        Text(type.displayName, textAlign: TextAlign.center),
+                        Text(entity.displayName, textAlign: TextAlign.center),
                       ],
                     ),
                   ),
@@ -67,22 +72,24 @@ class WikiTypePicker extends StatelessWidget {
     );
   }
 
-  IconData _iconForType(WikiPageType type) {
-    switch (type) {
-      case WikiPageType.creature:
+  IconData _iconForEntity(EntityTypeSchema entity) {
+    switch (entity.key) {
+      case 'creature':
         return Icons.pets;
-      case WikiPageType.spell:
+      case 'spell':
         return Icons.auto_awesome;
-      case WikiPageType.item:
+      case 'item':
         return Icons.gavel;
-      case WikiPageType.rule:
+      case 'rule':
         return Icons.menu_book;
-      case WikiPageType.location:
+      case 'location':
         return Icons.location_on;
-      case WikiPageType.npc:
+      case 'npc':
         return Icons.person;
-      case WikiPageType.other:
+      case 'other':
         return Icons.article;
+      default:
+        return Icons.help_outline;
     }
   }
 }
