@@ -145,6 +145,7 @@ class _GameModelFormBuilderState extends State<GameModelFormBuilder> {
       case FieldInputType.checkbox:
       case FieldInputType.list:
       case FieldInputType.dice:
+      case FieldInputType.group:
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: TextFormField(

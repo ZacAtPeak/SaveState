@@ -1,0 +1,250 @@
+{
+  "schemaVersion": 1,
+  "name": "D&D 5e",
+  "entityTypes": [
+    {
+      "key": "creature",
+      "displayName": "Creature",
+      "isWikiPageType": true,
+      "sortOrder": 0,
+      "fields": [
+        {"key": "id", "label": "ID", "inputType": "text", "required": true, "section": "Vitals"},
+        {"key": "name", "label": "Name", "inputType": "text", "required": true, "section": "Vitals"},
+        {"key": "size", "label": "Size", "inputType": "select", "required": true, "enumOptions": ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"], "section": "Vitals"},
+        {"key": "creatureType", "label": "Creature Type", "inputType": "text", "required": true, "hint": "Humanoid, Beast, Fiend...", "section": "Vitals"},
+        {"key": "armorClass", "label": "Armor Class", "inputType": "number", "required": true, "section": "Vitals"},
+        {"key": "armorSource", "label": "Armor Source", "inputType": "text", "hint": "natural armor, leather armor...", "section": "Vitals"},
+        {"key": "hitPoints", "label": "Hit Points", "inputType": "number", "required": true, "section": "Vitals"},
+        {"key": "currentHP", "label": "Current HP", "inputType": "number", "section": "Vitals"},
+        {
+          "key": "speed",
+          "label": "Movement Speed",
+          "inputType": "group",
+          "section": "Vitals",
+          "subFields": [
+            {"key": "walk", "label": "Walk", "inputType": "number"},
+            {"key": "fly", "label": "Fly", "inputType": "number"},
+            {"key": "swim", "label": "Swim", "inputType": "number"},
+            {"key": "climb", "label": "Climb", "inputType": "number"},
+            {"key": "burrow", "label": "Burrow", "inputType": "number"},
+            {"key": "hover", "label": "Hover", "inputType": "checkbox"}
+          ]
+        },
+        {
+          "key": "senses",
+          "label": "Senses",
+          "inputType": "group",
+          "section": "Vitals",
+          "subFields": [
+            {"key": "darkvision", "label": "Darkvision", "inputType": "number"},
+            {"key": "blindsight", "label": "Blindsight", "inputType": "number"},
+            {"key": "tremorsense", "label": "Tremorsense", "inputType": "number"},
+            {"key": "truesight", "label": "Truesight", "inputType": "number"},
+            {"key": "passivePerception", "label": "Passive Perception", "inputType": "number"}
+          ]
+        },
+        {"key": "challengeRating", "label": "Challenge Rating", "inputType": "text", "hint": "e.g. 1/4, 5, 12", "section": "Vitals"},
+        {"key": "strength", "label": "Strength", "inputType": "number", "attributeRef": "STR", "section": "Abilities"},
+        {"key": "strengthModifier", "label": "STR Mod", "inputType": "number", "derivedFrom": "floor((strength - 10) / 2)", "section": "Abilities"},
+        {"key": "dexterity", "label": "Dexterity", "inputType": "number", "attributeRef": "DEX", "section": "Abilities"},
+        {"key": "dexterityModifier", "label": "DEX Mod", "inputType": "number", "derivedFrom": "floor((dexterity - 10) / 2)", "section": "Abilities"},
+        {"key": "constitution", "label": "Constitution", "inputType": "number", "attributeRef": "CON", "section": "Abilities"},
+        {"key": "constitutionModifier", "label": "CON Mod", "inputType": "number", "derivedFrom": "floor((constitution - 10) / 2)", "section": "Abilities"},
+        {"key": "intelligence", "label": "Intelligence", "inputType": "number", "attributeRef": "INT", "section": "Abilities"},
+        {"key": "intelligenceModifier", "label": "INT Mod", "inputType": "number", "derivedFrom": "floor((intelligence - 10) / 2)", "section": "Abilities"},
+        {"key": "wisdom", "label": "Wisdom", "inputType": "number", "attributeRef": "WIS", "section": "Abilities"},
+        {"key": "wisdomModifier", "label": "WIS Mod", "inputType": "number", "derivedFrom": "floor((wisdom - 10) / 2)", "section": "Abilities"},
+        {"key": "charisma", "label": "Charisma", "inputType": "number", "attributeRef": "CHA", "section": "Abilities"},
+        {"key": "charismaModifier", "label": "CHA Mod", "inputType": "number", "derivedFrom": "floor((charisma - 10) / 2)", "section": "Abilities"},
+        {
+          "key": "attacks",
+          "label": "Attacks",
+          "inputType": "list",
+          "section": "Combat",
+          "itemSchema": {
+            "key": "attack",
+            "label": "Attack",
+            "inputType": "text",
+            "subFields": [
+              {"key": "name", "label": "Name", "inputType": "text"},
+              {"key": "hitBonus", "label": "To Hit", "inputType": "number"},
+              {"key": "damageRoll", "label": "Damage", "inputType": "text"},
+              {"key": "damageType", "label": "Damage Type", "inputType": "text"}
+            ]
+          }
+        },
+        {
+          "key": "specialAbilities",
+          "label": "Special Abilities",
+          "inputType": "list",
+          "section": "Combat",
+          "itemSchema": {
+            "key": "ability",
+            "label": "Ability",
+            "inputType": "text",
+            "subFields": [
+              {"key": "name", "label": "Name", "inputType": "text"},
+              {"key": "description", "label": "Description", "inputType": "multiline"}
+            ]
+          }
+        },
+        {
+          "key": "spellSlots",
+          "label": "Spell Slots",
+          "inputType": "list",
+          "section": "Spells",
+          "itemSchema": {
+            "key": "spellSlot",
+            "label": "Spell Slot",
+            "inputType": "text",
+            "subFields": [
+              {"key": "level", "label": "Level", "inputType": "number"},
+              {"key": "max", "label": "Max", "inputType": "number"},
+              {"key": "available", "label": "Available", "inputType": "number"}
+            ]
+          }
+        },
+        {
+          "key": "knownSpells",
+          "label": "Known Spells",
+          "inputType": "list",
+          "section": "Spells"
+        },
+        {"key": "loreText", "label": "Lore", "inputType": "multiline", "hint": "Background, personality, bonds, ideals, flaws...", "section": "Lore"},
+        {"key": "playerClass", "label": "Class", "inputType": "text", "hint": "Fighter, Wizard, Rogue...", "section": "Vitals"},
+        {"key": "race", "label": "Race", "inputType": "text", "hint": "Human, Elf, Dwarf...", "section": "Vitals"},
+        {"key": "level", "label": "Level", "inputType": "number", "section": "Vitals"},
+        {"key": "alignment", "label": "Alignment", "inputType": "select", "enumOptions": ["Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", "True Neutral", "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil"], "section": "Vitals"},
+        {"key": "body", "label": "Body", "inputType": "multiline", "section": "Lore"}
+      ]
+    },
+    {
+      "key": "spell",
+      "displayName": "Spell",
+      "isWikiPageType": true,
+      "sortOrder": 1,
+      "fields": [
+        {"key": "level", "label": "Level", "inputType": "number", "required": true},
+        {"key": "school", "label": "School", "inputType": "select", "required": true, "enumOptions": ["Abjuration", "Conjuration", "Divination", "Enchantment", "Evocation", "Illusion", "Necromancy", "Transmutation"]},
+        {"key": "castingTime", "label": "Casting Time", "inputType": "text", "required": true},
+        {"key": "range", "label": "Range", "inputType": "text", "required": true},
+        {"key": "duration", "label": "Duration", "inputType": "text", "required": true},
+        {"key": "components", "label": "Components", "inputType": "text", "hint": "V, S, M (material)"}
+      ]
+    },
+    {
+      "key": "item",
+      "displayName": "Item",
+      "isWikiPageType": true,
+      "sortOrder": 2,
+      "fields": [
+        {"key": "rarity", "label": "Rarity", "inputType": "select", "required": true, "enumOptions": ["Common", "Uncommon", "Rare", "Very Rare", "Legendary", "Artifact"]},
+        {"key": "itemType", "label": "Item Type", "inputType": "text", "required": true, "hint": "Weapon, Armor, Wondrous Item..."},
+        {"key": "attunement", "label": "Requires Attunement", "inputType": "select", "required": true, "enumOptions": ["No", "Yes"]},
+        {"key": "weight", "label": "Weight (lb)", "inputType": "number"},
+        {"key": "value", "label": "Value", "inputType": "text", "hint": "e.g. 250 gp"},
+        {"key": "properties", "label": "Properties", "inputType": "multiline", "hint": "Special properties and effects"}
+      ]
+    },
+    {
+      "key": "rule",
+      "displayName": "Rule",
+      "isWikiPageType": true,
+      "sortOrder": 3,
+      "fields": [
+        {"key": "ruleCategory", "label": "Rule Category", "inputType": "select", "required": true, "enumOptions": ["Combat", "Exploration", "Social", "Magic", "Downtime", "Optional"]},
+        {"key": "appliesTo", "label": "Applies To", "inputType": "text", "hint": "Classes, creatures, situations..."},
+        {"key": "sourcebook", "label": "Sourcebook", "inputType": "text"},
+        {"key": "pageNumber", "label": "Page Number", "inputType": "number"},
+        {"key": "summary", "label": "Quick Summary", "inputType": "multiline", "required": true}
+      ]
+    },
+    {
+      "key": "location",
+      "displayName": "Location",
+      "isWikiPageType": true,
+      "sortOrder": 4,
+      "fields": [
+        {"key": "region", "label": "Region", "inputType": "text", "required": true},
+        {"key": "locationType", "label": "Location Type", "inputType": "select", "required": true, "enumOptions": ["City", "Town", "Dungeon", "Wilderness", "Building", "Plane"]},
+        {"key": "population", "label": "Population", "inputType": "number"},
+        {"key": "factionControl", "label": "Faction Control", "inputType": "text"},
+        {"key": "notableFeatures", "label": "Notable Features", "inputType": "multiline"}
+      ]
+    },
+    {
+      "key": "npc",
+      "displayName": "NPC",
+      "isWikiPageType": true,
+      "sortOrder": 5,
+      "fields": [
+        {"key": "race", "label": "Race", "inputType": "text", "required": true},
+        {"key": "classOrRole", "label": "Class / Role", "inputType": "text", "required": true},
+        {"key": "alignment", "label": "Alignment", "inputType": "select", "required": true, "enumOptions": ["Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", "True Neutral", "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil"]},
+        {"key": "goals", "label": "Goals", "inputType": "multiline"},
+        {"key": "secrets", "label": "Secrets", "inputType": "multiline"}
+      ]
+    },
+    {
+      "key": "other",
+      "displayName": "Other",
+      "isWikiPageType": true,
+      "sortOrder": 6,
+      "fields": [
+        {"key": "category", "label": "Category", "inputType": "text", "required": true},
+        {"key": "reference", "label": "Reference", "inputType": "text"},
+        {"key": "notes", "label": "Notes", "inputType": "multiline"}
+      ]
+    }
+  ],
+  "rulesConfig": {
+    "abilityScores": {
+      "STR": "Strength",
+      "DEX": "Dexterity",
+      "CON": "Constitution",
+      "INT": "Intelligence",
+      "WIS": "Wisdom",
+      "CHA": "Charisma"
+    },
+    "attributes": {
+      "STR": {"label": "Strength", "abbreviation": "STR"},
+      "DEX": {"label": "Dexterity", "abbreviation": "DEX"},
+      "CON": {"label": "Constitution", "abbreviation": "CON"},
+      "INT": {"label": "Intelligence", "abbreviation": "INT"},
+      "WIS": {"label": "Wisdom", "abbreviation": "WIS"},
+      "CHA": {"label": "Charisma", "abbreviation": "CHA"}
+    },
+    "skills": [
+      {"name": "Acrobatics", "attributeRef": "DEX", "formula": "floor((dexterity - 10) / 2)"},
+      {"name": "Animal Handling", "attributeRef": "WIS", "formula": "floor((wisdom - 10) / 2)"},
+      {"name": "Arcana", "attributeRef": "INT", "formula": "floor((intelligence - 10) / 2)"},
+      {"name": "Athletics", "attributeRef": "STR", "formula": "floor((strength - 10) / 2)"},
+      {"name": "Deception", "attributeRef": "CHA", "formula": "floor((charisma - 10) / 2)"},
+      {"name": "History", "attributeRef": "INT", "formula": "floor((intelligence - 10) / 2)"},
+      {"name": "Insight", "attributeRef": "WIS", "formula": "floor((wisdom - 10) / 2)"},
+      {"name": "Intimidation", "attributeRef": "CHA", "formula": "floor((charisma - 10) / 2)"},
+      {"name": "Investigation", "attributeRef": "INT", "formula": "floor((intelligence - 10) / 2)"},
+      {"name": "Medicine", "attributeRef": "WIS", "formula": "floor((wisdom - 10) / 2)"},
+      {"name": "Nature", "attributeRef": "INT", "formula": "floor((intelligence - 10) / 2)"},
+      {"name": "Perception", "attributeRef": "WIS", "formula": "floor((wisdom - 10) / 2)"},
+      {"name": "Performance", "attributeRef": "CHA", "formula": "floor((charisma - 10) / 2)"},
+      {"name": "Persuasion", "attributeRef": "CHA", "formula": "floor((charisma - 10) / 2)"},
+      {"name": "Religion", "attributeRef": "INT", "formula": "floor((intelligence - 10) / 2)"},
+      {"name": "Sleight of Hand", "attributeRef": "DEX", "formula": "floor((dexterity - 10) / 2)"},
+      {"name": "Stealth", "attributeRef": "DEX", "formula": "floor((dexterity - 10) / 2)"},
+      {"name": "Survival", "attributeRef": "WIS", "formula": "floor((wisdom - 10) / 2)"}
+    ],
+    "resourceFields": [
+      {"key": "hitPoints", "label": "HP", "color": "red"}
+    ],
+    "statusConditions": [
+      "Blinded", "Charmed", "Deafened", "Frightened", "Grappled",
+      "Incapacitated", "Invisible", "Paralyzed", "Petrified", "Poisoned",
+      "Prone", "Restrained", "Stunned", "Unconscious", "Exhaustion"
+    ],
+    "initiativeConfig": {
+      "formula": "1d20+DEX",
+      "label": "Initiative"
+    }
+  }
+}
