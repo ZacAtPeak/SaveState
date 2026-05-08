@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: gamemodel
 status: executing
-stopped_at: Completed 08-01-PLAN.md
-last_updated: "2026-05-08T19:22:47.383Z"
+stopped_at: Completed 08-03-PLAN.md
+last_updated: "2026-05-08T19:52:33Z"
 last_activity: 2026-05-08
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 11
-  completed_plans: 9
-  percent: 82
+  completed_plans: 10
+  percent: 91
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-05-07)
 ## Current Position
 
 Phase: 08 (typed-model-replacement-migration) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-05-08
 
@@ -36,23 +36,24 @@ Progress: [████████░░] 82%
 
 **Velocity:**
 
-- Total plans completed: 0
-- Average duration: N/A
-- Total execution time: 0 hours
+- Total plans completed: 10
+- Average duration: 31 min
+- Total execution time: 5.2 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| Phase 08 P01 | 38 min | 3 tasks | 6 files |
+| Phase 08 P02 | 43 min | 2 tasks | 8 files |
+| Phase 08 P03 | 12 min | 3 tasks | 9 files |
 
 **Recent Trend:**
 
-- Last 5 plans: N/A
-- Trend: N/A
+- Last 3 plans: 38 min, 43 min, 12 min
+- Trend: Decreasing (simpler plans later in phase)
 
 *Updated after each plan completion*
-| Phase 08 P02 | 43 min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,8 @@ Recent decisions affecting current work:
 - [08-01]: Startup migration must run before wiki load and remain non-blocking on migration warnings.
 - [Phase 08]: Keep typed demo exports intact while introducing unified demoEntities bridge for DM compatibility. — Avoid dm_app typed callsite breakage while still delivering unified source for migration.
 - [Phase 08]: Lock strict entityTypeKey serialization and helper contracts with focused tests. — Prevents silent data-shape drift during remaining typed-model deletion work.
+- [08-03]: WikiPageType enum fallback branches fully removed — entityTypeKey is the only runtime path. — Satisfies D-02; legacy wiki JSON must have entityTypeKey (ensured by 08-01 migration).
+- [08-03]: DM bridge uses fromGameEntity factories with explicit D&D key mapping and safe defaults. — Satisfies D-13 through D-16; initiative remains d20+DEX in this phase.
 
 ### Pending Todos
 
@@ -81,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-08T19:22:26.791Z
-Stopped at: Completed 08-01-PLAN.md
+Last session: 2026-05-08T19:52:33Z
+Stopped at: Completed 08-03-PLAN.md
 Resume file: None
