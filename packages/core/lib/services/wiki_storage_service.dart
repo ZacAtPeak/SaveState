@@ -24,7 +24,9 @@ abstract class WikiCreateTarget {
   List<WikiPage> get pages;
   WikiPage? get selectedPage;
   bool get isCreating;
-  WikiPageType? get pendingType;
+  String? get pendingEntityKey;
+  @Deprecated('Use pendingEntityKey instead')
+  WikiPageType? get pendingType => null;
   void onPageCreated(WikiPage page);
   void onCreateComplete();
 }
@@ -33,7 +35,7 @@ class InMemoryWikiCreateTarget implements WikiCreateTarget {
   final List<WikiPage> _pages = [];
   WikiPage? _selectedPage;
   bool _isCreating = true;
-  WikiPageType? _pendingType;
+  String? _pendingEntityKey;
 
   @override
   List<WikiPage> get pages => List.unmodifiable(_pages);
@@ -45,7 +47,11 @@ class InMemoryWikiCreateTarget implements WikiCreateTarget {
   bool get isCreating => _isCreating;
 
   @override
-  WikiPageType? get pendingType => _pendingType;
+  String? get pendingEntityKey => _pendingEntityKey;
+
+  @override
+  @Deprecated('Use pendingEntityKey instead')
+  WikiPageType? get pendingType => null;
 
   @override
   void onPageCreated(WikiPage page) {
@@ -56,7 +62,7 @@ class InMemoryWikiCreateTarget implements WikiCreateTarget {
   @override
   void onCreateComplete() {
     _isCreating = false;
-    _pendingType = null;
+    _pendingEntityKey = null;
   }
 }
 
@@ -65,6 +71,42 @@ class WikiCreateSubmitFlow {
 
   final WikiStorageService storage;
   final WikiCreateTarget target;
+
+  /// Submit using EntityTypeSchema — converts to WikiPageType internally for backward compat.
+  Future<WikiPage> submitFromSchema({
+    required EntityTypeSchema entitySchema,
+    required WikiCreateSubmission draft,
+  }) async {
+    final wikiPageType = WikiPageType.values.byName(entitySchema.key);
+    final normalizedStatBlock = <String, dynamic>{};
+    final schemaKeys = entitySchema.fields.map((field) => field.key).toSet();
+    for (final entry in draft.statBlock.entries) {
+      if (!schemaKeys.contains(entry.key)) continue;
+      final value = entry.value;
+      if (value == null) continue;
+      if (value is String) {
+        final trimmed = value.trim();
+        if (trimmed.isEmpty) continue;
+        normalizedStatBlock[entry.key] = trimmed;
+      } else {
+        normalizedStatBlock[entry.key] = value;
+      }
+    }
+
+    final page = WikiPage(
+      title: draft.title.trim(),
+      pageType: wikiPageType,
+      body: draft.body.trim(),
+      tags: _normalizeCsvList(draft.tags),
+      aliases: _normalizeCsvList(draft.aliases),
+      statBlock: normalizedStatBlock,
+    );
+
+    await storage.savePage(page);
+    target.onPageCreated(page);
+    target.onCreateComplete();
+    return page;
+  }
 
   Future<WikiPage> submit({
     required WikiPageType selectedType,

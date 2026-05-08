@@ -11,7 +11,7 @@ class WikiProvider extends ChangeNotifier implements WikiCreateTarget {
   WikiPage? _selectedPage;
   bool _isLoaded = false;
   bool _isCreating = false;
-  WikiPageType? _pendingType;
+  String? _pendingEntityKey;
 
   @override
   List<WikiPage> get pages => List.unmodifiable(_pages);
@@ -23,7 +23,11 @@ class WikiProvider extends ChangeNotifier implements WikiCreateTarget {
   bool get isCreating => _isCreating;
 
   @override
-  WikiPageType? get pendingType => _pendingType;
+  String? get pendingEntityKey => _pendingEntityKey;
+
+  @override
+  @Deprecated('Use pendingEntityKey instead')
+  WikiPageType? get pendingType => null;
 
   bool get isLoaded => _isLoaded;
 
@@ -76,7 +80,7 @@ class WikiProvider extends ChangeNotifier implements WikiCreateTarget {
   @override
   void onCreateComplete() {
     _isCreating = false;
-    _pendingType = null;
+    _pendingEntityKey = null;
     notifyListeners();
   }
 }

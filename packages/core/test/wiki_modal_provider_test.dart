@@ -33,12 +33,13 @@ void main() {
       expect(provider.isCreating, isTrue);
     });
 
-    test('cancelCreate resets isCreating and pendingType', () {
+    test('cancelCreate resets isCreating and pendingEntityKey', () {
       provider.startCreate();
-      provider.selectCreateType(WikiPageType.spell);
+      final entity = EntityTypeSchema(key: 'spell', displayName: 'Spell', isWikiPageType: true, fields: const [], sortOrder: 1);
+      provider.selectCreateType(entity);
       provider.cancelCreate();
       expect(provider.isCreating, isFalse);
-      expect(provider.pendingType, isNull);
+      expect(provider.pendingEntityKey, isNull);
     });
 
     test('cancelCreate is safe to call when not creating', () {
