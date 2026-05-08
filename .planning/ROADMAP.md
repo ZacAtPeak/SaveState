@@ -122,8 +122,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — dnd5e.json asset: entity types, field schemas, rulesConfig, initiative formula
-- [ ] 06-02-PLAN.md — GameModelService + ChangeNotifierProxyProvider wiring in both apps
+- [x] 06-01-PLAN.md — dnd5e.json asset: entity types, field schemas, rulesConfig, initiative formula
+- [x] 06-02-PLAN.md — GameModelService + ChangeNotifierProxyProvider wiring in both apps
 
 ### Phase 7: Provider Rewiring
 **Goal**: WikiProvider is driven by the active GameModel — hardcoded WikiPageType enum references replaced with runtime GameModel lookups, with no regression to existing create flow
