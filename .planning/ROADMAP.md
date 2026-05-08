@@ -103,12 +103,12 @@ Plans:
   2. A GameEntity wraps a Map<String, dynamic> with an entityTypeKey and round-trips cleanly through toJson/fromJson with no data loss
   3. GameEntity.getInt, getString, and getBool return typed values with fallbacks — accessing a missing key never throws a cast exception
   4. Parsing a GameModel JSON that omits schemaVersion throws a readable FormatException with a message identifying the missing field
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 05-01: GameModel, EntityTypeSchema, and FieldSchema data classes (pure Dart)
-- [ ] 05-02: GameEntity wrapper with toJson/fromJson and typed accessor helpers
-- [ ] 05-03: GameModelParser with schemaVersion validation and FormatException messaging
+- [ ] 05-01-PLAN.md — FieldSchema, EntityTypeSchema, and GameModel data classes (pure Dart)
+- [ ] 05-02-PLAN.md — GameEntity wrapper with toJson/fromJson and typed accessor helpers
+- [ ] 05-03-PLAN.md — GameModelParser with schemaVersion validation and unit tests
 
 ### Phase 6: Service Layer + D&D 5e Asset
 **Goal**: The app can load and broadcast the active D&D 5e GameModel at startup — existing wiki and app behavior is unchanged
