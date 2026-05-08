@@ -66,6 +66,30 @@ class CombatantDragData {
         maxHP: npc.maxHP,
         statusConditions: npc.status?.map((s) => s.name).toList() ?? const [],
       );
+
+  /// Create from a GameEntity map with safe fallback defaults (per D-16).
+  factory CombatantDragData.fromGameEntity(GameEntity entity) {
+    final isPlayer = entity.entityTypeKey == 'creature' &&
+        entity.getString('playerClass').isNotEmpty;
+    final dexMod = entity.getInt('dexterityModifier', fallback: 0);
+    final statusList = entity.getList('status');
+    final statusConditions = statusList
+        .whereType<Map>()
+        .map((s) => s['name']?.toString() ?? '')
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    return CombatantDragData(
+      id: entity.getString('id', fallback: entity.entityTypeKey),
+      name: entity.getString('name', fallback: 'Unknown'),
+      initiativeModifier: dexMod,
+      currentHP: entity.getInt('currentHP', fallback: 0),
+      maxHP: entity.getInt('hitPoints',
+          fallback: entity.getInt('currentHP', fallback: 0)),
+      statusConditions: statusConditions,
+      isPlayer: isPlayer,
+    );
+  }
 }
 
 class InitiativeEntry {
@@ -119,6 +143,31 @@ class InitiativeEntry {
         maxHP: m.maxHP,
         statusConditions: m.status?.map((s) => s.name).toList() ?? [],
       );
+
+  /// Create from a GameEntity map with safe fallback defaults (per D-16).
+  factory InitiativeEntry.fromGameEntity(GameEntity entity,
+      {double initiative = 0}) {
+    final isPlayer = entity.entityTypeKey == 'creature' &&
+        entity.getString('playerClass').isNotEmpty;
+    final statusList = entity.getList('status');
+    final statusConditions = statusList
+        .whereType<Map>()
+        .map((s) => s['name']?.toString() ?? '')
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    return InitiativeEntry(
+      id: entity.getString('id', fallback: entity.entityTypeKey),
+      sourceId: entity.getString('id', fallback: entity.entityTypeKey),
+      name: entity.getString('name', fallback: 'Unknown'),
+      initiative: initiative,
+      currentHP: entity.getInt('currentHP', fallback: 0),
+      maxHP: entity.getInt('hitPoints',
+          fallback: entity.getInt('currentHP', fallback: 0)),
+      statusConditions: statusConditions,
+      isPlayer: isPlayer,
+    );
+  }
 
   double get hpPercent => maxHP > 0 ? currentHP / maxHP : 0;
 

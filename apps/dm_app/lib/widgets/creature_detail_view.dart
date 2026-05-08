@@ -17,6 +17,7 @@ class CreatureDetail {
   final List<String> knownSpells;
   final String? loreText;
   final List<SpecialAbility> specialAbilities;
+  final bool isPlayer;
 
   const CreatureDetail({
     required this.id,
@@ -34,6 +35,7 @@ class CreatureDetail {
     required this.knownSpells,
     required this.loreText,
     required this.specialAbilities,
+    this.isPlayer = false,
   });
 
   factory CreatureDetail.fromPlayerCharacter(PlayerCharacter pc) =>
@@ -90,6 +92,86 @@ class CreatureDetail {
         loreText: npc.biography,
         specialAbilities: npc.specialAbilities,
       );
+
+  /// Create from a GameEntity map with safe fallback defaults (per D-16).
+  factory CreatureDetail.fromGameEntity(GameEntity entity) {
+    final isPlayer = entity.entityTypeKey == 'creature' &&
+        entity.getString('playerClass').isNotEmpty;
+    final size = entity.getString('size', fallback: 'Medium');
+    final creatureType = entity.getString('creatureType', fallback: 'Unknown');
+    final cr = entity.getDouble('challengeRating', fallback: 0);
+    final playerClass = entity.getString('playerClass', fallback: '');
+    final race = entity.getString('race', fallback: '');
+    final level = entity.getInt('level', fallback: 0);
+
+    String typeLabel;
+    String? levelLabel;
+    if (isPlayer) {
+      typeLabel = '$race $playerClass';
+      levelLabel = 'Level $level';
+    } else if (cr > 0) {
+      typeLabel = '${_titleCase(size)} ${_titleCase(creatureType)}';
+      levelLabel = 'CR ${_formatCR(cr)}';
+    } else {
+      typeLabel = entity.getString('classOrRole', fallback: creatureType);
+      levelLabel = null;
+    }
+
+    return CreatureDetail(
+      id: entity.getString('id', fallback: entity.entityTypeKey),
+      name: entity.getString('name', fallback: 'Unknown'),
+      typeLabel: typeLabel,
+      levelLabel: levelLabel,
+      armorClass: entity.getInt('armorClass', fallback: 10),
+      armorSource: entity.getString('armorSource', fallback: 'natural'),
+      speed: MovementSpeed(
+        walk: entity.getInt('speedWalk', fallback: 30),
+        fly: entity.getInt('speedFly', fallback: 0) > 0
+            ? entity.getInt('speedFly', fallback: 0)
+            : null,
+        swim: entity.getInt('speedSwim', fallback: 0) > 0
+            ? entity.getInt('speedSwim', fallback: 0)
+            : null,
+        climb: entity.getInt('speedClimb', fallback: 0) > 0
+            ? entity.getInt('speedClimb', fallback: 0)
+            : null,
+        burrow: entity.getInt('speedBurrow', fallback: 0) > 0
+            ? entity.getInt('speedBurrow', fallback: 0)
+            : null,
+        hover: entity.getBool('hover', fallback: false),
+      ),
+      senses: Senses(
+        darkvision: entity.getInt('darkvision', fallback: 0) > 0
+            ? entity.getInt('darkvision', fallback: 0)
+            : null,
+        blindsight: entity.getInt('blindsight', fallback: 0) > 0
+            ? entity.getInt('blindsight', fallback: 0)
+            : null,
+        tremorsense: entity.getInt('tremorsense', fallback: 0) > 0
+            ? entity.getInt('tremorsense', fallback: 0)
+            : null,
+        truesight: entity.getInt('truesight', fallback: 0) > 0
+            ? entity.getInt('truesight', fallback: 0)
+            : null,
+        passivePerception: entity.getInt('passivePerception', fallback: 10),
+      ),
+      abilityScores: AbilityScores(
+        strength: entity.getInt('strength', fallback: 10),
+        dexterity: entity.getInt('dexterity', fallback: 10),
+        constitution: entity.getInt('constitution', fallback: 10),
+        intelligence: entity.getInt('intelligence', fallback: 10),
+        wisdom: entity.getInt('wisdom', fallback: 10),
+        charisma: entity.getInt('charisma', fallback: 10),
+      ),
+      skills: const [],
+      actions: const [],
+      spellSlots: const [],
+      knownSpells: const [],
+      loreText: entity.getString('body', fallback: null),
+      specialAbilities: const [],
+      isPlayer: isPlayer,
+    );
+  }
 }
 
 String _titleCase(String s) =>

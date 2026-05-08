@@ -95,24 +95,24 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _sidebarExpanded = true;
   final Set<String> _expandedSections = {'Characters'};
 
-  late final List<_SidebarEntry> _characters = demoPlayerCharacters
-      .map((pc) => _SidebarEntry(
-            drag: CombatantDragData.fromPlayerCharacter(pc),
-            detail: CreatureDetail.fromPlayerCharacter(pc),
+  late final List<_SidebarEntry> _characters = demoCharacterEntities
+      .map((e) => _SidebarEntry(
+            drag: CombatantDragData.fromGameEntity(e),
+            detail: CreatureDetail.fromGameEntity(e),
           ))
       .toList();
 
-  late final List<_SidebarEntry> _monsters = demoMonsters
-      .map((m) => _SidebarEntry(
-            drag: CombatantDragData.fromMonster(m),
-            detail: CreatureDetail.fromMonster(m),
+  late final List<_SidebarEntry> _monsters = demoMonsterEntities
+      .map((e) => _SidebarEntry(
+            drag: CombatantDragData.fromGameEntity(e),
+            detail: CreatureDetail.fromGameEntity(e),
           ))
       .toList();
 
-  late final List<_SidebarEntry> _npcs = demoNPCs
-      .map((n) => _SidebarEntry(
-            drag: CombatantDragData.fromNPC(n),
-            detail: CreatureDetail.fromNPC(n),
+  late final List<_SidebarEntry> _npcs = demoNpcEntities
+      .map((e) => _SidebarEntry(
+            drag: CombatantDragData.fromGameEntity(e),
+            detail: CreatureDetail.fromGameEntity(e),
           ))
       .toList();
 
