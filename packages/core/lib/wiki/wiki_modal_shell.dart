@@ -143,7 +143,10 @@ class _WikiModalShellState extends State<WikiModalShell> {
   Widget _buildTwoPanelRight(WikiModalProvider modal) {
     if (modal.isCreating && modal.pendingType == null) {
       return WikiTypePicker(
-        onTypeSelected: widget.provider.selectCreateType,
+        onTypeSelected: (entity) {
+          final pageType = WikiPageType.values.byName(entity.key);
+          widget.provider.selectCreateType(pageType);
+        },
         onCancel: widget.provider.cancelCreate,
       );
     }
@@ -181,7 +184,10 @@ class _WikiModalShellState extends State<WikiModalShell> {
             builder: (context, modal, _) {
               if (modal.pendingType == null) {
                 return WikiTypePicker(
-                  onTypeSelected: widget.provider.selectCreateType,
+                  onTypeSelected: (entity) {
+                    final pageType = WikiPageType.values.byName(entity.key);
+                    widget.provider.selectCreateType(pageType);
+                  },
                   onCancel: () {
                     widget.provider.cancelCreate();
                     Navigator.of(context).pop();
