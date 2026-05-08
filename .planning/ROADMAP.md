@@ -138,8 +138,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — GameModelFormBuilder widget + WikiTypePicker refactored for GameModel entity types
-- [ ] 07-02-PLAN.md — WikiCreateForm wired to GameModelFormBuilder, WikiModalProvider/Shell/SubmitFlow updated
+- [x] 07-01-PLAN.md — GameModelFormBuilder widget + WikiTypePicker refactored for GameModel entity types
+- [x] 07-02-PLAN.md — WikiCreateForm wired to GameModelFormBuilder, WikiModalProvider/Shell/SubmitFlow updated
 
 ### Phase 8: Typed Model Replacement & Migration
 **Goal**: Hardcoded D&D typed Dart models are deleted and all data is migrated to GameEntity — no data loss, no broken wiki pages
