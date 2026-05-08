@@ -18,7 +18,7 @@
 ### Migration (MIGRATE)
 
 - [ ] **MIGRATE-01**: `PlayerCharacter`, `Monster`, and `NPC` Dart model files deleted; all demo data (`demo_player_characters.dart`, `demo_monsters.dart`, `demo_npcs.dart`) migrated to `List<GameEntity>` using D&D 5e GameModel field keys
-- [ ] **MIGRATE-02**: `WikiPageType` enum deleted; existing persisted wiki page JSON files (which store `"pageType": "creature"` as enum name strings) migrated by a `WikiMigrationRunner` that rewrites legacy type strings to D&D 5e GameModel entity type keys before enum removal
+- [x] **MIGRATE-02**: `WikiPageType` enum deleted; existing persisted wiki page JSON files (which store `"pageType": "creature"` as enum name strings) migrated by a `WikiMigrationRunner` that rewrites legacy type strings to D&D 5e GameModel entity type keys before enum removal
 - [ ] **MIGRATE-03**: `enums.dart` (D&D ability score, alignment, size, damage type enums) deleted; values moved into D&D 5e GameModel JSON or replaced by `String` in affected code
 
 ### Wiki Integration (WIKI)
@@ -79,7 +79,7 @@
 | WIKI-01 | Phase 7 — Provider Rewiring | Pending |
 | WIKI-02 | Phase 7 — Provider Rewiring | Pending |
 | MIGRATE-01 | Phase 8 — Typed Model Replacement & Migration | Pending |
-| MIGRATE-02 | Phase 8 — Typed Model Replacement & Migration | Pending |
+| MIGRATE-02 | Phase 8 — Typed Model Replacement & Migration | Complete |
 | MIGRATE-03 | Phase 8 — Typed Model Replacement & Migration | Pending |
 | CHAR-01 | Phase 9 — Character Sheet & Encounter Tracker Generalization | Pending |
 | CHAR-02 | Phase 9 — Character Sheet & Encounter Tracker Generalization | Pending |
