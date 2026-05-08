@@ -4,8 +4,8 @@ milestone: v2.0
 milestone_name: gamemodel
 status: executing
 stopped_at: Phase 8 context gathered
-last_updated: "2026-05-08T17:45:01.195Z"
-last_activity: 2026-05-08 -- Phase 08 planning complete
+last_updated: "2026-05-08T19:06:39.030Z"
+last_activity: 2026-05-08 -- Phase 08 execution started
 progress:
   total_phases: 6
   completed_phases: 3
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-07)
 
 **Core value:** Any TTRPG group can open SaveState, pick or import their game system, and immediately have a properly structured wiki, character sheet, and encounter tracker — no hardcoded D&D assumptions.
-**Current focus:** Phase 07 — provider-rewiring
+**Current focus:** Phase 08 — typed-model-replacement-migration
 
 ## Current Position
 
-Phase: 07 (provider-rewiring) — EXECUTING
-Plan: 1 of 2
-Status: Ready to execute
-Last activity: 2026-05-08 -- Phase 08 planning complete
+Phase: 08 (typed-model-replacement-migration) — EXECUTING
+Plan: 1 of 4
+Status: Executing Phase 08
+Last activity: 2026-05-08 -- Phase 08 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
