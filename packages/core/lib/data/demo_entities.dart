@@ -11,10 +11,16 @@ final demoEntities = <GameEntity>[
     ),
   ),
   ...demoMonsters.map(
-    (monster) => monster,
+    (monster) => GameEntity(
+      entityTypeKey: 'creature',
+      data: monster.toJson(),
+    ),
   ),
   ...demoNPCs.map(
-    (npc) => npc,
+    (npc) => GameEntity(
+      entityTypeKey: 'npc',
+      data: npc.toJson(),
+    ),
   ),
 ];
 

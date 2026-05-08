@@ -1,6 +1,6 @@
 import '../models/models.dart';
 
-final List<PlayerCharacter> _legacyDemoPlayerCharacters = [
+final List<PlayerCharacter> demoPlayerCharacters = [
   PlayerCharacter(
     name: 'Thorin Ironforge',
     race: 'Dwarf',
@@ -300,12 +300,3 @@ final List<PlayerCharacter> _legacyDemoPlayerCharacters = [
     ],
   ),
 ];
-
-final List<GameEntity> demoPlayerCharacters = _legacyDemoPlayerCharacters
-    .map(
-      (pc) => GameEntity(
-        entityTypeKey: 'creature',
-        data: pc.toJson(),
-      ),
-    )
-    .toList(growable: false);

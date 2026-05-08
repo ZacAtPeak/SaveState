@@ -267,11 +267,8 @@ final List<Map<String, dynamic>> _npcJsonData = [
   },
 ];
 
-final List<GameEntity> demoNPCs = _npcJsonData
-    .map(
-      (json) => GameEntity(
-        entityTypeKey: 'npc',
-        data: Map<String, dynamic>.from(json),
-      ),
-    )
-    .toList(growable: false);
+List<NPC> get demoNPCs {
+  return _npcJsonData.map((json) {
+    return NPC.fromJson(json);
+  }).toList();
+}

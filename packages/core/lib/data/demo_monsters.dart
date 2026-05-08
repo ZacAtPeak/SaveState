@@ -516,11 +516,8 @@ final List<Map<String, dynamic>> _monsterJsonData = [
   },
 ];
 
-final List<GameEntity> demoMonsters = _monsterJsonData
-    .map(
-      (json) => GameEntity(
-        entityTypeKey: 'creature',
-        data: Map<String, dynamic>.from(json),
-      ),
-    )
-    .toList(growable: false);
+List<Monster> get demoMonsters {
+  return _monsterJsonData.map((json) {
+    return Monster.fromJson(json);
+  }).toList();
+}
