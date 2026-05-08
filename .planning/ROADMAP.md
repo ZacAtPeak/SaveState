@@ -157,7 +157,7 @@ Plans:
 - [x] 08-01-PLAN.md — WikiMigrationRunner + strict entityTypeKey migration at startup
 - [x] 08-02-PLAN.md — Unified demoEntities migration + core schema contract tests
 - [x] 08-03-PLAN.md — Remove enum-era wiki fallbacks + DM GameEntity bridge rewiring and acceptance
-- [ ] 08-04-PLAN.md — Delete legacy typed model/enum files and complete MIGRATE-03 cleanup
+- [x] 08-04-PLAN.md — Delete legacy typed model/enum files and complete MIGRATE-03 cleanup
 
 ### Phase 9: Character Sheet & Encounter Tracker Generalization
 **Goal**: Character sheet and encounter tracker read all mechanical params from the active GameModel — no hardcoded D&D field names remain in UI or tracker logic
@@ -213,6 +213,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 5. Core Data Layer | v2.0 GameModel | 0/3 | Not started | - |
 | 6. Service Layer + D&D 5e Asset | v2.0 GameModel | 0/3 | Not started | - |
 | 7. Provider Rewiring | v2.0 GameModel | 0/2 | Not started | - |
-| 8. Typed Model Replacement & Migration | v2.0 GameModel | 3/4 | In Progress|  |
+| 8. Typed Model Replacement & Migration | v2.0 GameModel | 4/4 | Complete   | 2026-05-08 |
 | 9. Character Sheet & Encounter Tracker Generalization | v2.0 GameModel | 0/3 | Not started | - |
 | 10. CoC 7e, System Picker & File Import | v2.0 GameModel | 0/4 | Not started | - |
