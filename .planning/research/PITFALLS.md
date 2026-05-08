@@ -1,344 +1,366 @@
-# Pitfalls Research
+# Domain Pitfalls: GameModel Schema-Driven Migration
 
-**Domain:** Flutter wiki/knowledge-base popup UI with responsive layouts, added to existing D&D companion + DM apps
+**Domain:** Replacing typed Dart domain models with a runtime JSON schema system in a Flutter/Dart app
 **Researched:** 2026-05-07
 **Confidence:** HIGH
 
+---
+
 ## Critical Pitfalls
 
-### Pitfall 1: Device-Type Checking Instead of Window-Size Branching
-
-**What goes wrong:**
-Layout decisions switch on "is phone" vs "is tablet" rather than actual available window space. The wiki modal renders a cramped single-panel layout on a tablet running in split-screen mode, or stretches a two-panel layout across a full-width phone in landscape.
-
-**Why it happens:**
-Developers naturally think in terms of device categories ("phones get list, tablets get sidebar"). Flutter's `Platform` class and `dart:io` make device-type checks trivial. It feels correct until the app runs in a resizeable window on desktop, ChromeOS multi-window, or iPad split-view.
-
-**How to avoid:**
-Use `MediaQuery.sizeOf(context)` to get the current app window dimensions and branch on width breakpoints. Follow Material 3 window size classes: < 600dp = compact (single panel), 600-840dp = medium (consider two-panel), > 840dp = expanded (two-panel). Never use `Platform.isIOS` or `Platform.isAndroid` for layout decisions.
-
-**Warning signs:**
-- Code contains `if (Platform.isTablet)` or similar device checks in layout logic
-- Layout looks wrong when resizing the desktop window
-- Single-panel layout appears on a tablet in split-screen mode
-
-**Phase to address:**
-Wiki Modal UI phase — enforce window-size branching from the first commit.
+Mistakes that cause rewrites, data loss, or unrecoverable user-facing breakage.
 
 ---
 
-### Pitfall 2: Using MaterialPageRoute for Full-Screen Modal Instead of Custom Slide-Up Route
+### Pitfall 1: Runtime Null Crash From Unchecked Map Access
 
 **What goes wrong:**
-The wiki modal uses `Navigator.push(MaterialPageRoute(...))` which gives a platform-specific transition (slide-right on Android, slide-left on iOS) instead of the required slide-up-from-bottom animation. On desktop, the route fills the entire window with no visual distinction from normal navigation, making it unclear how to return.
+Code accesses `entity.data['hitPoints'] as int` on a `GameEntity` loaded from a file where the author used `'hp'` instead. The `[]` operator on `Map` returns `null` for missing keys, but the `as int` cast throws `Null check operator used on a null value` at runtime — a crash with no compile-time warning.
 
 **Why it happens:**
-`MaterialPageRoute` is the default Flutter navigation pattern. It's well-documented and works out of the box. Developers reach for it because it's the first navigation pattern they learn.
+Moving from typed Dart classes (`character.currentHP`) to `Map<String, dynamic>` lookups (`entity.data['currentHP']`) removes the compiler's ability to catch missing keys or wrong types. Every field access is now a runtime gamble. The existing codebase already uses `as String`, `as int`, `as bool` casts heavily in `fromJson` factories — that pattern is safe for structured own-data but becomes a crash vector when applied to user-imported GameModel files or GameEntity data where the author controls the keys.
 
-**How to avoid:**
-Use `showModalBottomSheet` with `isScrollControlled: true` and `useSafeArea: true` for a slide-up modal that fills the screen. Alternatively, create a custom `PageRouteBuilder` with a slide-up transition animation. For the full-screen modal requirement, `showModalBottomSheet` with `constraints: BoxConstraints.expand()` is the simplest correct approach. On desktop, consider adding a visible close button and semi-transparent backdrop.
+**Specific triggers in SaveState:**
+- `wiki_storage_service.dart` line 159 silently skips malformed wiki page files with `catch (_)` — that pattern must extend to all GameEntity loading
+- `wiki_page.dart` line 51 does `WikiPageType.values.byName(json['pageType'] as String)` — after migration, `pageType` becomes a runtime string key that may not match any registered type
+- `player_character.dart` performs 25+ unchecked `as Type` casts in `fromJson` — if any of those field names are renamed in the D&D 5e GameModel JSON, every existing entity crashes on load
+
+**Consequences:**
+App crashes opening any page that references a missing or renamed field. If the crash is in the encounter tracker during a live session, the DM loses all combat state. No amount of unit tests on the happy path catches this.
+
+**Prevention:**
+Define typed accessor helpers at the `GameEntity` layer that use `??` fallbacks: `int getInt(String key, {int fallback = 0}) => (data[key] as int?) ?? fallback`. Never use bare `as T` on arbitrary `Map<String, dynamic>` data. Apply `try/catch` at every deserialization boundary, the same pattern already used in `WikiStorageService.loadAllPages()`. Keep an explicit list of every key name used in GameModel JSON against a schema contract.
 
 **Warning signs:**
-- Modal uses platform slide-left/right transition instead of slide-up
-- No visual distinction between wiki modal and regular screen navigation
-- Desktop users can't tell how to dismiss the modal
+- `entity.data['key'] as SomeType` without null-coalescing
+- Code that casts to `List<dynamic>` and then iterates without a try/catch wrapper
+- New field added to GameModel JSON but no fallback provided for entities that predate that field
 
-**Phase to address:**
-Wiki Modal UI phase — define the modal entry mechanism before building internal layout.
+**Phase to address:** GameModel data structure phase (the first implementation phase) — establish safe accessor patterns before any entity reads are written.
 
 ---
 
-### Pitfall 3: State Loss on Modal Dismiss (Selected Page, Search Query, Scroll Position)
+### Pitfall 2: Persisted Wiki Pages Become Unreadable After PageType Rename
 
 **What goes wrong:**
-User searches for "fireball", finds it, taps to view, closes the modal, reopens it — and everything resets. Search query is empty, list is at the top, previously viewed page is not highlighted. Every modal open feels like the first open.
+`WikiPage.fromJson` currently does `WikiPageType.values.byName(json['pageType'] as String)` — a compile-time enum lookup. After migration, `pageType` becomes a runtime string like `"creature"`. If the D&D 5e GameModel JSON renames that type key (even to fix a typo: `"creatures"` instead of `"creature"`), every existing wiki page with `"pageType": "creature"` throws `ArgumentError` on load. The user's entire wiki corpus is unreadable until a migration is written.
 
 **Why it happens:**
-`showModalBottomSheet` and `Navigator.push` create new widget trees each time. Ephemeral state (search text, scroll offset, selected item) lives in the modal's widget tree and is destroyed on dismiss. Developers assume users won't notice because the modal is "just a popup."
+There is no schema version number in the current `WikiPage` JSON format. `wiki_storage_service.dart` serializes `pageType` as the raw enum name (line 38: `'pageType': pageType.name`). Saved files have no metadata about which GameModel version authored them. A rename in the GameModel is indistinguishable from corruption.
 
-**How to avoid:**
-Lift wiki state (search query, selected page ID, scroll position) to a provider or state management solution that survives modal dismissal. Use `PageStorageKey` on the page list `ListView` to preserve scroll position. Store the last-selected page ID and search query in a `ChangeNotifier` or similar provider scoped above the modal. When the modal reopens, restore from this persisted state.
+**Specific existing exposure:**
+All 20 demo wiki pages in `demo_wiki_pages.dart` embed hardcoded type strings like `"creature"`, `"spell"`, `"item"`, `"rule"`, `"location"`, `"npc"`, `"other"`. The migration to GameModel must guarantee these exact string values map to D&D 5e GameModel type keys, or all demo data is permanently broken.
+
+**Consequences:**
+Silent data loss. `loadAllPages()` catches all errors and skips broken files (line 159). Users lose wiki pages with no error message. The DM notices half their wiki is gone after an update.
+
+**Prevention:**
+Add a `schemaVersion` field to both the GameModel JSON files and every persisted `WikiPage`/`GameEntity` file. Write a migration runner that reads the version field on load and applies transformations in sequence before returning the parsed object. The version field must be written at save time and checked at load time. Use additive-only changes for GameModel field keys in v1 — rename by adding the new key alongside the old one and mapping both during a transition period. The existing `WikiPage` JSON files on disk must be migrated (or the migration must handle the unversioned legacy format as "version 0").
 
 **Warning signs:**
-- Search field is TextEditingController created inside the modal's build method
-- No provider or state holder exists for wiki navigation state
-- `ListView` has no `PageStorageKey`
+- No `version` or `schemaVersion` field in GameModel JSON files
+- No migration runner between deserialization and use
+- Field key renames in GameModel JSON without an explicit migration document
+- `loadAllPages()` silently skipping files without logging which files failed and why
 
-**Phase to address:**
-Wiki Modal UI phase — state management design before UI construction.
+**Phase to address:** GameModel data structure phase — schema versioning strategy must be decided before the first GameModel JSON is written.
 
 ---
 
-### Pitfall 4: Using Discontinued flutter_markdown Instead of flutter_markdown_plus
+### Pitfall 3: CoC and D&D Use the Same Key Names for Structurally Different Concepts
 
 **What goes wrong:**
-The project adds `flutter_markdown` as a dependency, which is officially discontinued by Google (per pub.dev). It will not receive updates, bug fixes, or compatibility patches for future Flutter versions. The community-maintained `flutter_markdown_plus` is the active successor.
+Both systems have a concept called "HP" but they mean different things. In D&D 5e, HP is a value on a character sheet derived from class + CON modifier, tracked through combat, and can be recovered by magic. In CoC 7e, HP is `(CON + SIZ) / 10` rounded down, is never increased by "leveling," and major wounds (losing half HP in one hit) have unique mechanical effects. If both GameModels use the field key `"hp"`, the encounter tracker code written for D&D will misinterpret CoC HP values.
+
+**Specific structural divergences:**
+
+| Concept | D&D 5e | CoC 7e | Conflict |
+|---------|--------|--------|---------|
+| HP | Class-based, recoverable by magic | `(CON + SIZ) / 10`, no magic recovery | Same key, different semantics |
+| Initiative | Rolled d20 + DEX modifier | DEX attribute order (high DEX goes first) | Same concept, incompatible mechanics |
+| Ability scores | 6 scores (STR/DEX/CON/INT/WIS/CHA), 3–18 range, modifier = `(score-10)/2` | 8 characteristics (STR/CON/SIZ/DEX/APP/INT/POW/EDU), 15–90 range, no modifier concept | Same names, incompatible value ranges and math |
+| Skills | Proficiency bonus + ability modifier | Percentile values (01–100), success = roll-under | No overlap — the entire skill resolution system differs |
+| Leveling | XP → level → class features | Does not exist — investigators improve skills by practice | D&D-centric "level" field is meaningless for CoC |
+| Alignment | 9-point Lawful/Chaotic/Good/Evil grid | Does not exist | D&D `alignment` enum has no CoC equivalent |
+| Sanity | Does not exist | Primary resource (starts at `POW × 5`, max 99) | CoC-only field |
+| Luck | Does not exist | Derived stat (`3d6 × 5`), spendable | CoC-only field |
 
 **Why it happens:**
-`flutter_markdown` appears first in search results, has more downloads (1.4k likes vs 116), and is the "official" Flutter package. The discontinuation notice on pub.dev is easy to miss. Many tutorials and Stack Overflow answers still recommend the old package.
+Developers see "both have HP" and use a shared key to avoid duplication. The encounter tracker code then assumes HP semantics (e.g., "healing by half" from a potion) from D&D and runs the same logic on CoC characters. The result is technically running but mechanically wrong.
 
-**How to avoid:**
-Use `flutter_markdown_plus: ^1.0.7` instead. It is the direct continuation maintained by Foresight Mobile, with the same API surface. Both packages share the same underlying `markdown` parser, so migration is a simple dependency swap. Note: neither package supports inline HTML — Flutter is not an HTML renderer.
+**Consequences:**
+The encounter tracker produces wrong results for CoC sessions (wrong initiative order, wrong HP thresholds for major wounds, spell healing applied to a system with no spell healing). Users can't trust the app for CoC sessions. The "agnosticism test" fails.
+
+**Prevention:**
+Treat each GameModel as a completely isolated schema with no shared field key namespace. The encounter tracker must read all its mechanical parameters (initiative formula, HP formula, heal mechanic) from the active GameModel's `rulesConfig` block rather than from hardcoded field names. Provide a `formulaEngine` in `GameModelService` that evaluates the active model's initiative formula. Test the CoC GameModel's `rulesConfig` against real CoC mechanics before declaring the migration complete — specifically: initiative as DEX-sort, HP as derived stat, no alignment, Sanity as primary resource.
 
 **Warning signs:**
-- `pubspec.yaml` lists `flutter_markdown` (not `flutter_markdown_plus`)
-- pub.dev shows "discontinued" badge on the package
+- Encounter tracker code contains `entity.data['hp']` hardcoded rather than `gameModel.rulesConfig.hpFieldKey`
+- D&D-specific formula (`(score - 10) / 2`) computed in shared code rather than delegated to GameModel
+- Tests only cover the D&D 5e GameModel path
+- CoC character with DEX 70 shows wrong initiative relative to CoC character with DEX 40
 
-**Phase to address:**
-Wiki Modal UI phase — dependency selection before markdown rendering implementation.
+**Phase to address:** CoC GameModel authoring phase — must produce a complete CoC 7e `rulesConfig` block before the encounter tracker is migrated. Do not defer CoC testing to a final polish phase; it will surface deep architectural issues if left late.
 
 ---
 
-### Pitfall 5: Markdown Rendering Performance on the Main Isolate
+### Pitfall 4: GameModelService.notifyListeners() Rebuilds Every Consumer in Both Apps
 
 **What goes wrong:**
-Long wiki pages with extensive markdown content (stat blocks, tables, code blocks) cause frame drops and jank when the detail view renders. The markdown parser runs synchronously on the main isolate, blocking the UI thread during AST parsing and widget tree construction.
+`GameModelService extends ChangeNotifier`. When the user switches from D&D 5e to CoC, `notifyListeners()` is called once, which triggers rebuilds of every widget that called `context.watch<GameModelService>()` or `Consumer<GameModelService>` anywhere in either app. If the character sheet, encounter tracker, wiki modal, sidebar section labels, and app bar title all watch the same provider, a single system switch causes 5+ widgets to rebuild in the same frame. On a low-end device this is a dropped frame or animation stutter.
 
 **Why it happens:**
-`flutter_markdown_plus` parses markdown synchronously in the widget's build method. For short content this is invisible. For D&D wiki pages with multi-paragraph rules text, stat block tables, and formatted spell descriptions, the parse time becomes noticeable.
+`ChangeNotifier.notifyListeners()` is O(N) in listeners but triggers O(N) full widget subtree rebuilds if consumers are placed high in the widget tree. The existing codebase already uses `setState` for most UI state (e.g., `_HomeScreenState` in `dm_app/lib/main.dart` rebuilds the entire home screen with `setState`), which is a pattern that encourages coarse-grained rebuilds. When `GameModelService` is added to the same `ChangeNotifierProvider` pattern, it will compound this.
 
-**How to avoid:**
-Pre-parse markdown content into the AST or cached widget representation before it reaches the UI layer. Use `compute()` to run markdown parsing in a background isolate for pages exceeding a size threshold (e.g., > 2KB). Cache parsed results so re-visiting a page is instant. For the initial milestone with create-only pages, pre-parsing at save time is sufficient.
+**Specific risk in SaveState:**
+- DM app `HomeScreen` uses `setState` for `_entries`, `_activeIndex`, `_selectedDetail`, and `_rollHistory` — all separate concerns triggering full rebuilds
+- If `GameModelService` is watched at the `MaterialApp` level (to update app title or theme), every navigation event will rebuild the entire app
+- `WikiProvider` already calls `notifyListeners()` on `loadAll()`, `addPageFromSubmission()`, `selectPage()`, and `onCreateComplete()` — stacking `GameModelService` notifications on top could cascade
+
+**Consequences:**
+Frame drops during system switch (not a crash, but visible jank). The "no restart required" requirement means the switch happens live — janky transitions undermine the feature's perceived quality.
+
+**Prevention:**
+Use `Selector<GameModelService, T>` instead of `Consumer<GameModelService>` for all consumers that only need a single field from the service (e.g., `activeModelName`, `availableEntityTypes`, `initiativeConfig`). Place consumers as deep in the tree as possible. For the system switch animation, use `AnimatedSwitcher` to mask the rebuild as an intentional transition. Keep `GameModelService` scoped to the widgets that actually need it — do not place it above `MaterialApp`. Use `context.select<GameModelService, T>()` for fine-grained subscriptions.
 
 **Warning signs:**
-- `MarkdownBody(data: page.body)` called directly in build method with no caching
-- Frame drops visible in DevTools when opening pages with long markdown content
-- No `compute()` or isolate usage for markdown parsing
+- `Consumer<GameModelService>` wrapping large subtrees (sidebars, full screens)
+- `context.watch<GameModelService>()` in `HomeScreen.build()`
+- `GameModelService` provided at `MaterialApp` level or higher
+- No `Selector` usage anywhere in codebase
 
-**Phase to address:**
-Wiki Modal UI phase — performance consideration for markdown rendering. Defer isolate optimization if page content is small at launch.
+**Phase to address:** GameModelService + Provider wiring phase — Selector patterns must be established in the first wire-up, not retrofitted after jank complaints.
 
 ---
 
-### Pitfall 6: Full-Text Search Running Synchronously on Every Keystroke
+### Pitfall 5: WikiPageType Enum Deletion Breaks All Existing Persisted Data
 
 **What goes wrong:**
-User types "drag" in the search bar and the UI freezes for 200-500ms on each keystroke as the app scans every wiki page's title, body, tags, and aliases. On a wiki with hundreds of pages, this creates noticeable input lag.
+The migration plan removes the `WikiPageType` enum and replaces it with a runtime type registry from the active GameModel. Existing wiki pages on disk have `"pageType": "creature"` (the enum name). After the migration, `WikiPage.fromJson` no longer calls `WikiPageType.values.byName(...)` — it looks up the type string in `GameModelService.activeModel.pageTypes`. If the D&D 5e GameModel uses a different string (e.g., `"monster"` instead of `"creature"`), all existing creature pages become orphans. If the app is running CoC and a D&D wiki page is loaded, the page type lookup fails entirely.
 
 **Why it happens:**
-Developers implement search as a simple `where()` filter over the full page list, triggered by `onChanged` on the search TextField. No debouncing, no indexing, no incremental filtering. Every keystroke re-scans the entire corpus.
+The PROJECT.md explicitly states "Backwards compatibility shims for old typed Dart models — clean replacement, no bridge." The intent is a clean cut, but the data files on disk were written with the old type strings and cannot be rewritten automatically without a migration pass.
 
-**How to avoid:**
-Debounce search input (200-300ms delay) using `Timer` or `debounce` from `async` package. Filter only on titles initially, with full-text body search as a secondary pass. For larger wikis, build a simple inverted index at load time mapping words to page IDs. The requirement states "title matches prioritized" — implement title-first filtering, then body search only if title results are insufficient.
+**Specific file impact:**
+`demo_wiki_pages.dart` uses 7 type values as Dart enum references (`WikiPageType.creature`, `.spell`, `.item`, `.rule`, `.location`, `.npc`, `.other`). These will become dead references the moment the enum is deleted. More critically, any real user data saved during the wiki milestone (phases 1–4) uses those same 7 string names. All such data must be migrated or the migration will corrupt it.
 
-**Warning signs:**
-- Search filter runs in `TextField onChanged` callback with no debounce
-- Every page's full markdown body is scanned on each keystroke
-- No search index or pre-computed lookup structure
+**Consequences:**
+Every user who ran the app before the GameModel migration loses their entire wiki on first launch after migration. No visible error — `loadAllPages()` silently skips failed files.
 
-**Phase to address:**
-Wiki Modal UI phase — search implementation. Debounce is mandatory; indexing is optional for v1.
-
----
-
-### Pitfall 7: Duplicating Wiki UI Code Across Companion and DM Apps
-
-**What goes wrong:**
-The wiki modal widget, search logic, markdown rendering, and responsive layout code are copy-pasted into both `companion_app` and `dm_app`. A bug fix in one app is forgotten in the other. The two wiki implementations drift apart over time.
-
-**Why it happens:**
-The project convention places UI in each app's `lib/` directory. Developers interpret this as "all wiki code goes in each app." The shared `core` package is reserved for models and services, so UI components naturally get duplicated.
-
-**How to avoid:**
-Create a shared `wiki` sub-package or place wiki UI widgets in a shared location that both apps import. At minimum, extract the wiki modal widget, search component, and page detail renderer into `packages/core/lib/widgets/` (extending core beyond just models/services). The models stay in `core/lib/models/`, the UI widgets go in `core/lib/widgets/wiki/`, and each app only provides the book-icon trigger and theme context. This follows the existing pattern of keeping shared code in core.
+**Prevention:**
+Before deleting `WikiPageType`, write a migration runner that scans all persisted wiki page files, detects the absence of a `schemaVersion` field (the legacy signal), and rewrites `pageType` values to their D&D 5e GameModel equivalents. Run this migration on first launch after the GameModel migration. Keep the old enum accessible as `LegacyWikiPageType` during the migration window (a single release) so the migration runner can reference the old names. After the migration runner confirms all files are updated, the legacy class can be deleted in a subsequent release.
 
 **Warning signs:**
-- `WikiModal` or similar widget exists in both `apps/companion_app/lib/` and `apps/dm_app/lib/`
-- Same search logic implemented twice with minor differences
-- Bug fix applied to one app's wiki but not the other's
+- No migration runner exists before `WikiPageType` enum deletion
+- `demo_wiki_pages.dart` is deleted (not migrated) alongside the enum
+- Launch sequence has no "first-run after migration" detection
+- `loadAllPages()` error count not logged anywhere
 
-**Phase to address:**
-Wiki Modal UI phase — architecture decision before any UI code is written.
-
----
-
-### Pitfall 8: Exacerbating the Monolithic View File Problem
-
-**What goes wrong:**
-The wiki modal is implemented as a single 500+ line file (joining the existing 757-line `creature_detail_view.dart`). All layout logic, search, markdown rendering, responsive branching, and state management live in one widget class. Future modifications become impossible without introducing regressions.
-
-**Why it happens:**
-The existing codebase already has this pattern (`creature_detail_view.dart` at 757 lines). Developers follow the established convention. It's faster to write one big file than to design component boundaries upfront.
-
-**How to avoid:**
-Break the wiki modal into small, focused widgets following Flutter's best practices for adaptive design:
-- `WikiModal` — modal shell with slide-up animation
-- `WikiSearchBar` — search input with debounce
-- `WikiPageList` — filtered list of pages with selection
-- `WikiPageDetail` — renders a single page (markdown, stat blocks, tags)
-- `WikiResponsiveLayout` — branches between single-panel and two-panel based on `MediaQuery.sizeOf`
-
-Each widget should be < 150 lines. Use `const` constructors throughout for rebuild performance.
-
-**Warning signs:**
-- Single file exceeds 200 lines for the wiki feature
-- `build()` method contains nested ternary operators for responsive branching
-- Search, list, and detail logic all in one State class
-
-**Phase to address:**
-Wiki Modal UI phase — enforce component decomposition from the start.
-
----
-
-### Pitfall 9: Not Handling Keyboard Navigation and Mouse Input on Desktop/Tablet
-
-**What goes wrong:**
-The wiki modal works with touch but is unusable with keyboard on desktop. Tab navigation skips the search bar, arrow keys don't navigate the page list, Enter doesn't select a page, and Escape doesn't dismiss the modal. Desktop users are forced to use the mouse for everything.
-
-**Why it happens:**
-Flutter's Material widgets have good default touch behavior but keyboard/mouse support requires explicit configuration. Developers test primarily on mobile emulators where touch is the only input. Desktop testing is an afterthought.
-
-**How to avoid:**
-Wrap the page list in a `FocusableActionDetector` or use `Shortcuts`/`Actions` for keyboard navigation. Ensure Escape dismisses the modal (built into `showModalBottomSheet` but verify). Add `FocusNode` management for the search bar to auto-focus on modal open. Use `SelectableRegion` around markdown content for text selection with mouse. Test on desktop target regularly, not just mobile emulators.
-
-**Warning signs:**
-- No `FocusNode` or `Shortcuts` in wiki modal code
-- Search bar doesn't auto-focus when modal opens
-- Tab key doesn't move focus between search bar and page list
-
-**Phase to address:**
-Wiki Modal UI phase — input handling alongside layout implementation.
+**Phase to address:** GameEntity replacement phase — specifically, the migration runner must be written and tested before the enum is removed from any shared code that reads persisted files.
 
 ---
 
 ## Moderate Pitfalls
 
-### Pitfall 10: Hardcoded Breakpoint Values Without Documentation
-
-**What goes wrong:**
-The responsive layout switches at `width > 600` but no one remembers why 600 was chosen. Later, someone changes it to 500 to "fix" a layout issue on a specific device, breaking the layout on other devices.
-
-**Prevention:**
-Define breakpoints as named constants with comments referencing Material 3 window size classes. Use `const double kCompactWidth = 600.0;` and `const double kMediumWidth = 840.0;` with documentation links.
-
-### Pitfall 11: Sidebar List State Not Restored After Orientation/Resize Change
-
-**What goes wrong:**
-User scrolls to page 50 in the sidebar, resizes the window (or rotates a tablet), and the list jumps back to the top. The selected page in the detail panel is also lost.
-
-**Prevention:**
-Use `PageStorageKey` on the sidebar `ListView` to persist scroll position. Store the selected page ID in a provider that survives rebuilds. Per Flutter best practices: "To maintain the scroll position in a list that doesn't change its layout when the device's orientation changes, use the `PageStorageKey` class."
-
-### Pitfall 12: Not Using MediaQuery.sizeOf (Using MediaQuery.of Instead)
-
-**What goes wrong:**
-Using `MediaQuery.of(context).size` causes unnecessary rebuilds because `MediaQuery` contains much more data than just size (padding, view insets, platform brightness, etc.). Every time any MediaQuery property changes, the entire widget rebuilds.
-
-**Prevention:**
-Use `MediaQuery.sizeOf(context)` instead of `MediaQuery.of(context).size`. This is the current Flutter recommendation for performance reasons — it only rebuilds when size changes, not when other MediaQuery properties change.
-
-### Pitfall 13: Typed Page Schema Complexity Without Abstraction
-
-**What goes wrong:**
-Each page type (spell, item, creature, rule) has different structured fields. The detail view contains a massive switch statement rendering different field combinations for each type. Adding a new page type requires modifying the detail view, the create form, and the search indexing logic.
-
-**Prevention:**
-Define a `WikiPageType` enum with a schema descriptor interface. Each type provides its own field definitions, validators, and renderers through a polymorphic interface. The detail view delegates to type-specific renderers rather than containing all rendering logic inline.
+Mistakes that cause significant rework or degrade the feature but don't lose user data.
 
 ---
 
-## Technical Debt Patterns
+### Pitfall 6: Dynamic Form Generation Leaks TextEditingControllers on Schema Switch
 
-| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
-|----------|-------------------|----------------|-----------------|
-| Inline all wiki UI in each app | No shared package setup | Duplicate code, divergent behavior, double bug fixes | Never — use core package for shared widgets |
-| Synchronous markdown parsing | Simpler code | Jank on long pages, poor UX | Only if wiki pages are guaranteed < 1KB at launch |
-| No search debounce | Faster to implement | Input lag on every keystroke | Never — debounce is trivial and essential |
-| Hardcoded breakpoints | Works now | Unmaintainable, device-specific bugs | Never — use named constants with M3 references |
-| Single monolithic widget file | Fewer files to manage | Unmaintainable, impossible to test in isolation | Never — the codebase already suffers from this |
-| flutter_markdown over flutter_markdown_plus | More tutorials available | Discontinued package, no future updates | Never — flutter_markdown_plus is a drop-in replacement |
+**What goes wrong:**
+`WikiCreateForm._WikiCreateFormState.initState()` creates one `TextEditingController` per field from `widget.selectedType.fields`. If the active GameModel switches mid-session (or the user switches type pickers), the old controllers are not disposed before new ones are created. Each leaked controller holds a `ChangeNotifier` subscription. Over multiple switches, memory pressure increases and debug mode prints "TextEditingController was used after being disposed."
 
-## Integration Gotchas
+**Why it happens:**
+The current form (line 48–50 in `wiki_create_form.dart`) creates controllers in `initState` and disposes them in `dispose`. This lifecycle is safe for a static field list. When `selectedType` changes (or when the underlying GameModel changes the field count for a type), the widget is rebuilt but `initState` doesn't re-run — the controller map is stale. Any new fields have no controller; any removed fields leave leaked controllers.
 
-| Integration | Common Mistake | Correct Approach |
-|-------------|----------------|------------------|
-| Wiki models in core | Putting UI logic in core models | Models stay in `core/lib/models/`, UI widgets in `core/lib/widgets/` or app-specific |
-| Modal state management | Ephemeral state inside modal widget | Lift state to provider scoped above modal for persistence across open/close |
-| Markdown + stat blocks | Rendering stat blocks as markdown tables | Stat blocks are structured data — render as custom widgets, not markdown |
-| Search across both apps | Separate search indices per app | Single shared search index from core, both apps query the same data |
-| Theme consistency | Each app themes wiki differently | Use `Theme.of(context)` for all styling, wiki inherits app theme automatically |
-| NSD sync (future) | Building wiki UI assuming local-only data | Design data layer with abstraction so NSD sync can be plugged in later |
+**Prevention:**
+Override `didUpdateWidget` in `_WikiCreateFormState`. When `widget.selectedType != oldWidget.selectedType`, dispose all existing controllers and recreate the map from the new type's field list. For GameModel switches that happen while a create form is open, close and reopen the form rather than trying to migrate in-flight state. Consider a `ValueKey` on `WikiCreateForm` keyed to the active GameModel ID so Flutter fully replaces the widget (and calls `dispose` + `initState`) on model switch.
 
-## Performance Traps
+**Warning signs:**
+- `didUpdateWidget` not overridden in any `State` that holds a controller map
+- "TextEditingController was used after being disposed" in debug console
+- Controller map size differs from `widget.selectedType.fields.length`
 
-| Trap | Symptoms | Prevention | When It Breaks |
-|------|----------|------------|----------------|
-| Markdown parsed on every build | Frame drops opening long pages | Pre-parse at save time, cache parsed result | Pages > 2KB of markdown |
-| Full-text search on every keystroke | Input lag in search bar | Debounce (200-300ms), title-first filtering | > 50 wiki pages |
-| Rebuilding entire page list on search change | List flickers during filtering | Use `ValueListenableBuilder` or selective rebuild | > 100 wiki pages |
-| No const constructors on wiki widgets | Excessive rebuilds on modal resize | Use `const` everywhere possible | Any responsive resize event |
-| Loading all wiki pages into memory at once | Slow modal open, high memory | Lazy-load page bodies, load titles eagerly | > 200 wiki pages with long content |
+**Phase to address:** Dynamic form generation phase.
 
-## Security Mistakes
+---
 
-| Mistake | Risk | Prevention |
-|---------|------|------------|
-| Storing wiki content in SharedPreferences | Data loss on app reinstall, size limits (4-10KB on some platforms) | Use file-based storage (JSON files) or SQLite via `drift`/`sqflite` |
-| No input validation on wiki page creation | Malformed markdown, broken stat blocks | Validate title (non-empty), body (valid markdown), tags (non-empty strings) |
-| Markdown injection via user content | If wiki content is ever shared/synced, malicious markdown could crash the renderer | Sanitize markdown input, limit allowed syntax extensions |
+### Pitfall 7: JSON Startup Parse Time Exceeds 50ms Budget on Low-End Devices
 
-## UX Pitfalls
+**What goes wrong:**
+The D&D 5e GameModel JSON file is large (dozens of entity types, hundreds of field definitions, full rules config for initiative, HP, dice). Parsing it synchronously on the main isolate during startup exceeds the 50ms target stated in PROJECT.md, causing a white-screen flash or missed first frame.
 
-| Pitfall | User Impact | Better Approach |
-|---------|-------------|-----------------|
-| No empty state when wiki has no pages | User sees blank screen, doesn't know to tap + | Show "No pages yet — tap + to create one" with illustration |
-| Search returns no results with no feedback | User thinks search is broken | Show "No results for 'xyz'" with suggestion to try different terms |
-| Page list doesn't show page type | User can't distinguish spells from items at a glance | Show type badge/icon next to each page title |
-| Detail view scrolls to top on page switch | User loses their place when browsing | Preserve scroll position per-page with PageStorageKey |
-| Modal dismisses on tap outside (on desktop) | User accidentally closes wiki while reading | Disable tap-outside-dismiss on desktop, keep it on mobile |
+**Why it happens:**
+`rootBundle.loadString()` is async but `jsonDecode()` is synchronous and runs on the main isolate. A 50KB–150KB JSON file (realistic for a full D&D 5e schema) takes 10–60ms to decode on a mid-range device and longer on a low-end device. The project already specifies `rootBundle` for asset loading — this is the right choice, but parsing must be handled carefully.
 
-## "Looks Done But Isn't" Checklist
+**Critical constraint from Flutter:**
+`rootBundle` cannot be accessed from a spawned isolate (Flutter GitHub issue #61480). This means the asset string must be loaded on the main isolate first, then parsing can be offloaded to `Isolate.run()` or `compute()`. Isolate spawn overhead is approximately 90–175ms — for small GameModel files, synchronous parsing on the main thread is actually faster.
 
-- [ ] **Wiki Modal:** Often missing keyboard navigation (Escape to dismiss, Tab through elements, arrow keys in list) — verify desktop target testing
-- [ ] **Search:** Often missing debounce — verify no lag when typing quickly
-- [ ] **Responsive Layout:** Often missing testing at exact breakpoint widths (599dp, 600dp, 839dp, 840dp) — verify both sides of each breakpoint
-- [ ] **Markdown:** Often missing handling of edge cases (empty body, malformed markdown, very long single-line content) — verify with edge-case test data
-- [ ] **State Persistence:** Often missing scroll position and selected page restoration — verify by opening modal, navigating, closing, reopening
-- [ ] **Two-Panel Layout:** Often missing sidebar width constraint on very wide screens — verify sidebar doesn't exceed 400dp on ultrawide displays
-- [ ] **Both Apps:** Often missing testing in both companion_app and dm_app — verify identical behavior in both
-- [ ] **Core Package:** Often missing tests for wiki models — verify core package has unit tests for WikiPage, WikiPageType, and serialization
+**Prevention:**
+Measure first. If the bundled D&D 5e GameModel JSON is under 20KB, synchronous parsing is likely under 5ms and the target is easily met. If schemas grow large (importing a full monster manual via custom GameModel), use `compute()` to offload. Cache parsed `GameModel` objects in memory — never re-parse a model that is already loaded. Load bundled models eagerly at app start on a background isolate, but do not block the first frame waiting for the result: show a splash or loading state.
 
-## Recovery Strategies
+**Warning signs:**
+- GameModel JSON file exceeds 20KB
+- No startup timing in DevTools showing model parse time
+- `jsonDecode` called directly in `initState` or `runApp`
+- No caching of parsed `GameModel` objects
 
-| Pitfall | Recovery Cost | Recovery Steps |
-|---------|---------------|----------------|
-| Device-type checks everywhere | MEDIUM | Replace all `Platform.isX` checks with `MediaQuery.sizeOf` branching; define breakpoint constants |
-| flutter_markdown dependency | LOW | Swap to `flutter_markdown_plus` — API is identical, just change pubspec |
-| Monolithic wiki widget file | HIGH | Extract components incrementally: search bar first, then page list, then detail view, then responsive wrapper |
-| No state persistence across modal dismiss | MEDIUM | Introduce a ChangeNotifier provider, move search query and selected page ID into it |
-| Duplicated wiki UI in both apps | HIGH | Extract shared widgets to core package, update both apps to import from core |
-| Synchronous search on main thread | LOW | Add debounce timer, refactor search to title-first filtering |
+**Phase to address:** GameModelService implementation phase — performance baseline measurement required before shipping.
 
-## Pitfall-to-Phase Mapping
+---
 
-| Pitfall | Prevention Phase | Verification |
-|---------|------------------|--------------|
-| Device-type checking | Wiki Modal UI | Review all layout branching code for Platform.isX usage |
-| Wrong modal transition | Wiki Modal UI | Verify slide-up animation on both platforms and desktop |
-| State loss on dismiss | Wiki Modal UI | Test open→navigate→close→reopen cycle, verify state preserved |
-| Discontinued markdown package | Wiki Modal UI | Check pubspec.yaml for flutter_markdown_plus |
-| Markdown performance | Wiki Modal UI (defer optimization) | DevTools frame check with long wiki pages |
-| Search without debounce | Wiki Modal UI | Type quickly in search bar, verify no input lag |
-| Duplicated UI code | Wiki Modal UI | Grep for wiki widgets in both apps — should only exist in core |
-| Monolithic view files | Wiki Modal UI | Count lines per wiki file — none should exceed 200 |
-| No keyboard navigation | Wiki Modal UI | Test wiki modal on desktop with keyboard only |
-| Hardcoded breakpoints | Wiki Modal UI | Search for numeric width comparisons — should use named constants |
-| No empty state | Wiki Modal UI | Open wiki with zero pages, verify helpful empty state |
-| Missing core tests | Wiki Models (core) | Run `dart test` in packages/core, verify wiki model tests pass |
+### Pitfall 8: Schema Validation Absent on User-Imported GameModel Files
+
+**What goes wrong:**
+A user imports a custom `.json` GameModel file that is missing the `entityTypes` key. The app calls `gameModel.entityTypes` which returns null, and the character sheet rendering code crashes trying to iterate null. Or: the file has an `entityTypes` list but the `fields` array for one type is missing, causing the form generator to iterate null.
+
+**Why it happens:**
+File import is a new surface that bundled assets never exercise. Bundled assets are developer-controlled and always valid. User files are adversarial: truncated downloads, partially authored files, files from a different version of the schema spec, files with creative JSON5-ish comments (which `jsonDecode` rejects with an unhelpful error).
+
+**Specific minimum requirements for a parseable GameModel:**
+At minimum a valid GameModel file needs: `version` (string), `name` (string), `entityTypes` (non-empty list where each entry has `key` and `fields`), `pageTypes` (non-empty list with same structure), and `rulesConfig` (object with at minimum `initiativeFieldKey` or an initiative formula). Without these, no UI feature can render.
+
+**Prevention:**
+Write a `GameModelValidator` class that runs before any `GameModel` object is constructed from user input. Check for required top-level keys, that lists are non-empty, that no `fieldKey` is an empty string, and that referenced keys in `rulesConfig` exist in the relevant `entityType.fields` list. Return a `ValidationResult` with specific, user-readable error messages rather than a boolean. Show the errors in the import UI before accepting the file. Do not use `json_schema` package for this — it adds a dependency for something that can be done in 80 lines of hand-written validation code.
+
+**Warning signs:**
+- File import flow goes directly from `jsonDecode` to `GameModel.fromJson` with no intermediate validation
+- `GameModel.fromJson` uses unchecked `as List` casts on optional fields
+- No error message surfaced to the user when import fails
+
+**Phase to address:** External GameModel import phase.
+
+---
+
+### Pitfall 9: Switching GameModel Leaves Stale References in WikiProvider
+
+**What goes wrong:**
+`WikiProvider` holds a list of `WikiPage` objects. Each `WikiPage` currently carries a `WikiPageType` reference (after migration: a string type key). When the user switches from D&D 5e to CoC, the existing wiki pages still reference D&D 5e type keys (`"creature"`, `"spell"`) that do not exist in the CoC GameModel. The wiki type picker renders an empty list. The create form offers no types. The stat block card renders nothing for D&D pages. The search service might work (it only cares about text), but everything schema-dependent is broken.
+
+**Why it happens:**
+`WikiProvider` and `GameModelService` are separate providers. `WikiProvider` is not notified when the active GameModel changes. The wiki page list is not re-evaluated against the new model's type registry. There is no concept of "pages that belong to this model" vs "pages that belong to another model."
+
+**Prevention:**
+`WikiProvider` must listen to `GameModelService` and handle model switches by either: (a) filtering the displayed pages to only those whose type key exists in the current model's type registry, showing "incompatible" pages with a warning indicator; or (b) maintaining separate wiki page stores per GameModel ID and switching the active store on model change. Option (a) is simpler for v1. Implement `WikiProvider.onModelChanged(GameModel newModel)` called by `GameModelService`. Do not silently hide pages — show a "from another game system" indicator so users don't think their data is gone.
+
+**Warning signs:**
+- `WikiProvider` has no reference to `GameModelService`
+- `WikiProvider.pages` is not filtered by active model's `pageTypes`
+- No "incompatible system" indicator exists for wiki pages
+
+**Phase to address:** GameModelService + WikiProvider integration phase.
+
+---
+
+### Pitfall 10: Encounter Tracker Initiative Sort Breaks for CoC DEX-Order System
+
+**What goes wrong:**
+The current encounter tracker (`EncounterEntry.initiative` is a `double`) assumes initiative is a rolled value where higher numbers go first. D&D 5e: roll d20 + DEX mod. CoC 7e: simply order by DEX stat (no roll; ties broken by d100). If the encounter tracker uses `entries.sort((a, b) => b.initiative.compareTo(a.initiative))` hardcoded, CoC sessions will still ask for a rolled initiative value that doesn't exist in CoC, and the sort order will be wrong because DEX-order is not a rolled number but a stat lookup.
+
+**Why it happens:**
+`EncounterEntry` is being replaced by `GameEntity`, but the sort logic lives in the tracker UI code which will still need to sort. If the sort formula is not externalized to `GameModel.rulesConfig`, the D&D sort formula (`roll + mod`) is used for all systems.
+
+**Prevention:**
+`GameModel.rulesConfig` must include an `initiativeConfig` block that specifies: the field key to sort by, the sort direction (high-first or low-first), whether it is a rolled value or a derived stat, and a tiebreaker rule. The encounter tracker reads `initiativeConfig` from `GameModelService` rather than hardcoding `b.initiative.compareTo(a.initiative)`. For CoC, `initiativeConfig.fieldKey = "dex"` and `initiativeConfig.sortOrder = "high_first"` and `initiativeConfig.isRolled = false`.
+
+**Warning signs:**
+- `entries.sort((a, b) => b.initiative.compareTo(a.initiative))` hardcoded anywhere in encounter tracker
+- No `initiativeConfig` in GameModel schema spec
+- CoC test shows initiative entry UI asking for a roll value
+
+**Phase to address:** Encounter tracker migration phase.
+
+---
+
+## Minor Pitfalls
+
+Mistakes that create friction but are recoverable without data loss.
+
+---
+
+### Pitfall 11: Typed Test Helpers Become Invalid When Typed Classes Are Deleted
+
+**What goes wrong:**
+All existing tests in `packages/core/test/` reference `WikiPageType.creature`, `WikiPageType.spell`, etc. directly. When the enum is deleted, every test file fails to compile. The test suite goes from green to completely broken in a single commit, making CI a hard blocker before any migration work is verified.
+
+**Prevention:**
+Write `GameModel`-aware test helpers before deleting any typed classes. Create a `TestGameModels.dnd5e()` factory that returns a fully-populated `GameModel` object for D&D 5e. Replace all `WikiPageType.X` references in tests with `testDnd5e.pageTypes.byKey('creature')` equivalents. Delete typed classes only after all tests compile and pass against the new helpers.
+
+**Phase to address:** The commit that deletes any typed model class must include test file updates in the same commit, not a follow-up PR.
+
+---
+
+### Pitfall 12: Demo Data Dart Files Become Dead Code That Still Compiles
+
+**What goes wrong:**
+`demo_player_characters.dart`, `demo_monsters.dart`, and `demo_npcs.dart` contain typed `PlayerCharacter`, `Monster`, and `NPC` instances. These will become invalid when those classes are deleted. However, `demo_wiki_pages.dart` uses the runtime-safe `WikiPage` type and will survive. Developers may leave the typed demo files in place (forgetting to delete or migrate them), causing confusing "import succeeds but data is never used" dead code.
+
+**Prevention:**
+Migrate demo data to `GameEntity` format against the D&D 5e `GameModel` JSON as part of the same phase that deletes the typed classes. The existing data (defined in ~1100 lines of demo files) becomes the validation corpus for confirming the D&D 5e GameModel accurately captures all the fields that were previously hardcoded.
+
+**Phase to address:** GameEntity replacement phase.
+
+---
+
+### Pitfall 13: `int` vs `double` Type Coercion in Loaded JSON
+
+**What goes wrong:**
+`jsonDecode` returns `int` for whole numbers (`7`) and `double` for decimal numbers (`7.0`) in JSON. The current `EncounterEntry.fromJson` already handles this: `(json['initiative'] as num).toDouble()`. But new GameEntity access code that expects `int` will crash on values that were saved as `7.0` (e.g., if a user's text editor auto-formatted the JSON). Conversely, code expecting `double` will crash on `7` stored as `int`.
+
+**Prevention:**
+Always read numeric values from `GameEntity.data` via a helper that accepts both: `num? raw = data[key] as num?; int result = raw?.toInt() ?? fallback`. Never use bare `as int` or `as double` on values from JSON-decoded maps. This is already partially handled correctly in `EncounterEntry.fromJson` (line 46: `(json['initiative'] as num).toDouble()`) — apply this pattern universally.
+
+**Phase to address:** GameEntity accessor utilities phase.
+
+---
+
+## Phase-Specific Warnings
+
+| Phase Topic | Likely Pitfall | Mitigation |
+|-------------|---------------|------------|
+| GameModel JSON schema design | No version field | Add `"version": "1"` as the first required field |
+| D&D 5e GameModel authoring | Using `"creatureType"` but wiki pages have `"creature"` | Audit all existing string values in demo data before finalizing GameModel type keys |
+| CoC 7e GameModel authoring | Assuming D&D-style HP/initiative | Implement CoC `rulesConfig` from the Chaosium 7e rules; test with real CoC character |
+| WikiPageType enum deletion | All tests break simultaneously | Write `TestGameModels` helpers before any class is deleted |
+| GameEntity persistence | Existing wiki pages unreadable | Write migration runner; test with real data files from phases 1–4 |
+| File import UI | Crash on malformed file | Validate before constructing `GameModel`; show user-readable errors |
+| Encounter tracker migration | Hardcoded initiative sort | Read `initiativeConfig` from `GameModelService` |
+| GameModelService wiring | Global provider causes 5+ rebuilds | Use `Selector` for all consumers; scope provider below `MaterialApp` |
+| Dynamic form rebuild | Controller leak on schema switch | Override `didUpdateWidget`; use `ValueKey` on form widget |
+| Startup perf | 50ms parse budget | Measure bundled GameModel size; use `compute()` only if > 20KB |
+
+---
+
+## "What Must Be True" Verification Checklist
+
+Before any phase that touches persisted data is marked complete:
+
+- [ ] Existing wiki pages created in phases 1–4 still load correctly after migration
+- [ ] D&D 5e GameModel type keys exactly match the string values in `demo_wiki_pages.dart`
+- [ ] A valid CoC 7e GameModel file exists and parses without errors
+- [ ] Switching from D&D to CoC and back does not crash; wiki pages show appropriate "from another system" state
+- [ ] Initiative order for CoC test encounter is correct (high DEX goes first, no roll)
+- [ ] A custom malformed GameModel file shows an error in the import UI rather than crashing
+- [ ] GameModelService `notifyListeners()` call triggers no rebuild of the root `MaterialApp` widget
+- [ ] All `core` package tests pass with `GameModel`-aware test helpers (no `WikiPageType` enum references)
+
+---
 
 ## Sources
 
-- Flutter Official Docs — Adaptive and responsive design: https://docs.flutter.dev/ui/adaptive-responsive
-- Flutter Official Docs — General approach to adaptive apps: https://docs.flutter.dev/ui/adaptive-responsive/general
-- Flutter Official Docs — Best practices for adaptive design: https://docs.flutter.dev/ui/adaptive-responsive/best-practices
-- Flutter Official Docs — Large screen devices: https://docs.flutter.dev/ui/adaptive-responsive/large-screens
-- Flutter Official Docs — Display a Cupertino sheet: https://docs.flutter.dev/cookbook/design/cupertino-sheets
-- Flutter Official Docs — Navigate to a new screen and back: https://docs.flutter.dev/cookbook/navigation/navigation-basics
-- pub.dev — flutter_markdown (discontinued): https://pub.dev/packages/flutter_markdown
-- pub.dev — flutter_markdown_plus (active): https://pub.dev/packages/flutter_markdown_plus
-- Material 3 — Applying layout window size classes: https://m3.material.io/foundations/layout/applying-layout/window-size-classes
-- SaveState PROJECT.md — Existing concerns (monolithic views, model duplication, missing tests)
+- Dart official docs — Type system and null safety: https://dart.dev/null-safety/understanding-null-safety
+- Flutter official docs — Concurrency and isolates (rootBundle constraint): https://docs.flutter.dev/perf/isolates
+- Flutter GitHub — rootBundle unavailable in isolates (issue #61480): https://github.com/flutter/flutter/issues/61480
+- provider package GitHub — ChangeNotifier O(N²) performance discussion (issue #45): https://github.com/rrousselGit/provider/issues/45
+- provider package GitHub — Selector shouldRebuild (issue #333): https://github.com/rrousselGit/provider/issues/333
+- Foundry VTT — System Data Models (game-agnostic schema architecture): https://foundryvtt.com/article/system-data-models/
+- Couchbase — Schema versioning tutorial (field rename strategies): https://developer.couchbase.com/tutorial-schema-versioning
+- Chaosium — CoC 7e character sheet (HP/Luck/Sanity/Build formulas): https://www.chaosium.com/content/FreePDFs/CoC/Character%20Sheets/Character%20Sheet%20-%20base%20-%20Call%20of%20Cthulhu%207th%20Ed.pdf
+- DEV Community — Null safety crash case study: https://dev.to/alaminkarno/i-trusted-darts-null-safety-and-it-still-crashed-my-app-365a
+- Flutter docs — JSON serialization (type coercion in jsonDecode): https://docs.flutter.dev/data-and-backend/serialization/json
+- SaveState codebase — `wiki_storage_service.dart`, `wiki_page.dart`, `player_character.dart`, `wiki_create_form.dart`, `dm_app/lib/main.dart`
 
 ---
-*Pitfalls research for: Flutter wiki/knowledge-base popup UI with responsive layouts*
+*Pitfalls research for: GameModel schema-driven migration in Flutter/Dart app*
 *Researched: 2026-05-07*

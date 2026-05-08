@@ -1,181 +1,297 @@
-# Feature Research
+# Feature Landscape: TTRPG-Agnostic Schema-Driven GameModel
 
-**Domain:** Flutter D&D wiki popup UI with responsive layouts
+**Domain:** TTRPG companion/DM app with swappable game system schemas
 **Researched:** 2026-05-07
-**Confidence:** HIGH
+**Confidence:** HIGH (core schema architecture), MEDIUM (system popularity), MEDIUM (UX expectations)
+**Supersedes:** Prior wiki-milestone FEATURES.md (that research still applies to the wiki subsystem)
 
-## Feature Landscape
+---
 
-### Table Stakes (Users Expect These)
+## Research Context
 
-Features users assume exist. Missing these = product feels incomplete.
+This file answers six questions about the GameModel milestone:
+1. How do Foundry/Roll20/Fantasy Grounds handle multi-system support, and what is the lesson?
+2. D&D 5e vs Call of Cthulhu 7e schema divergence — where do they differ?
+3. What TTRPG systems are commonly requested beyond D&D/Pathfinder?
+4. Table stakes vs differentiators for a game system switcher companion app
+5. What users expect when switching systems — does ALL data change, or just templates?
+6. Anti-features — what schema-driven VTT apps got wrong
+
+---
+
+## Ecosystem Lessons: How Production VTTs Do It
+
+### Foundry VTT (the clearest architectural model)
+
+Foundry VTT is the strongest reference. Its architecture is:
+
+- **Each game system is a standalone package** with a `system.json` manifest declaring: entity types (Actor subtypes like "character", "npc", "vehicle"), item types, initiative formula, and compatible version range.
+- **Data models are schema classes** — each Actor/Item subtype has a `TypeDataModel` that uses typed fields (`NumberField`, `StringField`, `ArrayField`, `SchemaField`) with defaults and validation. Systems call `defineSchema()` to declare their own field structure.
+- **Derived values** are computed in `prepareDerivedData()` — things like proficiency bonus from level, or saving throw mod from ability score. The engine calls this automatically on change.
+- **Initiative** is a single formula string in `system.json` (e.g. `"1d20 + @abilities.dex.mod"`). The combat tracker reads and evaluates this at roll time.
+- **World-level isolation**: a Foundry "world" is pinned to exactly one system. Data created in that world uses only that system's schemas. There is no concept of switching a campaign mid-life — you pick a system when creating a world and it stays.
+- **~300 community-maintained game systems** ship on Foundry. System dev is documented and accessible.
+
+**Key architectural lesson for SaveState:** Foundry proves that a generic document store (Actor, Item, JournalEntry) + a system-provided schema works at scale. The GameModel JSON approach SaveState is building is the correct pattern. The critical insight is that **the schema describes types and fields; the engine stores/renders generic maps**. Foundry made one mistake worth learning from: HTML+JS templates for sheet rendering require redoing the whole UI per system. SaveState's Flutter approach (schema-driven form widgets) avoids this entirely.
+
+### Roll20's approach
+
+Roll20 character sheets are HTML/CSS/JavaScript per system — essentially a bespoke web form per game system. Switching game systems means switching to a completely different sheet template. Old character data from a different system is not migrated — it's orphaned. Multiple community forks exist for the same system because there's no canonical schema spec. The lesson: **per-system bespoke templates do not scale and fragment the community**.
+
+### Fantasy Grounds
+
+Fantasy Grounds builds on CoreRPG, a base ruleset that other systems extend. Characters can export/import across rulesets derived from CoreRPG, but cross-ruleset import is manual and lossy. The lesson: **a shared base type with system-specific extensions is better than isolated types**, but extension without a formal schema spec still causes fragmentation.
+
+### The correct synthesis for SaveState
+
+- GameModel defines: entity types (character, adversary, etc.), field schemas per type, wiki page types, initiative formula, dice notation
+- GameEntity stores: a `typeKey` pointing into the active GameModel's entity schema, plus a `Map<String, dynamic>` data payload
+- Switching GameModel changes: what schemas are active, how UI renders, what initiative formula is used
+- Switching GameModel does NOT affect: campaign notes, wiki pages scoped to a campaign, entity records that belong to a different system (they remain but show as "schema mismatch")
+
+---
+
+## D&D 5e vs Call of Cthulhu 7e: Schema Divergence Map
+
+This is the core test for whether the GameModel design is genuinely agnostic.
+
+### D&D 5e required schema concepts
+
+The existing `PlayerCharacter` and `Monster` models are the reference:
+
+**Character fields unique to D&D 5e:**
+- Six ability scores (STR/DEX/CON/INT/WIS/CHA) with associated modifiers
+- Proficiency bonus (derived from level, flat formula: `2 + floor((level-1)/4)`)
+- Saving throw proficiencies (one boolean per ability score)
+- Skills: ~18 named skills each mapped to an ability score, proficiency multiplier
+- Spell slots by level (nine tiers, each with max/used count)
+- Known spells list
+- Class + subclass + background
+- Creature size enum (Tiny/Small/Medium/Large/Huge/Gargantuan)
+- Alignment (lawful/neutral/chaotic × good/neutral/evil)
+- Armor class with source string
+- Damage vulnerabilities, resistances, immunities (typed damage categories)
+- Condition immunities
+- Hit dice notation (e.g. "10d8")
+- Movement speed (walk, swim, fly, burrow, climb)
+- Senses (darkvision range, passive perception)
+- Legendary actions list + legendary action budget
+
+**Adversary fields unique to D&D 5e:**
+- Challenge Rating (decimal, 0.125 to 30)
+- XP award (table-lookup from CR)
+- Legendary action count + legendary action list
+- Lair actions (optional)
+
+**Initiative formula:** `1d20 + DEX modifier`
+
+### Call of Cthulhu 7e required schema concepts
+
+**Structural differences from D&D that break D&D assumptions:**
+
+| Concept | D&D 5e | CoC 7e | Schema impact |
+|---------|--------|--------|---------------|
+| Core stats | 6 ability scores (3–18 range) | 8 characteristics (STR, CON, SIZ, DEX, APP, INT, POW, EDU) (all 1–100 range) | Cannot share a field name — values, ranges, and semantics differ. Both are `Map<String, int>` but with different key sets |
+| Skill system | ~18 named skills, proficiency-based bonuses (not percentage) | ~40+ named skills, each a percentage 1–100. Rolling = roll d100 under skill value | Completely different model: CoC skills are just `Map<String, int>` percentages, no proficiency concept |
+| HP derivation | Hit Dice (d6–d12) + CON modifier per level | `(CON + SIZ) / 10`, flat number, not level-scaled | HP is a derived field from a custom formula — formula must be in the schema |
+| Sanity | Does not exist | SAN: starts at `POW × 5`, max = `99 − Cthulhu Mythos skill`, depletes permanently | Entirely new resource type: `sanity_current`, `sanity_max`, `insanity_flags` |
+| Luck | Does not exist | Luck: separate value 1–100, spent to improve rolls, does not recover easily | New resource, not HP analog |
+| Magic Points | Spell slots by level | `POW / 5`, a flat pool not divided into tiers | No spell levels, no slot tiers |
+| Build / Damage Bonus | Not applicable | Derived from STR + SIZ combination; affects melee damage | New derived field |
+| Dodge | Passive (AC calculation) | Active skill at half DEX, can increase with advancement | Dodge is a trackable skill percentage |
+| Alignment | Lawful/Neutral/Chaotic × Good/Neutral/Evil | No alignment — replaced by psychological/ideological concepts | Alignment field doesn't exist, no enum equivalent |
+| Class/Subclass | Core identity, drives most mechanics | No class — Occupation is flavor only, gives some skill bonuses | No class system |
+| Level | 1–20, everything scales with it | No levels — Occupation grants initial skill bonuses; advancement is through session points | No level field; advancement model is entirely different |
+| CR/XP | Adversary rating (CR) + numeric reward (XP) | No CR or XP — monsters are described narratively | Adversary schema omits CR and XP entirely |
+| Damage types | Bludgeoning/piercing/slashing/fire/cold/etc. | No damage type categories — just numeric damage | No damage type enum |
+| Condition immunities | Typed list | Not applicable | Omit |
+| Legendary actions | D&D-specific boss mechanic | Not applicable | Omit |
+| Initiative | d20 + DEX mod | DEX rank order, or DEX characteristic / 2 for numerical comparison | Different formula |
+
+**Conclusion:** D&D 5e and CoC 7e share: name, description, HP (both have it, derived differently), a skills-like concept (totally different implementation), and adversaries (without CR/XP in CoC). Everything else is system-specific. This validates that a `Map<String, dynamic>` `GameEntity` with no hardcoded fields is the right model — there is no universal "character" structure that applies to both.
+
+---
+
+## Commonly Requested TTRPG Systems
+
+Based on the ICv2 and Roll20 Orr Group data, plus community research (MEDIUM confidence):
+
+| Rank | System | Market Share Notes | Structural Archetype |
+|------|--------|-------------------|---------------------|
+| 1 | D&D 5e | ~40–50% of all TTRPG play | Six ability scores, class/level, spell slots |
+| 2 | Pathfinder 2e | Strong second, growing | Very similar to D&D 5e structurally; adds degrees of success |
+| 3 | Call of Cthulhu 7e | Third globally, #1 non-fantasy | Percentile skills, Sanity, no class/level |
+| 4 | Star Wars RPG (Edge of Empire / Genesys) | Largest licensed IP system | Narrative dice pool (symbols not numbers); Characteristics + Skills drive pool size; Wound/Strain thresholds instead of HP; no initiative roll (side-order initiative) |
+| 5 | Vampire: The Masquerade 5e | Dominant horror system | Attributes + Skills (dot ratings 1–5); Hunger track instead of blood pool; Disciplines; Health + Willpower tracks; no alignment, no class |
+| 6 | Starfinder | Sci-fi Pathfinder derivative | Resolves/Stamina Points layered on top of HP; Drone/AI mechanics; similar core structure to PF2e |
+| 7 | Blades in the Dark | Most influential indie | No character stats as numbers; Action ratings 0–4; Stress track; Harm boxes; no initiative (free-form position/effect); completely different advancement |
+| 8 | Warhammer 40K: Wrath & Glory | Warhammer universe | d6 dice pool, Wrath die, Ruin track |
+| 9 | Shadowrun 5e/6e | Cyberpunk cult classic | Eight body attributes + Edge + Essence; dice pool of d6s counting hits; Karma advancement; Matrix/Magic/Resonance subsystems |
+| 10 | OSR Systems (Old School Essentials, etc.) | Collectively significant | Closer to original D&D; ascending/descending AC; fewer skills; more rulings-at-table |
+
+**Priority for SaveState's GameModel system support:**
+
+D&D 5e (bundled, milestone requirement) and CoC 7e (bundled, agnosticism proof) cover ranks 1 and 3. These two together validate the schema is genuinely flexible. Pathfinder 2e would be the highest-value third addition because structural similarity to D&D 5e means the D&D 5e GameModel file is a strong starting template.
+
+---
+
+## Table Stakes vs Differentiators for a Game System Switcher
+
+### Table Stakes
+
+Features users expect when the app says it supports "any TTRPG system."
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| Full-screen modal popup triggered by book icon | Standard pattern for reference overlays in companion apps; users expect to return to previous context after closing | LOW | Use `showModalBottomSheet` with `isScrollControlled: true` and full-height constraints. Slide-up animation is Material 3 standard. |
-| Searchable page list in sidebar | Any knowledge base requires findability; D&D players need to look up rules mid-game quickly | MEDIUM | Full-text search across title, aliases, tags, and markdown body. Title matches must rank higher. Requires in-memory index built at modal open time. |
-| Page detail view with markdown rendering | Wiki pages contain freeform text; markdown is the standard for game content formatting | LOW | Use `flutter_markdown_plus` (the maintained fork of discontinued `flutter_markdown`). Supports GFM, tables, code blocks. |
-| Responsive layout: two-panel on wide, single-panel on narrow | Users run on phones, tablets, and desktops; layout must adapt to window size, not device type | MEDIUM | Use `MediaQuery.sizeOf(context)` with Material 3 breakpoints (<600dp = single panel, >=600dp = two-panel). Branch on width, not platform. |
-| Page type indicator (creature, item, spell, rule, etc.) | D&D content is heterogeneous; users need to instantly recognize what kind of page they're viewing | LOW | Colored chip or icon in page list items and detail header. Type enum already exists in codebase (`CreatureType`, etc.). |
-| Tag display on page detail | Tags are the primary organization mechanism (no hierarchy in v1); users need to see and filter by them | LOW | Wrap chip list in detail header. Reuse `FilterChip` or custom styled `Chip` widgets. |
-| Stat block rendering for creature-type pages | D&D stat blocks have a canonical visual format (AC, HP, abilities, actions); flat markdown cannot represent this | HIGH | Requires custom widget that maps structured stat block fields to the classic D&D stat block layout. Must handle variable sections (legendary actions, spell slots, etc.). See existing `CreatureDetail` (757-line monolith) — needs modularization. |
-| Page list with type icon + title preview | Users browse by scanning; need visual differentiation between content types at a glance | LOW | `ListTile` with leading icon per type, title, and optional tag preview. |
-| Back/close button and dismiss gesture | Modal must be dismissible; users expect both explicit (button) and implicit (swipe/tap outside) dismissal | LOW | `showModalBottomSheet` provides scrim tap dismissal. Add `AppBar` with close icon. Set `isDismissible: true`. |
+| Game system selector UI | Users must be able to choose the active GameModel; hidden system switching is a UX failure | LOW | Picker widget, shows system name + short description. Persists selection across app restarts. Must be accessible from both apps' main navigation. |
+| System stays pinned per campaign | Users expect D&D campaign data to remain D&D, even after switching globally. The standard pattern from Foundry/Roll20 is that a campaign is pinned to a system. | MEDIUM | Each campaign record stores a `gameModelId`. The active GameModel for that campaign is separate from a global "last used" default. |
+| Character sheet adapts to active system | When viewing a character, the fields shown must match the active system — not a D&D sheet pretending to be CoC | HIGH | Form widgets generated from `GameModel.entitySchemas[typeKey].fields`. No hardcoded field names in UI. |
+| Entity type names match the system | D&D calls them "monsters"; CoC calls them "creatures" or "NPCs." The UI must use the GameModel's own terminology | LOW | `GameModel.entityTypes[key].displayName` drives all labels. No hardcoded "Monster," "PC," "NPC" strings in app code. |
+| Encounter/initiative adapts to active system | D&D uses d20 + DEX mod; CoC uses DEX rank. The tracker must use whatever formula the GameModel declares | MEDIUM | `GameModel.encounterConfig.initiativeFormula` is evaluated at roll time. Parser handles dice notation + attribute references. |
+| Wiki page types match the system | A CoC game should have wiki types for Cults, Tomes, Locations — not D&D Spell and Monster pages | MEDIUM | Wiki page type registry driven by `GameModel.wikiPageTypes`. Already the planned direction per PROJECT.md. |
+| Demo/seed data for bundled systems | Users expect to see sample content when they first select a built-in system | MEDIUM | Each bundled GameModel ships with a companion seed data asset. D&D 5e seed = existing demo data migrated to `GameEntity` format. CoC 7e seed = new set of investigators + creatures. |
+| No restart required on system switch | Users expect instant feedback when switching systems, not a loading spinner or app relaunch | HIGH | Provider-based `GameModelService` as `ChangeNotifier` drives all downstream widgets. All system-sensitive UI must listen to `GameModelService`. This is the hardest table stake to implement correctly. |
+| Schema validation on import | When a user imports an external `.json` game model, the app must validate it — not crash silently | MEDIUM | JSON schema validation before accepting import. Show clear error messages for missing required fields. |
+| External GameModel import from file | Users of niche systems need to import their own schema | MEDIUM | `file_picker` + JSON parsing + validation flow. Import once, stored in app documents directory. |
 
-### Differentiators (Competitive Advantage)
+### Differentiators
 
-Features that set the product apart. Not required, but valuable.
+Features that set SaveState apart from generic campaign tools.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| Title-prioritized full-text search | Searching "fire" returns "Fireball" spell before pages mentioning fire in body text; dramatically faster lookup during gameplay | MEDIUM | Implement scoring: exact title match (10x), alias match (5x), title substring (3x), tag match (2x), body match (1x). Pure Dart, no external dependency. Filter results in-memory. |
-| Alias-based search (alternative names) | "Longsword" found when searching "sword"; "Magic Missile" found when searching "missile"; critical for D&D terminology | LOW | Aliases stored as page field. Include alias strings in search index alongside title. |
-| Typed page schemas with different field sets | A spell page shows casting time, range, components; an item page shows weight, cost, rarity — each type renders its relevant fields | MEDIUM | Define `WikiPageType` enum with per-type field schemas. Detail view branches on type to render appropriate field groups. Models in `core` package. |
-| Create new page from within modal (plus button) | DM can add custom content without leaving the wiki context; reduces friction for content creation | MEDIUM | Plus button in modal app bar opens a type picker, then a form with fields appropriate to the selected type. Form validation per type schema. |
-| Stat block as both inline card and reference widget | Stat blocks render as styled cards in creature pages, but also as compact inline references when linked from other pages | HIGH | Two rendering modes: `StatBlockCard` (full layout) and `StatBlockInline` (compact name + AC/HP). Both consume same structured data. |
-| Keyboard navigation support (desktop) | Desktop DMs navigate with keyboard during sessions; arrow keys move through page list, Enter opens page, Escape closes modal | MEDIUM | Use Flutter's `Focus` and `Shortcuts` widgets. `RawKeyboardListener` for Escape. `ListView` with `FocusNode` per item. |
+| Bundled CoC 7e as genuine second system | Proves the schema is not secretly D&D-centric. CoC has Sanity, percentile skills, no class/level — if it works, everything works. Users of any percentile or skill-based system (BRP derivatives) benefit immediately. | HIGH | CoC 7e schema must correctly model: percentile skill list, eight characteristics, Sanity current/max, Luck, Build/Damage Bonus, Magic Points, Occupation, no alignment, no CR/XP |
+| Campaign-scoped system pinning | A user running both D&D and CoC simultaneously sees the right sheet, wiki types, and encounter rules for each campaign. No current mobile companion app does this well. | MEDIUM | `Campaign.gameModelId` field. `GameModelService.forCampaign(id)` returns the correct model. |
+| Initiative formula as a first-class config | DMs of systems with unusual initiative (side-based, stat-rank, flat rolls) can configure it without code changes. Most apps hardcode d20+DEX. | MEDIUM | Formula parser handles: `1d20`, `d20+@dex.mod`, `@dex` (rank order), `constant(5)` (flat group initiative). Documented in GameModel JSON spec. |
+| Schema-version migration path | When a GameModel file is updated (e.g. D&D 5e 2024 revision changes some field names), the app needs a clear story for existing entity data | HIGH | `GameModel.version` + `GameEntity.schemaVersion` fields. Migration hooks in `GameModelService` called on load if versions differ. Even if v1 does not implement migrations, the version field must exist. |
+| Community GameModel registry hint | If users can discover community-authored `.json` game model files (even via a simple URL), the platform becomes a hub. The RPG Companion App does this with `repositories.rpg-companion.app`. | LOW (registry itself) HIGH (full workflow) | For v1: just document the JSON spec publicly so community authors can write systems. A registry URL can be added later. Do not build the registry as part of this milestone. |
+| Rich dice notation in schema | Systems like Genesys use non-standard dice (custom symbol dice). The dice config in GameModel can specify notation + display glyphs, even if full Genesys symbol resolution is out of scope. | MEDIUM | `GameModel.dice` block: `[{"notation": "d6", "sides": 6}, {"notation": "dA", "display": "ability", "sides": 8}]`. The tracker displays the notation; rolling custom symbol dice is deferred. |
 
-### Anti-Features (Commonly Requested, Often Problematic)
+### Anti-Features
 
-Features that seem good but create problems.
+These are commonly requested or intuitively appealing — but building them in this milestone would cause harm.
 
-| Feature | Why Requested | Why Problematic | Alternative |
-|---------|---------------|-----------------|-------------|
-| Hierarchical folder/tree organization | Feels familiar from file systems and wikis like Notion | Adds significant complexity for D&D content that naturally spans multiple categories (a spell belongs to a class AND a school AND a level). Tag-based is simpler and sufficient for v1. | Tag-based organization with multi-tag filtering. Defer hierarchy to v2 if user feedback demands it. |
-| Real-time peer-to-peer sync between DM and companion | Seems necessary for "shared" wiki | Merge conflicts are inevitable with concurrent edits. Single-author-per-page model + DM as source of truth is simpler and matches D&D table dynamics (DM controls content). | DM app is source of truth. Companion app reads. NSD sync deferred to next milestone per PROJECT.md. |
-| Edit/delete existing pages in v1 | Seems like basic wiki functionality | This milestone is scoped to popup UI only. Edit/delete requires form state management, validation, undo, and conflict handling — each a significant feature. | Create-only for this milestone. Edit/delete in a subsequent milestone. |
-| External wiki import (from D&D Beyond, Roll20, etc.) | Users have existing content | Each source has different data formats, licensing restrictions, and API requirements. Massive scope expansion. | Content created in-app for v1. Import/export deferred. |
-| Rich text editor (WYSIWYG) for page body | Feels more user-friendly than markdown | Requires building or integrating a rich text editor, handling paste behavior, image insertion, and cross-platform consistency. Overkill for v1. | Markdown body field. Simple `TextField` with markdown syntax. |
-| Cross-linking from app text into wiki | Useful for referencing wiki content from character sheets, encounters | Requires parsing app text for wiki references, maintaining link integrity, and handling broken links. Deferred per PROJECT.md. | Defer to next milestone. |
+| Anti-Feature | Why Requested | Why Problematic | Correct Alternative |
+|--------------|---------------|-----------------|---------------------|
+| In-app GameModel schema editor (build your own system from scratch) | Power users want to create entirely new systems without JSON editing | Requires a full schema-editing UI with field type pickers, validation previews, formula testing, and save/load. This is a separate product. The PROJECT.md correctly marks this Out of Scope for v1. Building it now delays the core schema engine which is the actual value. | Document the JSON spec thoroughly. External editors (VS Code + JSON schema validation) are sufficient. Import the finished file. |
+| Cross-system entity migration ("convert my D&D character to CoC") | Appealing in theory for groups switching systems | D&D and CoC share almost no fields. Any automatic migration would produce either empty fields or nonsensical mappings. Worse, it suggests the app understands the semantic equivalence between systems, which it doesn't. Users who try it will trust incorrect data. | Show a clear "this entity was created in D&D 5e, which is not your current system" banner. Let users re-enter data in the new system. Do not attempt automatic migration. |
+| Global system switch that affects all campaigns simultaneously | Feels like a clean "change your game" gesture | A user running a D&D campaign and a CoC campaign would have both campaigns broken. Foundry's lesson is explicit: campaigns are pinned to systems. | Per-campaign system pinning is the right model. Global switch only affects new campaigns or a "default system" preference, not existing campaign data. |
+| Infinite custom fields per entity beyond the GameModel spec | GMs always want one more field | Breaks the schema contract. If any entity can have any field, then UI can't know what to render, search can't index, and exports are unreliable. Kanka's freeform "Attributes" approach leads to user complaints that the tool "fights you." | The GameModel IS the authority on fields. If a field is needed, it belongs in the GameModel file. The companion-app version of this is: edit the `.json` file, reimport. For v1, the schema is authoritative. |
+| System-aware compendium with rules text | Users want to look up rules in-app | Requires licensing agreements for official system content (D&D SRD, CoC Quick-Start). Foundry navigates this through official licensed modules that cost money. Including rules text for bundled systems is a legal and scope problem. | Wiki pages are user-authored. Demo seed data shows the format. Official rules text is out of scope. |
+| Real-time GameModel sync over network | DM and players could theoretically share a GameModel live | Introduces version conflicts, merge hell, and latency. The PROJECT.md correctly marks networked GameModel switching as Out of Scope. | Local-only per device. Each app loads the same bundled JSON. No sync needed for same-system play. |
+| Backwards compatibility shims for old typed Dart models | Tempting to bridge `PlayerCharacter` → `GameEntity` rather than replacing | Shims double the maintenance surface. The existing typed models encode D&D assumptions — any bridge would re-introduce those assumptions through the back door. The PROJECT.md explicitly says: "clean replacement, no bridge." | Hard cut. Migrate existing D&D demo data to `GameEntity` format. Remove the old Dart model files. |
+| "Auto-detect system" from imported JSON | Seems user-friendly | Heuristic detection is fragile and creates false confidence. A D&D homebrew variant might look like CoC to a heuristic. | Require the `id` field in every GameModel JSON. Imports must declare their system ID explicitly. |
+
+---
 
 ## Feature Dependencies
 
 ```
-Wiki Modal (full-screen popup)
-    ├──requires──> Responsive Layout System (MediaQuery size branching)
-    │                  ├──requires──> Breakpoint constants (Material 3: 600dp)
-    │                  └──requires──> Two-panel layout widget (sidebar + detail)
+GameModel Milestone (core)
     │
-    ├──requires──> Page List Sidebar
-    │                  ├──requires──> WikiPage model (title, type, tags, aliases)
-    │                  └──requires──> Page type icons/chips
+    ├──requires──> GameModel data structure (Dart, in core package)
+    │                  ├── EntityTypeDefinition (fields, display name)
+    │                  ├── FieldDefinition (name, type, required, default)
+    │                  ├── WikiPageTypeDefinition (replaces enum)
+    │                  ├── EncounterConfig (initiative formula, turn order rules)
+    │                  └── DiceConfig (notation, sides, display glyph)
     │
-    ├──requires──> Full-Text Search
-    │                  ├──requires──> Page List Sidebar (search filters the list)
-    │                  ├──requires──> Search index (built from page data)
-    │                  └──enhances──> Alias-based search (aliases feed into index)
+    ├──requires──> GameEntity (replaces PlayerCharacter, Monster, NPC)
+    │                  ├── id, gameModelId, typeKey, schemaVersion
+    │                  └── data: Map<String, dynamic>
     │
-    ├──requires──> Page Detail View
-    │                  ├──requires──> Markdown rendering (flutter_markdown_plus)
-    │                  ├──requires──> WikiPage model (body, metadata)
-    │                  └──requires──> Stat block rendering (for creature-type pages)
+    ├──requires──> GameModelService (Provider, ChangeNotifier)
+    │                  ├── activeModel: GameModel
+    │                  ├── switchModel(id) → notifyListeners()
+    │                  └── forCampaign(campaignId) → GameModel
     │
-    ├──requires──> Stat Block Rendering
-    │                  ├──requires──> Structured stat block fields on WikiPage
-    │                  └──requires──> WikiPageType enum (to determine rendering mode)
+    ├──requires──> D&D 5e GameModel JSON asset
+    │                  ├──depends on──> GameModel data structure finalized
+    │                  └── Must reproduce all existing PlayerCharacter/Monster fields
     │
-    ├──requires──> Create Page Flow
-    │                  ├──requires──> WikiPageType enum (type picker)
-    │                  ├──requires──> Per-type form schemas
-    │                  └──requires──> Persistence layer (save new pages)
+    ├──requires──> CoC 7e GameModel JSON asset
+    │                  ├──depends on──> GameModel data structure finalized
+    │                  └── Must include: percentile skills, Sanity, Luck, no CR/XP
     │
-    └──enhances──> Keyboard Navigation (desktop usability)
-                       └──requires──> Focus management in page list
+    ├──requires──> Character sheet UI from schema
+    │                  ├──depends on──> GameEntity + GameModelService
+    │                  └── Generated form widgets from FieldDefinition list
+    │
+    ├──requires──> Encounter tracker using initiative config
+    │                  ├──depends on──> GameModelService (active model)
+    │                  └── Formula parser for initiative expression
+    │
+    ├──enhances──> Wiki page types from GameModel registry
+    │                  ├──depends on──> WikiPageTypeDefinition in GameModel
+    │                  └──replaces──> WikiPageType enum
+    │
+    └──optional──> External GameModel import
+                       ├──depends on──> file_picker package
+                       ├──depends on──> JSON schema validation
+                       └──depends on──> GameModel data structure finalized
 ```
 
-### Dependency Notes
+**Critical path:** GameModel data structure → D&D 5e + CoC 7e JSON → GameModelService → everything else. The schema must be finalized before any JSON file authoring begins.
 
-- **Wiki Modal requires Responsive Layout System:** The modal must adapt its internal layout based on window width. Use `MediaQuery.sizeOf` (not physical device size) per Flutter's adaptive design guidance.
-- **Full-Text Search requires Page List Sidebar:** Search results replace or filter the page list. The search bar lives in the sidebar header.
-- **Stat Block Rendering requires Structured Fields:** Cannot render stat blocks from markdown alone. WikiPage model must include optional structured fields (AC, HP, abilities, etc.) that are populated for creature-type pages.
-- **Create Page Flow requires Persistence:** New pages must be saved. The persistence layer (file-based or SQLite) is a prerequisite — cannot create pages without storage.
-- **Keyboard Navigation enhances but is not required for:** The modal works without keyboard support, but desktop UX is significantly degraded without it.
+**Blocking dependency:** The formula parser for initiative is a discrete sub-problem. It needs its own design (what grammar is supported?) before encounter tracker integration.
 
-## MVP Definition
+---
 
-### Launch With (v1)
+## MVP Definition for GameModel Milestone
 
-Minimum viable product — what's needed to validate the concept.
+### Must ship (milestone complete when these are done)
 
-- [x] Full-screen modal popup via book icon — Core interaction; without this, no wiki access
-- [x] Responsive layout (two-panel / single-panel) — Must work on phones and tablets/desktops
-- [x] Page list with type indicator — Users need to see what pages exist
-- [x] Full-text search with title prioritization — Primary way users find content
-- [x] Page detail view with markdown rendering — Core content display
-- [x] Stat block rendering for creature pages — D&D-specific differentiator; expected by DMs
-- [x] Tag display on pages — Primary organization mechanism
-- [x] Close/dismiss modal — Basic modal hygiene
-- [x] Create new page from modal — DM needs to add content
+1. `GameModel` Dart class in `core` package — schema for entity types, field definitions, wiki page types, encounter config
+2. `GameEntity` Dart class in `core` — replaces `PlayerCharacter`, `Monster`, `NPC`
+3. D&D 5e `GameModel` JSON asset — field-compatible with existing typed models; existing demo data migrated
+4. CoC 7e `GameModel` JSON asset — proves agnosticism
+5. `GameModelService` Provider — loads active model, notifies listeners on switch
+6. Character sheet UI generated from active GameModel schema — no hardcoded D&D field names in UI
+7. Game system selector widget — accessible from both apps
+8. Encounter tracker reads initiative formula from active GameModel
+9. Wiki page type registry driven by active GameModel (enum replaced)
+10. Both apps reflect active GameModel without restart
 
-### Add After Validation (v1.x)
+### Defer to subsequent milestone
 
-Features to add once core is working.
+- External GameModel file import (file_picker workflow) — useful but not needed to prove the concept
+- Community GameModel registry/discovery
+- Schema-version migration logic (add version fields now; implement migration later)
+- Custom symbol dice rendering (Genesys-style narrative dice)
+- Third bundled system (Pathfinder 2e is the next logical candidate)
 
-- [ ] Alias-based search — Trigger: users searching alternative names and not finding pages
-- [ ] Keyboard navigation — Trigger: desktop usage patterns observed
-- [ ] Stat block inline references — Trigger: users linking between wiki pages
-- [ ] Page type filter chips in sidebar — Trigger: page list grows beyond ~50 entries
+---
 
-### Future Consideration (v2+)
+## Confidence Assessment
 
-Features to defer until product-market fit is established.
+| Area | Level | Source |
+|------|-------|--------|
+| Foundry VTT architecture | HIGH | Official Foundry docs (foundryvtt.com/article/system-development/) |
+| D&D 5e field requirements | HIGH | Existing codebase (player_character.dart, monster.dart) |
+| CoC 7e field requirements | MEDIUM | Official character sheet PDFs + Roll20 CoC sheet documentation |
+| System popularity rankings | MEDIUM | ScriptoriumGM 2025 article citing Roll20 Orr Group data |
+| Genesys/Star Wars dice model | MEDIUM | FFG official character sheet PDFs + community writeups |
+| VtM 5e field model | MEDIUM | Roll20 VtM wiki + StartPlaying character creation guides |
+| Schema anti-patterns | MEDIUM | Foundry dev docs, Cannibal Halfling campaign manager analysis |
+| User expectation on system switch | MEDIUM | Cannibal Halfling review + RPGPub forum thread on system migration |
 
-- [ ] Edit/delete existing pages — Why defer: scope expansion; create-only validates content model first
-- [ ] NSD sync from DM to companion — Why defer: next milestone; requires networking complexity
-- [ ] Cross-linking from app text into wiki — Why defer: requires text parsing infrastructure
-- [ ] Hierarchical organization — Why defer: tags sufficient for v1; adds complexity
-- [ ] External import/export — Why defer: format diversity and licensing complexity
-- [ ] Rich text editor — Why defer: markdown is sufficient; editor is a separate product
-
-## Feature Prioritization Matrix
-
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| Full-screen modal popup | HIGH | LOW | P1 |
-| Responsive layout branching | HIGH | MEDIUM | P1 |
-| Page list with type icons | HIGH | LOW | P1 |
-| Full-text search (title-prioritized) | HIGH | MEDIUM | P1 |
-| Page detail with markdown | HIGH | LOW | P1 |
-| Stat block rendering | HIGH | HIGH | P1 |
-| Tag display | MEDIUM | LOW | P1 |
-| Create new page | HIGH | MEDIUM | P1 |
-| Close/dismiss modal | HIGH | LOW | P1 |
-| Alias-based search | MEDIUM | LOW | P2 |
-| Keyboard navigation | MEDIUM | MEDIUM | P2 |
-| Stat block inline references | MEDIUM | HIGH | P2 |
-| Type filter chips | LOW | LOW | P2 |
-| Edit/delete pages | HIGH | HIGH | P3 |
-| NSD sync | HIGH | HIGH | P3 |
-| Cross-linking from app text | MEDIUM | HIGH | P3 |
-
-**Priority key:**
-- P1: Must have for launch
-- P2: Should have, add when possible
-- P3: Nice to have, future consideration
-
-## Competitor Feature Analysis
-
-| Feature | D&D Beyond | Roll20 Compendium | Foundry VTT Journal | Our Approach |
-|---------|-----------|-------------------|---------------------|--------------|
-| Modal popup access | Web overlay panels | Sidebar panel | Journal sidebar | Full-screen slide-up modal; returns to context on dismiss |
-| Search | Full-text, filters by source | Title-only search | Full-text with tags | Full-text with title-prioritized scoring + alias support |
-| Stat block rendering | Official styled blocks | Plain text compendium | Markdown + HTML | Custom structured stat block widgets (card + inline) |
-| Content creation | Publisher-only (SRD) | Homebrew builder | Full journal editor | Create-only in DM app; typed page schemas |
-| Responsive layout | Web-only (responsive CSS) | Desktop app | Desktop app | Flutter adaptive: two-panel on wide, single on narrow |
-| Organization | Source-based hierarchy | Category folders | Tag + folder hybrid | Tag-based only for v1 (simpler, multi-categorization) |
-| Offline access | Limited (requires subscription) | Local compendium | Fully local | Fully local; no network dependency |
+---
 
 ## Sources
 
-- Flutter adaptive/responsive design docs: https://docs.flutter.dev/ui/adaptive-responsive (HIGH confidence — official Flutter docs, updated 2026-05-05)
-- Flutter `showModalBottomSheet` API: https://api.flutter.dev/flutter/material/showModalBottomSheet.html (HIGH confidence — official API reference)
-- Material 3 layout breakpoints: https://m3.material.io/foundations/layout/applying-layout/window-size-classes (HIGH confidence — official Material Design spec)
-- `flutter_markdown_plus` package: https://pub.dev/packages/flutter_markdown_plus (HIGH confidence — pub.dev, maintained fork of discontinued `flutter_markdown`)
-- `flutter_markdown` discontinuation notice: https://pub.dev/packages/flutter_markdown (HIGH confidence — official package page shows discontinued banner)
-- SaveState PROJECT.md requirements (HIGH confidence — project source)
-- Existing `Monster` model in `packages/core/lib/models/monster.dart` (HIGH confidence — codebase inspection)
-- Existing `CreatureDetail` widget in `apps/dm_app/lib/widgets/creature_detail_view.dart` (HIGH confidence — codebase inspection, 757 lines, noted as monolithic)
+- Foundry VTT system development: https://foundryvtt.com/article/system-development/ (HIGH)
+- Foundry VTT system data models: https://foundryvtt.com/article/system-data-models/ (HIGH)
+- Top 10 TTRPG systems 2025: https://www.scriptoriumgm.com/blog/top-10-most-popular-ttrpg-systems-2025 (MEDIUM)
+- CoC 7e Roll20 sheet documentation: https://help.roll20.net/hc/en-us/articles/360052637253-Call-of-Cthulhu-7E-by-Roll20 (MEDIUM)
+- CoC 7e character creation overview: https://startplaying.games/blog/posts/how-do-you-create-character-call-of-cthulhu-coc-7e (MEDIUM)
+- RPG Companion App system schema: https://docs.rpg-companion.app/System/RPGSystem (MEDIUM)
+- System Split: Campaign Managers: https://cannibalhalflinggaming.com/2023/03/29/system-split-campaign-managers/ (MEDIUM)
+- VtM 5e mechanics overview: https://www.strangeassembly.com/2019/character-optimization-in-vampire-the-masquerade-v5 (MEDIUM)
+- Genesys/Star Wars dice writeup: https://philgamer.wordpress.com/2018/07/25/lets-study-genesys-part-1-narrative-dice-basic-rules/ (MEDIUM)
+- SaveState PROJECT.md (HIGH — project source of truth)
+- packages/core/lib/models/player_character.dart (HIGH — codebase)
+- packages/core/lib/models/monster.dart (HIGH — codebase)
 
 ---
-*Feature research for: Flutter D&D wiki popup UI*
+*Feature research for: TTRPG-agnostic schema-driven GameModel milestone*
 *Researched: 2026-05-07*

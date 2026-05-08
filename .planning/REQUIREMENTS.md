@@ -1,99 +1,80 @@
-# Requirements: SaveState Wiki Popup UI
-
-**Defined:** 2026-05-07
-**Core Value:** Users can find and reference any game-related information instantly through a unified, searchable wiki with deep cross-linking from every part of the app.
+# Requirements — SaveState GameModel
 
 ## v1 Requirements
 
-### Modal & Layout
+### Core Schema (SCHEMA)
 
-- [x] **MODAL-01**: Book icon opens full-screen slide-up modal in both apps
-- [x] **MODAL-02**: Two-panel layout (sidebar + detail) on windows >=600dp wide
-- [x] **MODAL-03**: Single-panel list→detail navigation on windows <600dp
-- [ ] **MODAL-04**: Modal dismissible via close button and tap outside
+- [ ] **SCHEMA-01**: `GameModel` data class parses a JSON file defining entity types, per-type field schemas, wiki page types (via `isWikiPageType` flag), and game rules config (dice notation, initiative config, ability score display names)
+- [ ] **SCHEMA-02**: `GameEntity` is a typed Dart wrapper over `Map<String, dynamic>` with an `entityTypeKey` field — replaces `PlayerCharacter`, `Monster`, and `NPC`; serializes to/from JSON; round-trips cleanly
+- [ ] **SCHEMA-03**: `GameEntity` exposes `getInt(key, {fallback})`, `getString(key, {fallback})`, and `getBool(key, {fallback})` accessor helpers — no bare `as T` dynamic casts anywhere in entity read code
+- [ ] **SCHEMA-04**: Every `GameModel` JSON file carries a top-level `schemaVersion` (int); `GameModelParser` throws a readable `FormatException` if the field is absent or not an int
 
-### Page List & Search
+### Game Systems (SYSTEM)
 
-- [x] **LIST-01**: Sidebar displays scrollable list of wiki pages with type icon and title
-- [x] **LIST-02**: Search bar at top of sidebar filters pages by full-text content
-- [ ] **LIST-03**: Search results prioritize title matches over body matches
-- [x] **LIST-04**: Page type indicator shown as icon or chip in list items
+- [ ] **SYSTEM-01**: D&D 5e `GameModel` ships as a bundled JSON asset at `packages/core/assets/game_models/dnd5e.json`; reproduces all existing field schemas — creature, spell, item, rule, location, npc, other page types; includes D&D ability score display names (Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma); initiative config uses 1d20+DEX modifier formula
+- [ ] **SYSTEM-02**: Call of Cthulhu 7e `GameModel` ships as a bundled JSON asset at `packages/core/assets/game_models/coc7e.json`; defines investigator entity (characteristics STR/CON/SIZ/DEX/APP/INT/POW/EDU at 15–90, derived Sanity/Luck/Magic Points/Build, percentile skill list); adversary entity (no CR/XP/class/spell slots); initiative config is DEX-rank sort (no roll)
+- [ ] **SYSTEM-03**: User can import an external `.json` GameModel file from disk via `file_picker`; app validates required fields (`schemaVersion`, `entityTypes`) and shows a human-readable error dialog on malformed input — never crashes silently
 
-### Detail View
+### Migration (MIGRATE)
 
-- [x] **DETAIL-01**: Selecting a page in the list displays its full content in the detail panel
-- [x] **DETAIL-02**: Markdown body renders with proper formatting (headers, lists, tables, code blocks)
-- [x] **DETAIL-03**: Tags displayed as chips in detail header
-- [x] **DETAIL-04**: Stat block renders as formatted UI card for creature-type pages
+- [ ] **MIGRATE-01**: `PlayerCharacter`, `Monster`, and `NPC` Dart model files deleted; all demo data (`demo_player_characters.dart`, `demo_monsters.dart`, `demo_npcs.dart`) migrated to `List<GameEntity>` using D&D 5e GameModel field keys
+- [ ] **MIGRATE-02**: `WikiPageType` enum deleted; existing persisted wiki page JSON files (which store `"pageType": "creature"` as enum name strings) migrated by a `WikiMigrationRunner` that rewrites legacy type strings to D&D 5e GameModel entity type keys before enum removal
+- [ ] **MIGRATE-03**: `enums.dart` (D&D ability score, alignment, size, damage type enums) deleted; values moved into D&D 5e GameModel JSON or replaced by `String` in affected code
 
-### Create Page
+### Wiki Integration (WIKI)
 
-- [x] **CREATE-01**: Plus button in modal opens page type picker
-- [ ] **CREATE-02**: Type picker presents available wiki page types
-- [x] **CREATE-03**: Form displays fields appropriate to selected page type
-- [x] **CREATE-04**: New page saves with title, tags, aliases, markdown body, and structured fields
+- [ ] **WIKI-01**: Wiki page type selector shows all entity types from the active `GameModel` where `isWikiPageType: true` — no hardcoded enum values in the type picker or create form
+- [ ] **WIKI-02**: `WikiCreateForm` field list is generated from the active GameModel's `FieldSchema` list for the selected entity type — via a new `GameModelFormBuilder` widget, not `WikiPageType.fields`
+- [ ] **WIKI-03**: `WikiProvider` receives the active `GameModel` via `ChangeNotifierProxyProvider.update` and re-derives available page types when the model switches
 
-### Core Infrastructure
+### Character Sheet (CHAR)
 
-- [x] **CORE-01**: WikiPage model in core package with all required fields
-- [x] **CORE-02**: WikiPageType enum with per-type field schemas
-- [x] **CORE-03**: File-based JSON persistence layer for wiki pages
-- [x] **CORE-04**: In-memory search service with title-prioritized scoring
+- [ ] **CHAR-01**: Character sheet UI in `companion_app` generates its field layout from the active GameModel's character entity type schema — no hardcoded D&D field names (e.g., `hitPoints`, `armorClass`, `proficiencyBonus`) in widget code
+- [ ] **CHAR-02**: Character sheet reflects the active game system's fields immediately when the user switches GameModel — no restart required
 
-## v2 Requirements
+### Encounter Tracker (ENCTR)
 
-### Search Enhancements
+- [ ] **ENCTR-01**: Initiative order in the DM app encounter tracker reads the `initiativeConfig` from the active GameModel's rules block — not hardcoded `d20 + DEX modifier`; CoC 7e (DEX-rank sort, no roll) must work correctly
+- [ ] **ENCTR-02**: Combatant HP display in the encounter tracker reads the HP field key from the active GameModel's adversary entity schema — not the hardcoded string `'hitPoints'`
 
-- **LIST-05**: Alias-based search (alternative names match pages)
-- **LIST-06**: Page type filter chips in sidebar
+### System Selection UX (UX)
 
-### Polish
+- [ ] **UX-01**: A game system selector UI is accessible in both `companion_app` and `dm_app`; selected system persists across app restarts
+- [ ] **UX-02**: Switching game systems triggers a live UI update via `GameModelService.notifyListeners()` — wiki type list, character sheet fields, and encounter initiative config all change without app restart
+- [ ] **UX-03**: End-to-end agnosticism demo works: user switches to CoC 7e, creates a new wiki entry of type "investigator" with Sanity and percentile skill fields, switches back to D&D 5e and sees D&D wiki types and character fields
 
-- **POLISH-01**: Keyboard navigation support (arrow keys, Enter, Escape)
-- **POLISH-02**: Stat block as compact inline reference widget
+---
+
+## v2 Requirements (Deferred)
+
+- Per-campaign game system pinning (each campaign locked to its system independently)
+- Third bundled system (Pathfinder 2e, FATE Core, or community-selected)
+- In-app GameModel schema editor (build/edit game system definitions inside the app)
+- Cross-system entity migration (auto-convert a D&D character when switching to CoC)
+- Community GameModel registry / marketplace
+- GameModelParser migration chain for schema v0→v1 evolution
+
+---
 
 ## Out of Scope
 
-| Feature | Reason |
-|---------|--------|
-| Hierarchical page organization | Tag-based is simpler and sufficient for v1 |
-| Edit/delete existing pages | Create-only validates content model first |
-| NSD sync from DM to companion | Next milestone; requires networking complexity |
-| Cross-linking from app text into wiki | Requires text parsing infrastructure |
-| External wiki import/export | Format diversity and licensing complexity |
-| Rich text editor (WYSIWYG) | Markdown is sufficient; editor is separate product |
-| Real-time collaborative editing | Single-author model per page |
+- Cloud sync of GameModel files — local-only; no network fetch of model definitions
+- Import from third-party VTT formats (Foundry, Roll20) — JSON-only import
+- Backwards compatibility shims for old typed Dart models — clean deletion
+- Networked GameModel switching via NSD — deferred to NSD milestone
+- In-app GameModel schema editor — import/bundled only for v1
+
+---
 
 ## Traceability
 
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| CORE-01 | Phase 1 | Complete |
-| CORE-02 | Phase 1 | Complete |
-| CORE-03 | Phase 1 | Complete |
-| CORE-04 | Phase 1 | Complete |
-| MODAL-01 | Phase 2 | Complete |
-| MODAL-02 | Phase 2 | Complete |
-| MODAL-03 | Phase 2 | Complete |
-| MODAL-04 | Phase 4 | Pending |
-| LIST-01 | Phase 2 | Complete |
-| LIST-02 | Phase 2 | Complete |
-| LIST-03 | Phase 2 | Pending |
-| LIST-04 | Phase 2 | Complete |
-| DETAIL-01 | Phase 2 | Complete |
-| DETAIL-02 | Phase 2 | Complete |
-| DETAIL-03 | Phase 2 | Complete |
-| DETAIL-04 | Phase 2 | Complete |
-| CREATE-01 | Phase 3 | Complete |
-| CREATE-02 | Phase 2 | Pending |
-| CREATE-03 | Phase 3 | Complete |
-| CREATE-04 | Phase 3 | Complete |
-
-**Coverage:**
-- v1 requirements: 20 total
-- Mapped to phases: 20
-- Unmapped: 0 ✓
-
----
-*Requirements defined: 2026-05-07*
-*Last updated: 2026-05-07 after initial definition*
+| REQ-ID | Phase |
+|--------|-------|
+| SCHEMA-01 – SCHEMA-04 | Phase 1 |
+| SYSTEM-01 – SYSTEM-02 | Phase 2 |
+| MIGRATE-01 – MIGRATE-03 | Phase 5 |
+| WIKI-01 – WIKI-03 | Phase 3–4 |
+| CHAR-01 – CHAR-02 | Phase 4 |
+| ENCTR-01 – ENCTR-02 | Phase 5 |
+| UX-01 – UX-03 | Phase 6 |
+| SYSTEM-03 | Phase 6 |

@@ -1,513 +1,553 @@
-# Architecture Research: Wiki Popup UI
+# Architecture Patterns: GameModel Schema System
 
-**Domain:** Flutter wiki popup with responsive layouts in existing D&D companion/DM apps
+**Domain:** TTRPG-agnostic schema-driven Flutter app (GameModel migration)
 **Researched:** 2026-05-07
-**Confidence:** HIGH
+**Confidence:** HIGH (codebase analysis) / MEDIUM (external patterns cross-verified)
 
-## System Overview
+---
 
-The wiki popup integrates as a full-screen modal overlay accessible from both apps via a book icon in the AppBar. It uses a shared core package for models and services, with app-specific UI layers that share a responsive layout component.
+## Recommended Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        App Layer (each app)                      │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────┐    ┌──────────────────────────────┐    │
-│  │ companion_app/lib/  │    │ dm_app/lib/                  │    │
-│  │  wiki/              │    │  wiki/                       │    │
-│  │   wiki_modal.dart   │    │   wiki_modal.dart            │    │
-│  │   wiki_trigger.dart │    │   wiki_trigger.dart          │    │
-│  └────────┬────────────┘    └────────────┬─────────────────┘    │
-│           │                              │                      │
-│           └──────────────┬───────────────┘                      │
-├──────────────────────────┼──────────────────────────────────────┤
-│                    Shared UI Layer                               │
-├──────────────────────────┼──────────────────────────────────────┤
-│  ┌───────────────────────┴──────────────────────────────────┐   │
-│  │  packages/core/lib/wiki/ (or apps shared via composition) │   │
-│  │  ┌──────────────────┐ ┌────────────────┐ ┌────────────┐  │   │
-│  │  │ WikiPageList     │ │ WikiPageDetail │ │ WikiCreate │  │   │
-│  │  │ (searchable list)│ │ (markdown +    │ │ (form for  │  │   │
-│  │  │                  │ │  stat blocks)  │ │  new pages)│  │   │
-│  │  └────────┬─────────┘ └───────┬────────┘ └─────┬──────┘  │   │
-│  │           │                   │                │         │   │
-│  │  ┌────────┴───────────────────┴────────────────┴──────┐  │   │
-│  │  │              WikiResponsiveLayout                  │  │   │
-│  │  │  (MediaQuery.sizeOf branching: 1-panel vs 2-panel) │  │   │
-│  │  └────────────────────────────────────────────────────┘  │   │
-│  └──────────────────────────────────────────────────────────┘   │
-├─────────────────────────────────────────────────────────────────┤
-│                        Core Package                              │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌──────────────┐ ┌─────────────────┐ ┌──────────────────────┐  │
-│  │ WikiPage     │ │ WikiPageType    │ │ WikiStorageService   │  │
-│  │ (model)      │ │ (enum)          │ │ (file-based JSON)    │  │
-│  └──────────────┘ └─────────────────┘ └──────────────────────┘  │
-│  ┌──────────────┐ ┌─────────────────┐                            │
-│  │ StatBlock    │ │ WikiSearchService│                            │
-│  │ (value type) │ │ (in-memory text) │                            │
-│  └──────────────┘ └─────────────────┘                            │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Component Responsibilities
-
-| Component | Responsibility | Typical Implementation |
-|-----------|----------------|------------------------|
-| `WikiPage` (core model) | Immutable domain model for wiki pages | Class with `toJson`/`fromJson`, UUID id, title, tags, aliases, markdown body, stat block fields, page type |
-| `WikiPageType` (core enum) | Typed page system (rule, item, spell, creature, location, etc.) | Enum with associated field schema metadata |
-| `WikiStorageService` (core) | Persist wiki pages to local filesystem | File-based JSON storage using `path_provider` + `dart:io` |
-| `WikiSearchService` (core) | In-memory full-text search with title prioritization | Simple string matching over loaded pages, no external dependency |
-| `WikiResponsiveLayout` (shared UI) | Branches between 1-panel and 2-panel layouts | `MediaQuery.sizeOf(context)` with 600px breakpoint |
-| `WikiPageList` (shared UI) | Searchable sidebar/list of wiki pages | `TextField` + `ListView.builder` with filtered results |
-| `WikiPageDetail` (shared UI) | Renders page content (markdown + stat blocks) | `flutter_markdown_plus` for markdown, custom stat block widgets |
-| `WikiCreateForm` (shared UI) | Form for creating new wiki pages | `Form` with dynamic fields based on `WikiPageType` |
-| `WikiModal` (per-app) | Full-screen modal wrapper with slide-up animation | `showGeneralDialog` with `PageRouteBuilder` |
-| `WikiTrigger` (per-app) | Book icon button in each app's AppBar | `IconButton(Icons.menu_book)` wired to modal open |
-
-## Recommended Project Structure
+### Component Map
 
 ```
-SaveState/
-├── packages/core/
-│   └── lib/
-│       ├── models/
-│       │   ├── wiki_page.dart           # WikiPage model + toJson/fromJson
-│       │   ├── wiki_page_type.dart      # WikiPageType enum
-│       │   └── wiki_stat_block.dart     # StatBlock value type for structured data
-│       ├── services/
-│       │   ├── wiki_storage_service.dart  # File-based JSON persistence
-│       │   └── wiki_search_service.dart   # In-memory full-text search
-│       └── wiki/                          # NEW: shared wiki UI components
-│           ├── wiki_responsive_layout.dart  # Adaptive 1/2-panel layout
-│           ├── wiki_page_list.dart          # Searchable page list sidebar
-│           ├── wiki_page_detail.dart        # Markdown + stat block renderer
-│           ├── wiki_create_form.dart        # New page creation form
-│           └── wiki_widgets.dart            # Shared small widgets (tag chips, etc.)
+packages/core/lib/
+├── game_model/
+│   ├── game_model.dart            # GameModel, EntityTypeSchema, FieldSchema
+│   ├── game_entity.dart           # GameEntity (typed wrapper over Map<String,dynamic>)
+│   ├── game_model_service.dart    # ChangeNotifier — active model + switch
+│   └── game_model.g.dart          # (optional) generated fromJson via json_serializable
 │
-├── apps/companion_app/
-│   └── lib/
-│       ├── main.dart                      # Add wiki trigger to AppBar
-│       └── wiki/
-│           ├── wiki_modal.dart              # Full-screen modal wrapper
-│           └── wiki_trigger.dart            # Book icon button
+├── wiki/
+│   └── wiki_provider.dart         # CHANGE: WikiPageType? → String? (type key into GameModel)
 │
-└── apps/dm_app/
-    └── lib/
-        ├── main.dart                      # Wire existing wiki icon (line 142)
-        └── wiki/
-            ├── wiki_modal.dart              # Full-screen modal wrapper
-            └── wiki_trigger.dart            # Book icon button
+├── models/
+│   ├── wiki_page.dart             # CHANGE: pageType String (not enum)
+│   └── [delete] player_character.dart, monster.dart, npc.dart, enums.dart
+│
+└── assets/
+    ├── game_models/dnd5e.json     # Bundled D&D 5e GameModel
+    └── game_models/coc7e.json     # Bundled Call of Cthulhu 7e GameModel
+
+apps/dm_app/lib/
+└── main.dart                      # Add GameModelService to Provider tree
+
+apps/companion_app/lib/
+└── main.dart                      # Add GameModelService to Provider tree
 ```
 
-### Structure Rationale
+### Component Boundaries
 
-- **`packages/core/lib/models/`** — Wiki domain models follow the existing pattern (immutable classes with `toJson`/`fromJson` alongside `monster.dart`, `item.dart`, etc.)
-- **`packages/core/lib/services/`** — Storage and search services follow the existing service pattern (alongside NSD discovery service)
-- **`packages/core/lib/wiki/`** — NEW directory for shared UI components. Both apps render wiki pages identically, so the list, detail, and form widgets belong in core to avoid duplication. This is the same rationale that puts `CreatureDetail` in `creature_detail_view.dart` — but unlike that 757-line monolith, these will be small, focused widgets.
-- **`apps/*/lib/wiki/`** — Per-app modal wrappers and trigger buttons. The modal presentation (slide-up animation) is the same, but each app needs its own entry point wired into its existing AppBar.
+| Component | Responsibility | Communicates With |
+|-----------|---------------|-------------------|
+| `GameModel` | Immutable data class: parsed JSON schema, list of entity type schemas, rules config | Deserialized from JSON assets or file import; consumed by `GameModelService` |
+| `EntityTypeSchema` | Immutable schema for one entity type: key, display name, list of `FieldSchema`, flags (isCharacter, isAdversary, isWikiPageType) | Owned by `GameModel`; consumed by `GameModelFormBuilder`, `WikiProvider` |
+| `FieldSchema` | Immutable definition of one field: key, label, inputType, required, hint, options | Owned by `EntityTypeSchema`; replaces `WikiPageFieldDefinition` |
+| `GameEntity` | Runtime entity instance: `entityTypeKey` + `Map<String,dynamic> fields` | Created by forms/import; persisted to JSON; consumed by encounter tracker, wiki, character sheet |
+| `GameModelService` | `ChangeNotifier` — holds `activeModel`, loads bundled/imported models, broadcasts switches | Consumed by `WikiProvider`, `EncounterProvider`, `CharacterProvider` via `ChangeNotifierProxyProvider` |
+| `GameModelFormBuilder` | Stateless widget — builds `Form` children from `List<FieldSchema>` at runtime | Replaces `_buildStructuredField` in `WikiCreateForm`; consumed by create flows |
+| `WikiProvider` | `ChangeNotifier` — wiki page CRUD, now carries `GameModel` reference for type lookups | Receives `GameModel` from `GameModelService` via proxy; exposes `availablePageTypes` |
 
-### Why shared UI in core (not duplicated per app)?
+---
 
-The existing codebase already shares `CreatureDetailView` between apps via the core package. The wiki detail view has the same requirement: identical rendering of markdown, stat blocks, tags, and metadata in both apps. Duplicating this would repeat the monolithic-view anti-pattern.
+## Decision 1: GameEntity Design — Typed Wrapper, Not Raw Map
 
-## Architectural Patterns
+**Recommendation:** Use `class GameEntity { String entityTypeKey; Map<String, dynamic> fields; }` — the typed wrapper.
 
-### Pattern 1: Responsive Layout via MediaQuery.sizeOf
+**Rationale:**
 
-**What:** Use `MediaQuery.sizeOf(context)` to branch between single-panel (phone) and two-panel (tablet/desktop) layouts based on window width, not device type.
+Raw `Map<String, dynamic>` throughout would mean every caller must independently know the `entityTypeKey` convention and cast fields manually. The typed wrapper:
 
-**When to use:** Any widget that needs to adapt its layout to available space — especially full-screen modals.
+- Makes the type explicit (`entity.entityTypeKey`) so no key-by-convention
+- Allows `copyWith` for immutable updates (same pattern as `InitiativeEntry` already in the codebase)
+- Provides a single `toJson`/`fromJson` on `GameEntity` rather than scattered map manipulation
+- Allows type-level validation: `entity.validate(schema)` can check required fields exist
 
-**Trade-offs:**
-- Pro: Works in split-screen, floating windows, and desktop resizing
-- Pro: Single codebase, no device-type detection
-- Con: Requires a breakpoint decision (600px is Material 3's compact/medium boundary)
+**What the class should look like:**
 
-**Example:**
 ```dart
-class WikiResponsiveLayout extends StatelessWidget {
-  final List<WikiPage> pages;
-  final WikiPage? selectedPage;
-  final ValueChanged<WikiPage?> onSelectPage;
-  final VoidCallback onCreatePage;
+class GameEntity {
+  const GameEntity({
+    String? id,
+    required this.entityTypeKey,
+    required this.fields,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  })  : id = id ?? const Uuid().v4(),
+        createdAt = createdAt ?? DateTime.now(),
+        updatedAt = updatedAt ?? DateTime.now();
+
+  final String id;
+  final String entityTypeKey;         // e.g. "creature", "spell", "character"
+  final Map<String, dynamic> fields;  // all typed field values
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  GameEntity copyWith({String? entityTypeKey, Map<String, dynamic>? fields}) => ...;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'entityTypeKey': entityTypeKey,
+    'fields': fields,
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+  };
+
+  factory GameEntity.fromJson(Map<String, dynamic> json) => ...;
+}
+```
+
+**Serialization tradeoffs:**
+
+- `fields` is `Map<String, dynamic>` — `jsonEncode`/`jsonDecode` handles it natively since all values must be JSON-safe primitives (strings, numbers, booleans, null, lists of those). No nested objects in field values.
+- Unknown keys in `fields` are preserved on round-trip. If the schema adds a new required field later, existing entities simply lack it — callers use `fields['key'] ?? defaultValue`.
+- Type coercion on load: the `FieldSchema.inputType` tells you whether `fields['hp']` should be coerced to `int`. Do this coercion in `GameEntity.fromJson`, not at use sites.
+
+---
+
+## Decision 2: GameModel JSON Format
+
+**Recommendation:** A single flat JSON object with `schemaVersion`, `system` metadata block, `entityTypes` array, and `rules` config block.
+
+**Rationale from reference systems:**
+
+Foundry VTT's `template.json` uses a two-level structure (document type → sub-types with shared templates). Open5e's API schema uses a flat key namespace per entity. For SaveState's use case, a flat entity-types array with per-type field lists maps directly onto `List<EntityTypeSchema>` in Dart without requiring template inheritance resolution — which adds complexity for no local benefit.
+
+**Canonical format:**
+
+```json
+{
+  "schemaVersion": 1,
+  "system": {
+    "key": "dnd5e",
+    "name": "Dungeons & Dragons 5th Edition",
+    "version": "1.0.0",
+    "description": "Official D&D 5e rules"
+  },
+  "rules": {
+    "initiativeFormula": "1d20 + dex_modifier",
+    "abilityScoreNames": ["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"],
+    "defaultDiceNotation": "XdY+Z"
+  },
+  "entityTypes": [
+    {
+      "key": "creature",
+      "displayName": "Creature",
+      "isCharacterType": false,
+      "isAdversaryType": true,
+      "isWikiPageType": true,
+      "fields": [
+        { "key": "size", "label": "Size", "inputType": "select", "required": true,
+          "options": ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"] },
+        { "key": "armorClass", "label": "Armor Class", "inputType": "number", "required": true },
+        { "key": "hitPoints", "label": "Hit Points", "inputType": "number", "required": true },
+        { "key": "challengeRating", "label": "Challenge Rating", "inputType": "text" }
+      ]
+    },
+    {
+      "key": "character",
+      "displayName": "Character",
+      "isCharacterType": true,
+      "isAdversaryType": false,
+      "isWikiPageType": false,
+      "fields": [
+        { "key": "race", "label": "Race", "inputType": "text", "required": true },
+        { "key": "class", "label": "Class", "inputType": "text", "required": true },
+        { "key": "level", "label": "Level", "inputType": "number", "required": true },
+        { "key": "armorClass", "label": "Armor Class", "inputType": "number", "required": true },
+        { "key": "hitPoints", "label": "Hit Points", "inputType": "number", "required": true },
+        { "key": "maxHitPoints", "label": "Max HP", "inputType": "number", "required": true },
+        { "key": "initiative", "label": "Initiative", "inputType": "number" }
+      ]
+    }
+  ]
+}
+```
+
+**Essential top-level keys:**
+
+| Key | Type | Purpose |
+|-----|------|---------|
+| `schemaVersion` | `int` | Migration branching — increment on breaking changes |
+| `system.key` | `String` | Unique identifier for system switching (e.g., `"dnd5e"`, `"coc7e"`) |
+| `system.name` | `String` | Display name in the system picker |
+| `system.version` | `String` | Semver for the bundled model file itself |
+| `rules` | `Object` | Game-specific rule config (initiative formula, ability score names) |
+| `entityTypes` | `Array` | The schema definitions for all entity types |
+
+**FieldSchema inputType values** (mirrors existing `WikiFieldInputType`):
+
+`"text"`, `"number"`, `"multiline"`, `"select"`, `"boolean"`, `"list"` (comma-separated strings)
+
+**Flags on EntityTypeSchema** (`isCharacterType`, `isAdversaryType`, `isWikiPageType`) let the UI filter: the encounter tracker shows only adversary types in the "Add Monster" flow; the wiki type picker shows only wiki page types; the character sheet renders only character types.
+
+---
+
+## Decision 3: Provider Architecture — ChangeNotifierProxyProvider Cascade
+
+**Recommendation:** Use `ChangeNotifierProxyProvider` so `WikiProvider` (and future `EncounterProvider`, `CharacterProvider`) automatically receive the new `GameModel` when `GameModelService` switches models.
+
+**Why not "all UI listens directly to GameModelService":**
+
+Having every individual form widget call `context.watch<GameModelService>().activeModel.entityTypes` spreads the coupling everywhere. The provider that owns wiki page logic (`WikiProvider`) is the right place to re-derive `availablePageTypes` — not dozens of individual UI widgets.
+
+**Why not a manual cascade (WikiProvider calls GameModelService.addListener):**
+
+Manually wiring `addListener`/`removeListener` is brittle and produces memory leaks if dispose is missed. `ChangeNotifierProxyProvider` does this correctly and is already a supported pattern in the `provider ^6.1.2` package already declared in the codebase.
+
+**How the tree is structured:**
+
+```dart
+// apps/dm_app/lib/main.dart (and companion_app identically)
+MultiProvider(
+  providers: [
+    ChangeNotifierProvider<GameModelService>(
+      create: (_) => GameModelService()..loadBundled(),
+    ),
+    ChangeNotifierProxyProvider<GameModelService, WikiProvider>(
+      create: (ctx) => WikiProvider(
+        storage: WikiStorageService(baseDirectory: Directory.current),
+        gameModel: ctx.read<GameModelService>().activeModel,
+      ),
+      update: (_, gameModelService, wikiProvider) {
+        wikiProvider!.updateGameModel(gameModelService.activeModel);
+        return wikiProvider;
+      },
+    ),
+    // Future providers follow the same proxy pattern:
+    // ChangeNotifierProxyProvider<GameModelService, EncounterProvider>(...),
+    // ChangeNotifierProxyProvider<GameModelService, CharacterProvider>(...),
+  ],
+  child: MaterialApp(...),
+)
+```
+
+**What `WikiProvider.updateGameModel` does:**
+
+```dart
+void updateGameModel(GameModel model) {
+  _gameModel = model;
+  // If selected page type no longer exists in the new model, clear it
+  if (_pendingTypeKey != null &&
+      !model.entityTypes.any((e) => e.key == _pendingTypeKey)) {
+    _pendingTypeKey = null;
+  }
+  notifyListeners();
+}
+
+List<EntityTypeSchema> get availablePageTypes =>
+    _gameModel.entityTypes.where((e) => e.isWikiPageType).toList();
+```
+
+**Data flow on model switch:**
+
+```
+User selects "Call of Cthulhu" in system picker
+    ↓
+GameModelService.switchModel("coc7e") → loads JSON asset → sets _activeModel → notifyListeners()
+    ↓
+ChangeNotifierProxyProvider calls update() on WikiProvider
+    ↓
+WikiProvider.updateGameModel(cocModel) → re-derives availablePageTypes → notifyListeners()
+    ↓
+WikiTypePicker rebuilds showing CoC page types (Investigator, Tome, Location, etc.)
+WikiCreateForm rebuilds showing CoC fields if a type was selected
+```
+
+**One constraint:** `ChangeNotifierProxyProvider.update` must not replace the `WikiProvider` instance — it must call a mutating method and return the same instance (`wikiProvider!`). This preserves the existing page list and selection state during a model switch.
+
+---
+
+## Decision 4: Schema Versioning
+
+**Recommendation:** Embed `schemaVersion: int` in every GameModel JSON. Parse version first; run migration functions before constructing the full model.
+
+**Migration pattern in Dart:**
+
+```dart
+class GameModelParser {
+  static GameModel parse(Map<String, dynamic> json) {
+    final version = json['schemaVersion'] as int? ?? 1;
+    final migrated = _migrate(json, fromVersion: version);
+    return GameModel.fromJson(migrated);
+  }
+
+  static Map<String, dynamic> _migrate(Map<String, dynamic> json, {required int fromVersion}) {
+    var data = json;
+    if (fromVersion < 2) data = _migrateV1toV2(data);
+    if (fromVersion < 3) data = _migrateV2toV3(data);
+    return data;
+  }
+
+  static Map<String, dynamic> _migrateV1toV2(Map<String, dynamic> json) {
+    // Example: v1 used "pageTypes" key, v2 uses "entityTypes"
+    final result = Map<String, dynamic>.from(json);
+    if (result.containsKey('pageTypes') && !result.containsKey('entityTypes')) {
+      result['entityTypes'] = result.remove('pageTypes');
+    }
+    result['schemaVersion'] = 2;
+    return result;
+  }
+}
+```
+
+**Rules for backward compatibility:**
+
+- Adding a new optional field to `entityTypes[*].fields`: backward compatible, no version bump needed (old parsers skip unknown field keys)
+- Renaming a key in the GameModel JSON structure: requires `schemaVersion` increment + migration function
+- The bundled `dnd5e.json` file ships at the current `schemaVersion` — no migration needed at runtime for bundled files
+- User-imported files may be older versions — the migration chain handles them silently
+
+**Versioning is for the GameModel JSON file format, not for the user's entity data.** `GameEntity` instances stored to disk carry `entityTypeKey` as a string; if the schema renames `"creature"` to `"monster"`, that is a data migration problem (out of scope per PROJECT.md). Keep entity type keys stable.
+
+---
+
+## Decision 5: Dynamic Form Generation
+
+**Recommendation:** Extract `GameModelFormBuilder` as a stateless widget that takes `List<FieldSchema>` and `Map<String, TextEditingController>`. This is a direct generalization of the existing `_buildStructuredField` method in `WikiCreateForm`.
+
+**Current pattern in WikiCreateForm (lines 106-136):**
+
+The form initializes one `TextEditingController` per field key in `initState`, iterates `widget.selectedType.fields` to build widgets, and collects values on submit. This exact pattern works with runtime `List<FieldSchema>` — the only change is the source of the field list.
+
+**Recommended widget signature:**
+
+```dart
+class GameModelFormBuilder extends StatelessWidget {
+  const GameModelFormBuilder({
+    super.key,
+    required this.fields,
+    required this.controllers,
+  });
+
+  final List<FieldSchema> fields;
+  final Map<String, TextEditingController> controllers;
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final isWide = width >= 600; // Material 3 compact breakpoint
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: fields.map(_buildField).toList(),
+    );
+  }
 
-    if (isWide) {
-      return Row(
-        children: [
-          SizedBox(width: 320, child: WikiPageList(pages: pages, onSelect: onSelectPage)),
-          Expanded(child: WikiPageDetail(page: selectedPage)),
-        ],
-      );
-    } else {
-      // Single panel: show list if no selection, detail if selected
-      return selectedPage != null
-          ? WikiPageDetail(page: selectedPage, onBack: () => onSelectPage(null))
-          : WikiPageList(pages: pages, onSelect: onSelectPage);
+  Widget _buildField(FieldSchema field) {
+    // Same logic as existing _buildStructuredField in WikiCreateForm
+    // Handles: select → DropdownButtonFormField
+    //          number → TextFormField(keyboardType: TextInputType.number)
+    //          multiline → TextFormField(minLines: 3, maxLines: 5)
+    //          text → TextFormField (default)
+    //          boolean → CheckboxFormField (new inputType)
+  }
+}
+```
+
+**Controller lifecycle — critical detail:**
+
+`initState` must build controllers from the current schema. When the active `GameModel` switches mid-session and the form is still open, `didUpdateWidget` must diff the old and new field lists, dispose controllers for removed fields, and create controllers for added fields. Failure to do this causes memory leaks (controllers never disposed) or crashes (controller accessed after dispose).
+
+```dart
+@override
+void didUpdateWidget(WikiCreateForm old) {
+  super.didUpdateWidget(old);
+  if (old.fields != widget.fields) {
+    final oldKeys = old.fields.map((f) => f.key).toSet();
+    final newKeys = widget.fields.map((f) => f.key).toSet();
+    for (final removed in oldKeys.difference(newKeys)) {
+      _structured[removed]?.dispose();
+      _structured.remove(removed);
+    }
+    for (final added in newKeys.difference(oldKeys)) {
+      _structured[added] = TextEditingController();
     }
   }
 }
 ```
 
-### Pattern 2: Full-Screen Modal via showGeneralDialog
+**Select fields with runtime options:**
 
-**What:** Use `showGeneralDialog` with a custom `PageRouteBuilder` for a slide-up full-screen modal with backdrop.
+The existing `DropdownButtonFormField` pattern works unchanged — `field.options` comes from the JSON schema instead of a hardcoded Dart list.
 
-**When to use:** Modal overlays that should feel like a temporary full-screen view (not a new route in the navigator stack).
+---
 
-**Trade-offs:**
-- Pro: Slide-up animation, backdrop dimming, back-button dismissal
-- Pro: Doesn't interfere with app's existing navigation
-- Con: More boilerplate than `Navigator.push`
+## Decision 6: Build Order
 
-**Example:**
-```dart
-void openWikiModal(BuildContext context) {
-  showGeneralDialog(
-    context: context,
-    barrierDismissible: true,
-    barrierLabel: 'Close wiki',
-    barrierColor: Colors.black54,
-    transitionDuration: const Duration(milliseconds: 300),
-    pageBuilder: (context, animation, secondaryAnimation) {
-      return const WikiModalContent();
-    },
-    transitionBuilder: (context, animation, secondaryAnimation, child) {
-      return SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0, 1),
-          end: Offset.zero,
-        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
-        child: child,
-      );
-    },
-  );
-}
-```
-
-### Pattern 3: Provider-Based Wiki State
-
-**What:** Use `ChangeNotifierProvider` (already a dependency in companion_app) to manage wiki state (pages, selection, search query, loading).
-
-**When to use:** App-level state that multiple wiki widgets need to read and react to.
-
-**Trade-offs:**
-- Pro: Already used in the project, no new dependencies
-- Pro: Simple, declarative state management
-- Con: Can become unwieldy if state grows complex (mitigated by keeping wiki state focused)
-
-**Example:**
-```dart
-class WikiState extends ChangeNotifier {
-  List<WikiPage> _pages = [];
-  WikiPage? _selectedPage;
-  String _searchQuery = '';
-
-  List<WikiPage> get pages => _pages;
-  WikiPage? get selectedPage => _selectedPage;
-  String get searchQuery => _searchQuery;
-
-  List<WikiPage> get filteredPages {
-    if (_searchQuery.isEmpty) return _pages;
-    final query = _searchQuery.toLowerCase();
-    // Title matches first, then body matches
-    final titleMatches = _pages.where((p) => p.title.toLowerCase().contains(query)).toList();
-    final bodyMatches = _pages.where(
-      (p) => !titleMatches.contains(p) && p.body.toLowerCase().contains(query)
-    ).toList();
-    return [...titleMatches, ...bodyMatches];
-  }
-
-  void setSearchQuery(String query) {
-    _searchQuery = query;
-    notifyListeners();
-  }
-
-  void selectPage(WikiPage? page) {
-    _selectedPage = page;
-    notifyListeners();
-  }
-
-  Future<void> loadPages() async {
-    _pages = await WikiStorageService().loadAll();
-    notifyListeners();
-  }
-
-  Future<void> createPage(WikiPage page) async {
-    await WikiStorageService().save(page);
-    _pages = [..._pages, page];
-    notifyListeners();
-  }
-}
-```
-
-### Pattern 4: Typed Page Schema with Dynamic Forms
-
-**What:** `WikiPageType` enum drives which fields appear in the create form. Each type has a different stat block schema.
-
-**When to use:** When different content types need different structured data but share a common page model.
-
-**Trade-offs:**
-- Pro: Single model class, type-specific behavior via enum
-- Con: Form logic gets conditional (mitigated by type-specific field builders)
-
-**Example:**
-```dart
-enum WikiPageType {
-  rule,
-  item,
-  spell,
-  creature,
-  location,
-  npc,
-  other;
-
-  List<StatBlockField> get statBlockFields => switch (this) {
-    WikiPageType.creature => [
-      StatBlockField(name: 'Armor Class', type: StatBlockFieldType.number),
-      StatBlockField(name: 'Hit Points', type: StatBlockFieldType.number),
-      StatBlockField(name: 'Speed', type: StatBlockFieldType.text),
-      StatBlockField(name: 'Challenge Rating', type: StatBlockFieldType.text),
-    ],
-    WikiPageType.spell => [
-      StatBlockField(name: 'Level', type: StatBlockFieldType.number),
-      StatBlockField(name: 'Casting Time', type: StatBlockFieldType.text),
-      StatBlockField(name: 'Range', type: StatBlockFieldType.text),
-      StatBlockField(name: 'Components', type: StatBlockFieldType.text),
-      StatBlockField(name: 'Duration', type: StatBlockFieldType.text),
-    ],
-    WikiPageType.item => [
-      StatBlockField(name: 'Type', type: StatBlockFieldType.text),
-      StatBlockField(name: 'Rarity', type: StatBlockFieldType.text),
-      StatBlockField(name: 'Weight', type: StatBlockFieldType.number),
-    ],
-    _ => const [],
-  };
-}
-```
-
-## Data Flow
-
-### Opening the Wiki Modal
-
-```
-User taps book icon (AppBar)
-    ↓
-WikiTrigger calls openWikiModal(context)
-    ↓
-showGeneralDialog presents WikiModalContent
-    ↓
-WikiModalContent wraps WikiState (ChangeNotifierProvider)
-    ↓
-WikiState.loadPages() reads from WikiStorageService
-    ↓
-WikiResponsiveLayout renders (1-panel or 2-panel based on width)
-```
-
-### Searching and Selecting Pages
-
-```
-User types in search bar (WikiPageList)
-    ↓
-WikiState.setSearchQuery(query)
-    ↓
-WikiState.filteredPages recomputes (title matches → body matches)
-    ↓
-WikiPageList rebuilds with filtered results
-    ↓
-User taps a page
-    ↓
-WikiState.selectPage(page)
-    ↓
-WikiPageDetail rebuilds with selected page content
-```
-
-### Creating a New Page
-
-```
-User taps + button
-    ↓
-WikiCreateForm shows (inline in 2-panel, full-screen in 1-panel)
-    ↓
-User selects WikiPageType → dynamic stat block fields render
-    ↓
-User fills title, tags, aliases, markdown body, stat block fields
-    ↓
-User submits
-    ↓
-WikiState.createPage(newPage) → WikiStorageService.save(page)
-    ↓
-WikiState reloads pages, list updates
-```
-
-### State Management
-
-```
-WikiState (ChangeNotifier)
-    ↓ (notifyListeners)
-WikiPageList ←→ search query
-WikiPageDetail ←→ selected page
-WikiCreateForm ←→ page type, form fields
-WikiResponsiveLayout ←→ layout mode
-```
-
-### Key Data Flows
-
-1. **Page load:** Storage service reads JSON files → parses to `List<WikiPage>` → WikiState holds in memory → widgets react
-2. **Search:** In-memory filter over loaded pages, no I/O. Title matches prioritized over body matches.
-3. **Page creation:** Form → new `WikiPage` → storage service writes JSON file → state updates → list refreshes
-4. **Responsive branching:** `MediaQuery.sizeOf` at layout root → single widget tree decides 1-panel vs 2-panel
-
-## Scaling Considerations
-
-| Scale | Architecture Adjustments |
-|-------|--------------------------|
-| 0-100 pages (current milestone) | In-memory search, file-based JSON storage — no changes needed |
-| 100-1000 pages | Consider lazy-loading pages, indexed search (still no DB needed) |
-| 1000+ pages | SQLite via `sqflite`/`drift` for indexed search, pagination in list |
-
-### Scaling Priorities
-
-1. **First bottleneck:** Search performance over large page sets. Mitigation: switch from `String.contains` to indexed search when pages exceed ~500.
-2. **Second bottleneck:** File I/O latency on page load. Mitigation: cache parsed pages in memory, only re-read on changes.
-
-**Realistic note:** D&D wikis rarely exceed a few hundred pages. File-based JSON with in-memory search is sufficient for this project's lifetime.
-
-## Anti-Patterns
-
-### Anti-Pattern 1: Monolithic Wiki View (757-line creature_detail_view.dart repeat)
-
-**What people do:** Put all wiki UI (list, detail, form, search, stat blocks) in one giant widget file.
-
-**Why it's wrong:** The existing `creature_detail_view.dart` is 757 lines and mixes layout, formatting helpers, tab content, and state. It's hard to navigate, hard to test, and hard to modify without breaking unrelated parts.
-
-**Do this instead:** Split into focused widgets: `WikiPageList` (~80 lines), `WikiPageDetail` (~120 lines), `WikiCreateForm` (~150 lines), `WikiResponsiveLayout` (~40 lines). Each file has a single responsibility.
-
-### Anti-Pattern 2: Duplicating Wiki UI Between Apps
-
-**What people do:** Copy the wiki list/detail/form widgets into both `companion_app` and `dm_app`.
-
-**Why it's wrong:** Both apps must render wiki pages identically. Duplicating means bugs fixed in one app won't be fixed in the other. The existing codebase already shares `CreatureDetailView` via core — follow that pattern.
-
-**Do this instead:** Put shared wiki UI widgets in `packages/core/lib/wiki/`. Each app only owns its modal wrapper and trigger button.
-
-### Anti-Pattern 3: Device-Type Detection Instead of Size-Based Branching
-
-**What people do:** Use `Platform.isIOS` or `MediaQuery.platformBrightness` to decide layout.
-
-**Why it's wrong:** The app may run in a small window on a large desktop, or in split-screen on a tablet. Device type doesn't correlate with available space.
-
-**Do this instead:** Use `MediaQuery.sizeOf(context).width` with Material 3 breakpoints (600px compact/medium boundary). Branch on size, not device.
-
-### Anti-Pattern 4: Navigator.push for Modal Presentation
-
-**What people do:** Use `Navigator.push` to navigate to a wiki screen.
-
-**Why it's wrong:** The wiki is a popup overlay, not a navigation destination. `Navigator.push` adds to the route stack, changes the URL (on web), and doesn't provide the slide-up modal feel specified in requirements.
-
-**Do this instead:** Use `showGeneralDialog` with a custom `PageRouteBuilder` for slide-up animation and backdrop dismissal.
-
-### Anti-Pattern 5: Coupling Wiki State to App-Specific Providers
-
-**What people do:** Put wiki state in the companion app's or DM app's provider tree.
-
-**Why it's wrong:** Wiki state is shared between both apps. App-specific providers create coupling and prevent the core package from owning wiki behavior.
-
-**Do this instead:** `WikiState` is a standalone `ChangeNotifier` instantiated at the modal level. It's self-contained and doesn't depend on app-level state.
-
-## Integration Points
-
-### External Services
-
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| `flutter_markdown_plus` | Dependency in both app pubspec.yaml | `flutter_markdown` is discontinued; use `flutter_markdown_plus: ^1.0.7` (the official successor) |
-| `path_provider` | Dependency in core pubspec.yaml | Needed for file-based storage path resolution |
-| `provider` | Already in companion_app; add to dm_app | Used for `WikiState` ChangeNotifier |
-
-### Internal Boundaries
-
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| `WikiTrigger` → `WikiModal` | Function call (`openWikiModal(context)`) | Simple, no state crossing |
-| `WikiModal` → `WikiResponsiveLayout` | Widget composition | Modal provides the state provider, layout consumes it |
-| `WikiResponsiveLayout` → `WikiPageList` / `WikiPageDetail` | Widget composition with callbacks | Layout passes filtered pages and selection state down |
-| `WikiPageList` → `WikiSearchService` | Direct method call | Search service is stateless, called from WikiState |
-| `WikiState` → `WikiStorageService` | Async method calls | Storage service is the I/O boundary |
-| `WikiCreateForm` → `WikiState` | Callback (`onCreatePage`) | Form emits new page, state persists it |
-
-### Existing Code Integration
-
-| Location | Change | Details |
-|----------|--------|---------|
-| `apps/dm_app/lib/main.dart` line 142-145 | Wire existing wiki icon | Replace empty `onPressed: () {}` with `onPressed: () => openWikiModal(context)` |
-| `apps/companion_app/lib/main.dart` | Add wiki icon to AppBar | Add `IconButton(Icons.menu_book)` to HomeScreen's Scaffold appBar actions |
-| `packages/core/pubspec.yaml` | Add `path_provider` dependency | Required for file storage |
-| `apps/companion_app/pubspec.yaml` | Already has `provider` | No change needed |
-| `apps/dm_app/pubspec.yaml` | Add `provider` dependency | Needed for WikiState |
-
-## Suggested Build Order
-
-```
-Phase 1: Core Models + Services
-├── 1.1 WikiPageType enum (core/models/wiki_page_type.dart)
-├── 1.2 WikiPage model (core/models/wiki_page.dart)
-├── 1.3 StatBlock value type (core/models/wiki_stat_block.dart)
-├── 1.4 WikiStorageService (core/services/wiki_storage_service.dart)
-└── 1.5 WikiSearchService (core/services/wiki_search_service.dart)
-
-Phase 2: Shared UI Components (in core)
-├── 2.1 WikiPageList (core/wiki/wiki_page_list.dart) — search bar + list
-├── 2.2 WikiPageDetail (core/wiki/wiki_page_detail.dart) — markdown + stat blocks
-├── 2.3 WikiCreateForm (core/wiki/wiki_create_form.dart) — dynamic form
-├── 2.4 WikiResponsiveLayout (core/wiki/wiki_responsive_layout.dart) — adaptive branching
-└── 2.5 WikiState (core/wiki/wiki_state.dart) — ChangeNotifier provider
-
-Phase 3: Per-App Integration
-├── 3.1 WikiModal (companion_app) — full-screen modal wrapper
-├── 3.2 WikiTrigger (companion_app) — book icon in HomeScreen AppBar
-├── 3.3 WikiModal (dm_app) — full-screen modal wrapper
-├── 3.4 Wire existing wiki icon (dm_app/main.dart line 142)
-└── 3.5 Add provider dependency to dm_app pubspec.yaml
-
-Phase 4: Polish + Testing
-├── 4.1 Slide-up animation tuning
-├── 4.2 Responsive breakpoint testing (phone, tablet, desktop)
-├── 4.3 Core package tests for WikiPage model + search service
-└── 4.4 Widget tests for WikiPageList filtering
-```
-
-### Build Order Rationale
-
-1. **Models first** — Everything depends on `WikiPage`. Can't build UI without the data shape.
-2. **Services second** — Storage and search are needed before the UI can display real data. Can use demo data for UI development, but services should exist.
-3. **Shared UI third** — Core UI components are the bulk of the work. Building them in core means both apps get them simultaneously.
-4. **Per-app integration last** — Wiring the modal and trigger is trivial once the shared UI exists. The DM app's wiki icon already exists (line 142 of main.dart) — just needs to be connected.
-5. **Polish final** — Animation tuning and responsive testing require the full stack to be functional.
+Build order is determined by the dependency graph. Nothing should be built that depends on something not yet stable.
 
 ### Dependency Graph
 
 ```
-WikiPage ← WikiStorageService ← WikiState ← WikiResponsiveLayout
-         ← WikiSearchService  ← WikiPageList
-                              ← WikiPageDetail
-                              ← WikiCreateForm
+GameModel (data class, no deps)
+    ↓
+GameModelParser (parses JSON → GameModel, no Flutter deps)
+    ↓
+EntityTypeSchema, FieldSchema (owned by GameModel)
+    ↓
+GameEntity (entityTypeKey + fields, no Flutter deps)
+    ↓
+GameModelService (ChangeNotifier — wraps GameModel + file loading)
+    ↓
+WikiProvider (proxy to GameModelService — must receive GameModel on update)
+WikiPage (model change: pageType String replaces WikiPageType enum)
+    ↓
+GameModelFormBuilder (widget — depends on FieldSchema, replaces static WikiCreateForm)
+WikiTypePicker (widget — reads GameModelService.activeModel.entityTypes filtered by isWikiPageType)
+    ↓
+WikiCreateForm (updated to use GameModelFormBuilder)
+WikiModalProvider (type changed: pendingTypeKey String not WikiPageType enum)
+    ↓
+Provider tree wiring (MultiProvider in both app main.dart)
+    ↓
+System picker UI (settings screen for switching active GameModel)
+    ↓
+Demo data migration (convert demoPlayerCharacters/demoMonsters/demoNPCs → GameEntity)
+    ↓
+D&D 5e GameModel JSON asset (replaces demo data typed fields)
+Call of Cthulhu 7e GameModel JSON asset (agnosticism proof)
 ```
+
+### Recommended Phase Sequence
+
+**Phase A — Core data layer (no UI, pure Dart):**
+
+1. `FieldSchema` + `EntityTypeSchema` + `GameModel` data classes with `toJson`/`fromJson`
+2. `GameModelParser` with `schemaVersion` migration chain
+3. `GameEntity` with `toJson`/`fromJson` and `copyWith`
+4. Unit tests: round-trip JSON for all three classes
+
+Rationale: Everything depends on these. Build and test them before touching any UI or Provider. They have zero Flutter dependencies — can be tested with `dart test`, no `flutter test` needed.
+
+**Phase B — Service layer:**
+
+5. `GameModelService` as `ChangeNotifier` (loads bundled assets via `rootBundle`, holds `activeModel`, exposes `switchModel`)
+6. Bundled `dnd5e.json` asset (JSON-ification of current `WikiPageType.fields` — the exact same data, just externalized)
+7. `GameModelService` unit tests with mock `AssetBundle`
+
+Rationale: Until `GameModelService` exists and can load a model, nothing downstream can be wired. The D&D 5e JSON must exist before any other phase can produce visible output.
+
+**Phase C — Provider rewiring (no new UI):**
+
+8. Change `WikiPage.pageType` from `WikiPageType` enum to `String` (type key)
+9. Update `WikiPage.fromJson`/`toJson` accordingly
+10. Update `WikiProvider` to accept `GameModel` via constructor + `updateGameModel` mutator
+11. Wire `ChangeNotifierProxyProvider<GameModelService, WikiProvider>` in both app `main.dart` files
+12. Update `WikiCreateSubmitFlow` to use `EntityTypeSchema` instead of `WikiPageType`
+13. Update `WikiStorageService.loadAllPages` — `WikiPage.fromJson` handles the string type key
+14. Update `WikiModalProvider.pendingType` from `WikiPageType?` to `String?`
+
+Rationale: This is the riskiest phase for breaking existing functionality. Completing it with no new features (only the existing D&D 5e model loaded) lets you verify the existing wiki still works before removing the typed models.
+
+**Phase D — UI generalization:**
+
+15. `GameModelFormBuilder` widget (replaces `_buildStructuredField`)
+16. Update `WikiCreateForm` to use `GameModelFormBuilder` and receive `List<FieldSchema>` instead of `WikiPageType`
+17. Update `WikiTypePicker` to read `GameModelService.activeModel.entityTypes` filtered by `isWikiPageType`
+18. Delete `packages/core/lib/models/wiki_page_type.dart` once zero references remain
+
+Rationale: The static `WikiPageType` enum can be deleted only after the form and type picker are both driven by runtime schemas.
+
+**Phase E — Typed model replacement:**
+
+19. `GameEntity` storage service (parallel to `WikiStorageService` but for entities)
+20. Migrate `demoPlayerCharacters`, `demoMonsters`, `demoNPCs` to `List<GameEntity>` using D&D 5e model keys
+21. Update `CreatureDetail.from*` factory constructors to accept `GameEntity`
+22. Update `CombatantDragData.from*` factory constructors to accept `GameEntity`
+23. Delete `player_character.dart`, `monster.dart`, `npc.dart`, `enums.dart`
+
+Rationale: These deletions are last because `CreatureDetail` and `CombatantDragData` are adapters that depend on the typed models. They can only be updated after `GameEntity` is stable and the encounter tracker logic is validated.
+
+**Phase F — Agnosticism proof:**
+
+24. Bundled `coc7e.json` asset
+25. System picker UI (selector in settings showing bundled + imported models)
+26. File import via `file_picker` for external `.json` model files
+27. Full end-to-end test: switch D&D 5e → CoC 7e, create CoC entities, switch back
+
+Rationale: The CoC model is the litmus test. If it works without code changes, only JSON, then the architecture is genuinely agnostic. Build it last so all the machinery is proven on D&D first.
+
+---
+
+## Architectural Patterns to Follow
+
+### Pattern 1: FieldSchema Mirrors WikiPageFieldDefinition
+
+`FieldSchema` is a direct generalization of the existing `WikiPageFieldDefinition`. Use identical field names (`key`, `label`, `inputType`, `required`, `hint`, `options`) so the diff from `WikiPageFieldDefinition` to `FieldSchema` is minimal — only the source (JSON parse vs Dart constructor) changes.
+
+### Pattern 2: String Type Keys, Not Enums
+
+Everywhere `WikiPageType` (an enum) is used, replace with `String` (a type key). The GameModel is the registry that says which keys are valid. This is the same pattern `WikiPage.statBlock` already uses: `Map<String, dynamic>` with string keys, not typed structs.
+
+### Pattern 3: Flags Over Separate Lists
+
+Use `isCharacterType`, `isAdversaryType`, `isWikiPageType` boolean flags on `EntityTypeSchema` rather than maintaining separate lists of character types vs wiki page types. A single entity type can be multiple things (a PC is both a character type and potentially a wiki page type). Flags compose; parallel lists diverge.
+
+### Pattern 4: GameModelService as the Single Source of Truth
+
+No component except `GameModelService` should hold a reference to the loaded GameModel JSON or parse it. All other providers receive the model object via `ChangeNotifierProxyProvider`. If a widget needs the active model directly, it reads `context.watch<GameModelService>().activeModel` — it never loads or parses JSON itself.
+
+### Pattern 5: GameEntity is Opaque Storage
+
+`GameEntity.fields` is treated as opaque `Map<String, dynamic>` by the storage layer. Only UI components and domain logic that know the active `GameModelService` should interpret field values. The storage service reads/writes the map without schema knowledge — the same way `WikiPage.statBlock` works today.
+
+---
+
+## Anti-Patterns to Avoid
+
+### Anti-Pattern 1: Putting Schema Logic in GameEntity
+
+**What goes wrong:** Adding methods like `entity.armorClass` or `entity.initiativeModifier` to `GameEntity` — these are D&D concepts baked into a generic type.
+
+**Instead:** Domain logic that interprets fields lives in game-system-aware services or UI components that have access to the `GameModelService`. `GameEntity` carries data; it does not know what the data means.
+
+### Anti-Pattern 2: Replacing Enum with int Index
+
+**What goes wrong:** Storing the entity type as an integer index into `gameModel.entityTypes` instead of a string key. Saves a byte; breaks every saved `GameEntity` if the type list is reordered.
+
+**Instead:** Always use the string `key` field as the persistent identifier. Indices are UI concerns only.
+
+### Anti-Pattern 3: WikiProvider Listening to GameModelService Directly
+
+**What goes wrong:** `WikiProvider` calls `gameModelService.addListener(() { updateGameModel(gameModelService.activeModel); })` in its constructor. If the listener is not removed in `dispose`, or if `WikiProvider` is recreated while the listener is still attached, memory leaks and double-notification bugs follow.
+
+**Instead:** `ChangeNotifierProxyProvider` handles the subscription lifecycle correctly. Let the Provider framework manage the wiring.
+
+### Anti-Pattern 4: Lazy Schema Loading
+
+**What goes wrong:** Loading the GameModel JSON on first use (when the wiki opens) instead of at app startup. Creates visible delay + race conditions (what happens if two widgets request entity types simultaneously before the model loads?).
+
+**Instead:** `GameModelService.loadBundled()` is called in `initState` of the root widget, before `MaterialApp` renders. Assets loaded via `rootBundle` are synchronous after the first load; the startup parse is under 50ms for a well-formed JSON file.
+
+### Anti-Pattern 5: Preserving WikiPageType Enum as Intermediate Layer
+
+**What goes wrong:** Adding a `toEntityTypeSchema()` method to `WikiPageType` as a bridge during migration. Creates two parallel systems that must stay in sync.
+
+**Instead:** Phase C (Provider rewiring) does the migration in one pass. The enum is deleted when the last reference is removed. No bridge; clean cut.
+
+---
+
+## Scalability Considerations
+
+| Concern | Current Scale | At 10 Entity Types | At 50+ Entity Types |
+|---------|--------------|--------------------|--------------------|
+| Model parse time | <10ms | <20ms | <50ms (still well under target) |
+| `availablePageTypes` filter | Negligible | Negligible | Still O(n), fine |
+| Form field controllers | 5-10 fields | 10-20 fields | Consider lazy initialization |
+| `WikiProvider.availablePageTypes` rebuild | One list copy | One list copy | One list copy — no scaling issue |
+
+**Memory:** A parsed `GameModel` with 20 entity types and 10 fields each is approximately 50KB of Dart objects. No scaling concern for the foreseeable lifetime of this app.
+
+---
 
 ## Sources
 
-- [Flutter Adaptive/Responsive Design — General Approach](https://docs.flutter.dev/ui/adaptive-responsive/general) — Official Flutter docs, HIGH confidence
-- [Material 3 Layout Breakpoints](https://m3.material.io/foundations/layout/applying-layout/window-size-classes) — Material guidelines, HIGH confidence
-- [flutter_markdown_plus package](https://pub.dev/packages/flutter_markdown_plus) — Official pub.dev page (successor to discontinued flutter_markdown), HIGH confidence
-- [Flutter showGeneralDialog API](https://api.flutter.dev/flutter/material/showGeneralDialog.html) — Official Flutter API, HIGH confidence
-- [Flutter MediaQuery.sizeOf](https://api.flutter.dev/flutter/widgets/MediaQuery/sizeOf.html) — Official Flutter API, HIGH confidence
-- Existing codebase analysis (monster.dart, creature_detail_view.dart, main.dart files) — Direct observation, HIGH confidence
+- Codebase analysis: `wiki_page_type.dart`, `wiki_create_form.dart`, `wiki_provider.dart`, `wiki_storage_service.dart`, `player_character.dart`, `encounter.dart`, `dm_app/main.dart` — HIGH confidence (direct observation)
+- Foundry VTT template.json structure (https://www.makeyourownrpg.com/my-rpg-blog/creating-a-new-system-for-foundry-vtt-the-data-template) — MEDIUM confidence (cross-checked with official Foundry docs)
+- Foundry VTT DataModel fields and migration: https://foundryvtt.com/article/system-data-models/ — MEDIUM confidence
+- Open5e V2 API creature schema: https://api.open5e.com/v2/creatures/srd_aboleth/ — HIGH confidence (live API response)
+- Flutter `ChangeNotifierProxyProvider` pattern: https://pub.dev/packages/provider — HIGH confidence (official package docs)
+- JSON schema versioning best practices: https://developer.couchbase.com/tutorial-schema-versioning — MEDIUM confidence (multiple sources agree on schemaVersion + migration chain pattern)
 
 ---
-*Architecture research for: Flutter wiki popup UI with responsive layouts*
+
+*Architecture research for: GameModel schema-driven Flutter app*
 *Researched: 2026-05-07*
