@@ -6,6 +6,7 @@ enum FieldInputType {
   checkbox,
   list,
   dice,
+  group, // NEW: for subFields containers
 }
 
 class FieldSchema {
@@ -22,6 +23,10 @@ class FieldSchema {
     this.enumOptions,
     this.derivedFrom,
     this.defaultValue,
+    this.section,              // NEW: D-18 section grouping
+    this.subFields,            // NEW: D-19 nested object fields
+    this.itemSchema,           // NEW: D-19 list item schema
+    this.attributeRef,         // NEW: D-25 attribute reference
   });
 
   final String key;
@@ -36,6 +41,10 @@ class FieldSchema {
   final List<String>? enumOptions;
   final String? derivedFrom;
   final dynamic defaultValue;
+  final String? section;
+  final List<FieldSchema>? subFields;
+  final FieldSchema? itemSchema;
+  final String? attributeRef;
 
   Map<String, dynamic> toJson() => {
         'key': key,
@@ -50,6 +59,10 @@ class FieldSchema {
         if (enumOptions != null) 'enumOptions': enumOptions,
         if (derivedFrom != null) 'derivedFrom': derivedFrom,
         if (defaultValue != null) 'defaultValue': defaultValue,
+        if (section != null) 'section': section,
+        if (subFields != null) 'subFields': subFields!.map((f) => f.toJson()).toList(),
+        if (itemSchema != null) 'itemSchema': itemSchema!.toJson(),
+        if (attributeRef != null) 'attributeRef': attributeRef,
       };
 
   factory FieldSchema.fromJson(Map<String, dynamic> json) => FieldSchema(
@@ -69,5 +82,15 @@ class FieldSchema {
             .toList(),
         derivedFrom: json['derivedFrom'] as String?,
         defaultValue: json['defaultValue'],
+        section: json['section'] as String?,
+        subFields: (json['subFields'] as List<dynamic>?)
+            ?.map((f) => FieldSchema.fromJson(
+                Map<String, dynamic>.from(f as Map)))
+            .toList(),
+        itemSchema: json['itemSchema'] != null
+            ? FieldSchema.fromJson(
+                Map<String, dynamic>.from(json['itemSchema'] as Map))
+            : null,
+        attributeRef: json['attributeRef'] as String?,
       );
 }
