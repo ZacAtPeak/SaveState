@@ -173,11 +173,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 09-01-PLAN.md — FieldSchema extension, FormulaEvaluator, dnd5e.json comprehensive schema
-- [ ] 09-02-PLAN.md — SchemaFormBuilder widget + SectionRenderer + FieldRenderer + ListFieldRenderer
-- [ ] 09-03-PLAN.md — Companion app character sheet screen with SchemaFormBuilder
-- [ ] 09-04-PLAN.md — DM app CreatureDetailView rewritten for schema-driven rendering
-- [ ] 09-05-PLAN.md — InitiativeTracker formula-driven rolls + schema-driven HP field key
+- [x] 09-01-PLAN.md — FieldSchema extension, FormulaEvaluator, dnd5e.json comprehensive schema
+- [x] 09-02-PLAN.md — SchemaFormBuilder widget + SectionRenderer + FieldRenderer + ListFieldRenderer
+- [x] 09-03-PLAN.md — Companion app character sheet screen with SchemaFormBuilder
+- [x] 09-04-PLAN.md — DM app CreatureDetailView rewritten for schema-driven rendering
+- [x] 09-05-PLAN.md — InitiativeTracker formula-driven rolls + schema-driven HP field key
 
 ### Phase 10: CoC 7e, System Picker & File Import
 **Goal**: Users can pick any bundled game system or import their own — CoC 7e works end-to-end, proving true TTRPG agnosticism
