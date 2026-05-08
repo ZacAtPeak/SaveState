@@ -6,4 +6,7 @@ export 'monster.dart';
 export 'item.dart';
 export 'wiki_page_type.dart';
 export 'wiki_page.dart';
+export 'field_schema.dart';
+export 'entity_type_schema.dart';
+export 'game_model.dart';
 export 'game_entity.dart';
