@@ -97,29 +97,36 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _sidebarExpanded = true;
   final Set<String> _expandedSections = {'Characters'};
 
-  late final List<_SidebarEntry> _characters = demoCharacterEntities
-      .map((e) => _SidebarEntry(
-            drag: CombatantDragData.fromGameEntity(e),
-            detail: CreatureDetail.fromGameEntity(e),
-            entity: e,
-          ))
-      .toList();
+  late final List<_SidebarEntry> _characters;
+  late final List<_SidebarEntry> _monsters;
+  late final List<_SidebarEntry> _npcs;
 
-  late final List<_SidebarEntry> _monsters = demoMonsterEntities
-      .map((e) => _SidebarEntry(
-            drag: CombatantDragData.fromGameEntity(e),
-            detail: CreatureDetail.fromGameEntity(e),
-            entity: e,
-          ))
-      .toList();
-
-  late final List<_SidebarEntry> _npcs = demoNpcEntities
-      .map((e) => _SidebarEntry(
-            drag: CombatantDragData.fromGameEntity(e),
-            detail: CreatureDetail.fromGameEntity(e),
-            entity: e,
-          ))
-      .toList();
+  @override
+  void initState() {
+    super.initState();
+    final gameModel = context.read<GameModelService>().activeModel;
+    _characters = demoCharacterEntities
+        .map((e) => _SidebarEntry(
+              drag: CombatantDragData.fromGameEntity(e, gameModel: gameModel),
+              detail: CreatureDetail.fromGameEntity(e),
+              entity: e,
+            ))
+        .toList();
+    _monsters = demoMonsterEntities
+        .map((e) => _SidebarEntry(
+              drag: CombatantDragData.fromGameEntity(e, gameModel: gameModel),
+              detail: CreatureDetail.fromGameEntity(e),
+              entity: e,
+            ))
+        .toList();
+    _npcs = demoNpcEntities
+        .map((e) => _SidebarEntry(
+              drag: CombatantDragData.fromGameEntity(e, gameModel: gameModel),
+              detail: CreatureDetail.fromGameEntity(e),
+              entity: e,
+            ))
+        .toList();
+  }
 
   late final Map<String, GameEntity> _detailById = {
     for (final e in [..._characters, ..._monsters, ..._npcs])
@@ -244,6 +251,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   onRoll: _onRoll,
                   onEntryTap: _onTrackerEntryTap,
                   activeIndex: _activeIndex,
+                  gameModel: context.read<GameModelService>().activeModel,
                 ),
                 Expanded(
                   child: CreatureDetailView(entity: _selectedDetail),

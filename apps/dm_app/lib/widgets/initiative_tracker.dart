@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:core/models/models.dart';
 
@@ -27,8 +25,9 @@ class CombatantDragData {
   final int maxHP;
   final List<String> statusConditions;
   final bool isPlayer;
+  final Map<String, dynamic> _entityData;
 
-  const CombatantDragData({
+  CombatantDragData({
     required this.id,
     required this.name,
     required this.initiativeModifier,
@@ -36,10 +35,14 @@ class CombatantDragData {
     required this.maxHP,
     this.statusConditions = const [],
     this.isPlayer = false,
-  });
+    Map<String, dynamic>? entityData,
+  }) : _entityData = entityData ?? {};
 
   /// Create from a GameEntity map with safe fallback defaults (per D-16).
-  factory CombatantDragData.fromGameEntity(GameEntity entity) {
+  factory CombatantDragData.fromGameEntity(GameEntity entity, {GameModel? gameModel}) {
+    final hpKey = _resolveHPFieldKey(gameModel, entity.entityTypeKey);
+    final currentHPKey = 'currentHP';
+
     final isPlayer = entity.entityTypeKey == 'creature' &&
         entity.getString('playerClass').isNotEmpty;
     final dexMod = entity.getInt('dexterityModifier', fallback: 0);
@@ -50,16 +53,44 @@ class CombatantDragData {
         .where((s) => s.isNotEmpty)
         .toList();
 
+    final maxHP = entity.getInt(hpKey, fallback: entity.getInt(currentHPKey, fallback: 0));
+    final currentHP = entity.getInt(currentHPKey, fallback: maxHP);
+
     return CombatantDragData(
       id: entity.getString('id', fallback: entity.entityTypeKey),
       name: entity.getString('name', fallback: 'Unknown'),
       initiativeModifier: dexMod,
-      currentHP: entity.getInt('currentHP', fallback: 0),
-      maxHP: entity.getInt('hitPoints',
-          fallback: entity.getInt('currentHP', fallback: 0)),
+      currentHP: currentHP,
+      maxHP: maxHP,
       statusConditions: statusConditions,
       isPlayer: isPlayer,
+      entityData: Map<String, dynamic>.from(entity.toJson()['data'] as Map),
     );
+  }
+
+  /// Build a context map for FormulaEvaluator from entity data.
+  /// Includes ability scores (STR, DEX, etc.) and modifiers.
+  Map<String, dynamic> toFormulaContext() {
+    return {
+      'STR': _entityData['strength'] ?? 10,
+      'DEX': _entityData['dexterity'] ?? 10,
+      'CON': _entityData['constitution'] ?? 10,
+      'INT': _entityData['intelligence'] ?? 10,
+      'WIS': _entityData['wisdom'] ?? 10,
+      'CHA': _entityData['charisma'] ?? 10,
+      'strength': _entityData['strength'] ?? 10,
+      'dexterity': _entityData['dexterity'] ?? 10,
+      'constitution': _entityData['constitution'] ?? 10,
+      'intelligence': _entityData['intelligence'] ?? 10,
+      'wisdom': _entityData['wisdom'] ?? 10,
+      'charisma': _entityData['charisma'] ?? 10,
+      'strengthModifier': _entityData['strengthModifier'] ?? 0,
+      'dexterityModifier': _entityData['dexterityModifier'] ?? 0,
+      'constitutionModifier': _entityData['constitutionModifier'] ?? 0,
+      'intelligenceModifier': _entityData['intelligenceModifier'] ?? 0,
+      'wisdomModifier': _entityData['wisdomModifier'] ?? 0,
+      'charismaModifier': _entityData['charismaModifier'] ?? 0,
+    };
   }
 }
 
@@ -86,7 +117,10 @@ class InitiativeEntry {
 
   /// Create from a GameEntity map with safe fallback defaults (per D-16).
   factory InitiativeEntry.fromGameEntity(GameEntity entity,
-      {double initiative = 0}) {
+      {double initiative = 0, GameModel? gameModel}) {
+    final hpKey = _resolveHPFieldKey(gameModel, entity.entityTypeKey);
+    final currentHPKey = 'currentHP';
+
     final isPlayer = entity.entityTypeKey == 'creature' &&
         entity.getString('playerClass').isNotEmpty;
     final statusList = entity.getList('status');
@@ -96,14 +130,16 @@ class InitiativeEntry {
         .where((s) => s.isNotEmpty)
         .toList();
 
+    final maxHP = entity.getInt(hpKey, fallback: entity.getInt(currentHPKey, fallback: 0));
+    final currentHP = entity.getInt(currentHPKey, fallback: maxHP);
+
     return InitiativeEntry(
       id: entity.getString('id', fallback: entity.entityTypeKey),
       sourceId: entity.getString('id', fallback: entity.entityTypeKey),
       name: entity.getString('name', fallback: 'Unknown'),
       initiative: initiative,
-      currentHP: entity.getInt('currentHP', fallback: 0),
-      maxHP: entity.getInt('hitPoints',
-          fallback: entity.getInt('currentHP', fallback: 0)),
+      currentHP: currentHP,
+      maxHP: maxHP,
       statusConditions: statusConditions,
       isPlayer: isPlayer,
     );
@@ -133,6 +169,44 @@ class InitiativeEntry {
       );
 }
 
+/// Resolve the HP field key from the active GameModel's adversary entity schema.
+/// Falls back to 'hitPoints' if not found.
+String _resolveHPFieldKey(GameModel? gameModel, String entityTypeKey) {
+  if (gameModel == null) return 'hitPoints';
+
+  // First try resourceFields in rulesConfig
+  final resourceFields = gameModel.rulesConfig['resourceFields'] as List<dynamic>?;
+  if (resourceFields != null) {
+    for (final rf in resourceFields) {
+      if (rf is Map) {
+        final key = rf['key'] as String?;
+        final label = rf['label'] as String?;
+        if (key != null && (key.toLowerCase().contains('hit') || key.toLowerCase().contains('hp'))) {
+          return key;
+        }
+        if (label != null && label.toUpperCase() == 'HP') {
+          return key ?? 'hitPoints';
+        }
+      }
+    }
+  }
+
+  // Fallback: find entity type and look for HP-related field
+  final entityType = gameModel.entityTypes
+      .where((t) => t.key == entityTypeKey)
+      .firstOrNull;
+  if (entityType != null) {
+    for (final field in entityType.fields) {
+      final label = field.label.toLowerCase();
+      if (label.contains('hit point') || label == 'hp') {
+        return field.key;
+      }
+    }
+  }
+
+  return 'hitPoints';
+}
+
 class InitiativeTracker extends StatefulWidget {
   final List<InitiativeEntry> entries;
   final ValueChanged<List<InitiativeEntry>>? onEntriesChanged;
@@ -140,6 +214,7 @@ class InitiativeTracker extends StatefulWidget {
   final ValueChanged<RollHistoryEntry>? onRoll;
   final ValueChanged<InitiativeEntry>? onEntryTap;
   final int activeIndex;
+  final GameModel? gameModel;
 
   const InitiativeTracker({
     super.key,
@@ -149,6 +224,7 @@ class InitiativeTracker extends StatefulWidget {
     this.onRoll,
     this.onEntryTap,
     this.activeIndex = -1,
+    this.gameModel,
   });
 
   @override
@@ -156,7 +232,6 @@ class InitiativeTracker extends StatefulWidget {
 }
 
 class _InitiativeTrackerState extends State<InitiativeTracker> {
-  static final _rng = Random();
   late List<InitiativeEntry> _sortedEntries;
   late int _activeIndex;
   String? _lastRollMessage;
@@ -211,21 +286,33 @@ class _InitiativeTrackerState extends State<InitiativeTracker> {
   }
 
   void _onCombatantDropped(CombatantDragData data) {
-    final roll = _rng.nextInt(20) + 1;
-    final initiative = (roll + data.initiativeModifier).toDouble();
+    final formula = widget.gameModel?.rulesConfig['initiativeConfig']?['formula'] as String? ?? '1d20+DEX';
+    final context = data.toFormulaContext();
+
+    num initiative;
+    String rollDetail;
+    try {
+      initiative = FormulaEvaluator.evaluate(formula, context);
+      rollDetail = '$formula = ${initiative.toStringAsFixed(0)}';
+    } on FormulaError catch (_) {
+      // Fallback: simple d20 roll if formula fails
+      initiative = (data.initiativeModifier + 1).toDouble();
+      rollDetail = 'formula error, using modifier';
+    }
+
     widget.onRoll?.call(RollHistoryEntry(
       combatantName: data.name,
-      d20: roll,
+      d20: initiative.toInt(),
       modifier: data.initiativeModifier,
       timestamp: DateTime.now(),
     ));
-    final instanceId =
-        '${data.id}_${DateTime.now().millisecondsSinceEpoch}_$roll';
+
+    final instanceId = '${data.id}_${DateTime.now().millisecondsSinceEpoch}';
     final entry = InitiativeEntry(
       id: instanceId,
       sourceId: data.id,
       name: data.name,
-      initiative: initiative,
+      initiative: initiative.toDouble(),
       currentHP: data.currentHP,
       maxHP: data.maxHP,
       statusConditions: data.statusConditions,
@@ -234,11 +321,9 @@ class _InitiativeTrackerState extends State<InitiativeTracker> {
 
     final next = List<InitiativeEntry>.from(_sortedEntries)..add(entry);
 
-    final modSign = data.initiativeModifier >= 0 ? '+' : '';
     setState(() {
       _sortedEntries = _sortEntries(next);
-      _lastRollMessage =
-          '${data.name}: $roll $modSign${data.initiativeModifier} = ${initiative.toStringAsFixed(0)}';
+      _lastRollMessage = '${data.name}: $rollDetail';
     });
     widget.onEntriesChanged?.call(_sortedEntries);
   }
