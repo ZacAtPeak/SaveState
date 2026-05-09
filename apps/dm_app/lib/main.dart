@@ -6,9 +6,10 @@ import 'package:core/wiki/wiki.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
 import 'package:core/models/game_entity.dart';
-import 'widgets/creature_detail_view.dart';
-import 'widgets/initiative_tracker.dart';
-import 'widgets/roll_history_panel.dart';
+import 'package:dm_app/widgets/creature_detail_view.dart';
+import 'package:dm_app/widgets/initiative_tracker.dart';
+import 'package:dm_app/widgets/roll_history_panel.dart';
+import 'package:dm_app/screens/settings_screen.dart';
 
 void main() {
   runApp(const DmApp());
@@ -216,7 +217,11 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.settings),
             tooltip: 'Settings',
-            onPressed: () {},
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Icons.search),
