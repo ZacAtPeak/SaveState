@@ -70,16 +70,18 @@ class CombatantDragData {
 
   /// Build a context map for FormulaEvaluator from entity data.
   /// Includes ability scores (STR, DEX, etc.) and modifiers.
+  /// D-41: CoC uses 'dex' (lowercase) instead of 'dexterity' — include both keys.
   Map<String, dynamic> toFormulaContext() {
     return {
       'STR': _entityData['strength'] ?? 10,
-      'DEX': _entityData['dexterity'] ?? 10,
+      'DEX': _entityData['dexterity'] ?? _entityData['dex'] ?? 10,
       'CON': _entityData['constitution'] ?? 10,
       'INT': _entityData['intelligence'] ?? 10,
       'WIS': _entityData['wisdom'] ?? 10,
       'CHA': _entityData['charisma'] ?? 10,
       'strength': _entityData['strength'] ?? 10,
-      'dexterity': _entityData['dexterity'] ?? 10,
+      'dexterity': _entityData['dexterity'] ?? _entityData['dex'] ?? 10,
+      'dex': _entityData['dex'] ?? _entityData['dexterity'] ?? 10,
       'constitution': _entityData['constitution'] ?? 10,
       'intelligence': _entityData['intelligence'] ?? 10,
       'wisdom': _entityData['wisdom'] ?? 10,
@@ -286,18 +288,34 @@ class _InitiativeTrackerState extends State<InitiativeTracker> {
   }
 
   void _onCombatantDropped(CombatantDragData data) {
-    final formula = widget.gameModel?.rulesConfig['initiativeConfig']?['formula'] as String? ?? '1d20+DEX';
-    final context = data.toFormulaContext();
+    // D-41: Check isRolled flag — when false, use DEX-rank sort (CoC-style, no dice roll)
+    final initiativeConfig = widget.gameModel?.rulesConfig['initiativeConfig'] as Map<String, dynamic>?;
+    final isRolled = initiativeConfig?['isRolled'] as bool? ?? true; // default: roll dice
+    // D-41: label available for UI display if needed in future
+    // ignore: unused_local_variable
+    final label = initiativeConfig?['label'] as String? ?? 'Initiative';
 
     num initiative;
     String rollDetail;
-    try {
-      initiative = FormulaEvaluator.evaluate(formula, context);
-      rollDetail = '$formula = ${initiative.toStringAsFixed(0)}';
-    } on FormulaError catch (_) {
-      // Fallback: simple d20 roll if formula fails
-      initiative = (data.initiativeModifier + 1).toDouble();
-      rollDetail = 'formula error, using modifier';
+
+    if (isRolled) {
+      // D&D-style: roll dice formula
+      final formula = initiativeConfig?['formula'] as String? ?? '1d20+DEX';
+      final context = data.toFormulaContext();
+      try {
+        initiative = FormulaEvaluator.evaluate(formula, context);
+        rollDetail = '$formula = ${initiative.toStringAsFixed(0)}';
+      } on FormulaError catch (_) {
+        // Fallback: simple d20 roll if formula fails
+        initiative = (data.initiativeModifier + 1).toDouble();
+        rollDetail = 'formula error, using modifier';
+      }
+    } else {
+      // D-42: CoC-style: DEX-rank sort — no dice, use raw DEX value
+      // D-43: display raw DEX value for tie negotiation
+      final dex = _entityDataFor(data, 'dex');
+      initiative = dex.toDouble();
+      rollDetail = 'DEX = ${initiative.toStringAsFixed(0)} (no roll)';
     }
 
     widget.onRoll?.call(RollHistoryEntry(
@@ -326,6 +344,15 @@ class _InitiativeTrackerState extends State<InitiativeTracker> {
       _lastRollMessage = '${data.name}: $rollDetail';
     });
     widget.onEntriesChanged?.call(_sortedEntries);
+  }
+
+  /// Helper to safely extract a numeric field from CombatantDragData._entityData.
+  int _entityDataFor(CombatantDragData data, String key) {
+    final val = data._entityData[key];
+    if (val is int) return val;
+    if (val is double) return val.toInt();
+    if (val is String) return int.tryParse(val) ?? 10;
+    return 10;
   }
 
   @override
