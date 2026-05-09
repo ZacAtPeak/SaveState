@@ -8,6 +8,7 @@ import 'package:core/wiki/wiki.dart';
 import 'package:companion_app/widgets/generic_tab_view.dart';
 import 'package:companion_app/screens/character_sheet_screen.dart';
 import 'package:companion_app/screens/settings_screen.dart';
+import 'package:companion_app/screens/settings_screen.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -94,6 +95,17 @@ class HomeScreen extends StatelessWidget {
                 provider: WikiModalProvider(),
                 pages: wikiProvider.pages,
                 gameModel: gameModel,
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Settings',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const SettingsScreen(),
+                ),
               );
             },
           ),

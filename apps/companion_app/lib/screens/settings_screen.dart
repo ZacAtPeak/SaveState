@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:core/services/services.dart';
 
+/// Settings screen with game system selector and import functionality.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final gameModelService = context.watch<GameModelService>();
     final theme = Theme.of(context);
+    final gameModelService = context.watch<GameModelService>();
 
     return Scaffold(
       appBar: AppBar(
@@ -16,7 +18,7 @@ class SettingsScreen extends StatelessWidget {
       ),
       body: ListView(
         children: [
-          // Game System Section
+          // Bundled Systems Section
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Text(
@@ -26,64 +28,128 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
           ),
-          ...GameModelService.bundledSystems.map((system) {
-            final (key, displayName, _) = system;
-            final isSelected = gameModelService.activeSystemKey == key;
+          ...gameModelService.bundledSystems.map((system) {
+            final (key, displayName, assetPath) = system;
+            final isActive = gameModelService.activeSystemKey == key;
             return RadioListTile<String>(
               title: Text(displayName),
+              subtitle: Text(key),
               value: key,
-              groupValue: gameModelService.activeSystemKey,
+              groupValue: gameModelService.activeSystemKey ?? 'dnd5e',
               onChanged: (value) async {
-                if (value == null) return;
-                // Show migration dialog
-                final shouldSwitch = await _showMigrationDialog(context, displayName);
-                if (shouldSwitch) {
-                  await gameModelService.switchToSystem(value);
+                if (value != null) {
+                  await gameModelService.loadFromAsset(assetPath);
                 }
               },
             );
           }),
+
           const Divider(),
-          // About section
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: const Text('About SaveState'),
-            subtitle: const Text('Version 1.0'),
-            onTap: () {
-              showAboutDialog(
-                context: context,
-                applicationName: 'SaveState',
-                applicationVersion: '1.0.0',
-                applicationLegalese: 'A TTRPG companion app',
-              );
-            },
+
+          // Custom Systems Section
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              'Custom Systems',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
           ),
+          ListTile(
+            leading: const Icon(Icons.upload_file),
+            title: const Text('Import Game System'),
+            subtitle: const Text('Load a .json GameModel file'),
+            onTap: () => _importCustomSystem(context),
+          ),
+
+          // Show imported systems if any
+          ...gameModelService.availableSystems
+              .where((s) => s.assetPath == null) // imported systems have null assetPath
+              .map((system) {
+            final (key, displayName, _) = system;
+            return ListTile(
+              leading: const Icon(Icons.folder_open),
+              title: Text(displayName),
+              subtitle: Text('Imported: $key'),
+              onTap: () async {
+                await gameModelService.loadFromDocumentsDirectory(key);
+              },
+            );
+          }),
         ],
       ),
     );
   }
 
-  Future<bool> _showMigrationDialog(BuildContext context, String systemName) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Switch to $systemName?'),
-        content: const Text(
-          'Switching game systems may affect how your wiki entries are displayed. '
-          'Existing wiki data will be preserved.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+  Future<void> _importCustomSystem(BuildContext context) async {
+    final gameModelService = context.read<GameModelService>();
+
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        allowMultiple: false,
+      );
+
+      if (result == null || result.files.isEmpty) return;
+
+      final file = result.files.first;
+      if (file.path == null) return;
+
+      // Read file contents
+      final jsonString = await File(file.path!).readAsString();
+
+      // Import and store
+      final filename = await gameModelService.importExternalFile(
+        jsonString,
+        file.name,
+      );
+
+      // Load it
+      await gameModelService.loadFromDocumentsDirectory(filename);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Imported ${file.name} successfully'),
+            backgroundColor: Colors.green,
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Switch'),
+        );
+      }
+    } on FormatException catch (e) {
+      // Validation/parse error — show AlertDialog per D-40
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Import Failed'),
+            content: Text(e.message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('OK'),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-    return result ?? false;
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Import Failed'),
+            content: Text('An unexpected error occurred: $e'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
   }
 }
