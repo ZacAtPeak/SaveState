@@ -12,8 +12,8 @@
 ### Game Systems (SYSTEM)
 
 - [ ] **SYSTEM-01**: D&D 5e `GameModel` ships as a bundled JSON asset at `packages/core/assets/game_models/dnd5e.json`; reproduces all existing field schemas — creature, spell, item, rule, location, npc, other page types; includes D&D ability score display names (Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma); initiative config uses 1d20+DEX modifier formula
-- [ ] **SYSTEM-02**: Call of Cthulhu 7e `GameModel` ships as a bundled JSON asset at `packages/core/assets/game_models/coc7e.json`; defines investigator entity (characteristics STR/CON/SIZ/DEX/APP/INT/POW/EDU at 15–90, derived Sanity/Luck/Magic Points/Build, percentile skill list); adversary entity (no CR/XP/class/spell slots); initiative config is DEX-rank sort (no roll)
-- [ ] **SYSTEM-03**: User can import an external `.json` GameModel file from disk via `file_picker`; app validates required fields (`schemaVersion`, `entityTypes`) and shows a human-readable error dialog on malformed input — never crashes silently
+- [x] **SYSTEM-02**: Call of Cthulhu 7e `GameModel` ships as a bundled JSON asset at `packages/core/assets/game_models/coc7e.json`; defines investigator entity (characteristics STR/CON/SIZ/DEX/APP/INT/POW/EDU at 15–90, derived Sanity/Luck/Magic Points/Build, percentile skill list); adversary entity (no CR/XP/class/spell slots); initiative config is DEX-rank sort (no roll)
+- [x] **SYSTEM-03**: User can import an external `.json` GameModel file from disk via `file_picker`; app validates required fields (`schemaVersion`, `entityTypes`) and shows a human-readable error dialog on malformed input — never crashes silently
 
 ### Migration (MIGRATE)
 
@@ -85,8 +85,8 @@
 | CHAR-02 | Phase 9 — Character Sheet & Encounter Tracker Generalization | Pending |
 | ENCTR-01 | Phase 9 — Character Sheet & Encounter Tracker Generalization | Pending |
 | ENCTR-02 | Phase 9 — Character Sheet & Encounter Tracker Generalization | Pending |
-| SYSTEM-02 | Phase 10 — CoC 7e, System Picker & File Import | Pending |
-| SYSTEM-03 | Phase 10 — CoC 7e, System Picker & File Import | Pending |
+| SYSTEM-02 | Phase 10 — CoC 7e, System Picker & File Import | Complete |
+| SYSTEM-03 | Phase 10 — CoC 7e, System Picker & File Import | Complete |
 | UX-01 | Phase 10 — CoC 7e, System Picker & File Import | Pending |
 | UX-02 | Phase 10 — CoC 7e, System Picker & File Import | Pending |
 | UX-03 | Phase 10 — CoC 7e, System Picker & File Import | Pending |

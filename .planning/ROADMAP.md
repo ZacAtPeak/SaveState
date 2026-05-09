@@ -191,13 +191,13 @@ Plans:
   4. The encounter tracker correctly uses DEX-rank sort (no dice roll) for CoC initiative order
   5. A user can import an external .json file, see a human-readable error dialog for malformed input, and load a valid custom GameModel without the app crashing
 **UI hint**: yes
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 10-01: coc7e.json asset — investigator entity, adversary entity, DEX-rank initiativeConfig
-- [ ] 10-02: System picker UI in both apps with persistence (shared_preferences or local file)
-- [ ] 10-03: External .json file import via file_picker with validation and error dialog
-- [ ] 10-04: End-to-end agnosticism smoke test — create CoC investigator, switch back to D&D, verify both systems
+- [x] 10-01-PLAN.md — coc7e.json asset — investigator entity, adversary entity, DEX-rank initiativeConfig
+- [x] 10-02-PLAN.md — System picker UI in both apps with persistence (shared_preferences or local file)
+- [x] 10-03-PLAN.md — External .json file import via file_picker with validation and error dialog
+- [ ] 10-04-PLAN.md — End-to-end agnosticism smoke test — create CoC investigator, switch back to D&D, verify both systems
 
 ---
 
