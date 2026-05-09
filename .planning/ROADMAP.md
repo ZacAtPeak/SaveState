@@ -4,7 +4,7 @@
 
 | # | Phase | Goal | Requirements | Success Criteria |
 |---|-------|------|--------------|------------------|
-| 1 | Initiative & Core Layout | Initiative tracker strip with entity cards, sidebar quick-links, basic detail view shell | INIT-01–06, SIDE-01–05, DATA-01–04 | User can add entity to initiative, see it in strip, click to view details |
+| 1 | Initiative & Core Layout | Initiative tracker strip with entity cards, sidebar quick-links, basic detail view shell | INIT-01–06, SIDE-01–05, DATA-01–04 | User can add entity to initiative, see it in strip, click to view details | **Complete (2026-05-09)** |
 | 2 | Entity Detail View | Full character sheet rendering, edit mode with drag-and-drop field customization | DETL-01–06 | Entity detail view renders fields per system; edit mode customizes layout |
 | 3 | Game System & Entity Builders | Game system switching, custom entity/system creation via JSON and builder UI | SYS-01–08, CENT-01–06 | User can switch systems without data loss; create/edit custom entities and systems |
 | 4 | Roll Tracker & Search | Roll tracker with dice math, universal search across entities | ROLL-01–05, SRCH-01–05 | Roll tracker shows math breakdown; search queries all entity fields |
