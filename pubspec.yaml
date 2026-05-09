@@ -1,7 +1,0 @@
-name: dnd_workspace
-workspace:
-  - packages/core
-  - apps/dm_app
-  - apps/companion_app
-environment:
-  sdk: '^3.11.5'
