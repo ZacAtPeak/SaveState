@@ -44,6 +44,146 @@ html, body {
   overflow-y: auto;
 }
 
+.actor-header {
+  margin-bottom: 0.5rem;
+}
+
+.actor-divider {
+  height: 2px;
+  background: #a82020;
+  margin-bottom: 1rem;
+}
+
+.actor-info {
+  margin-bottom: 1rem;
+}
+
+.actor-info p {
+  margin: 0.25rem 0;
+}
+
+.abilities-section {
+  margin-top: 1rem;
+}
+
+.abilities-header {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.abilities-label {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #666;
+  font-weight: 600;
+}
+
+.abilities-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 0.5rem;
+}
+
+.ability-box {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 0.5rem;
+  text-align: center;
+  background: #fafafa;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.ability-box .ability-name {
+  display: block;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.ability-box .ability-score {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.ability-box .ability-mod {
+  display: block;
+  font-size: 0.85rem;
+  color: #a82020;
+  font-weight: 600;
+}
+
+.ability-box .ability-name.no-transform {
+  text-transform: none;
+}
+
+.ability-box .ability-mod.coc-mod {
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.skills-section {
+  margin-top: 1rem;
+}
+
+.skills-header {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.skills-label {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #666;
+  font-weight: 600;
+}
+
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+.skill-box {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 0.5rem;
+  text-align: center;
+  background: #fafafa;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.skill-box .skill-name {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.skill-box .skill-stat {
+  display: block;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #666;
+}
+
 #main-content {
   flex: 1;
   display: flex;
@@ -574,197 +714,27 @@ html, body {
   background: #3a3a3a;
 }
 
-.wiki-list-item.selected {
-  background: #4a4a4a;
-}
+  .wiki-list-item.selected {
+    background: #4a4a4a;
+  }
 
-.wiki-tag {
-  background: #4a4a4a;
-}
-}
+  .ability-box {
+    background: #2a2a2a;
+    border-color: #444;
+  }
 
-.logo.tauri:hover {
-  filter: drop-shadow(0 0 2em #24c8db);
-}
+  .abilities-label {
+    color: #999;
+  }
 
-.row {
-  display: flex;
-  justify-content: center;
-}
+  .skill-box {
+    background: #2a2a2a;
+    border-color: #444;
+  }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-
-a:hover {
-  color: #535bf2;
-}
-
-h1 {
-  text-align: center;
-}
-
-input,
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  color: #0f0f0f;
-  background-color: #ffffff;
-  transition: border-color 0.25s;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
-}
-
-button {
-  cursor: pointer;
-}
-
-button:hover {
-  border-color: #396cd8;
-}
-button:active {
-  border-color: #396cd8;
-  background-color: #e8e8e8;
-}
-
-input,
-button {
-  outline: none;
-}
-
-#greet-input {
-  margin-right: 5px;
-}
-
-.actors-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 2rem;
-}
-
-.actors-table th,
-.actors-table td {
-  padding: 0.75rem 1rem;
-  text-align: left;
-  border-bottom: 1px solid #ddd;
-}
-
-.actors-table th {
-  background-color: #f6f6f6;
-  font-weight: 600;
-}
-
-.actors-table tr:hover {
-  background-color: #f9f9f9;
-}
-
-/* Actor Stat Block - DnD Beyond Style */
-.stat-block {
-  background: #fdf6e3;
-  border: 3px solid #a82020;
-  border-radius: 8px;
-  max-width: 400px;
-  font-family: 'Noto Sans', Arial, sans-serif;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-}
-
-.stat-block-header {
-  background: #a82020;
-  color: white;
-  padding: 0.5rem 1rem;
-  text-align: center;
-}
-
-.stat-block-header h2 {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 700;
-}
-
-.stat-block-header .actor-type {
-  margin: 0.125rem 0 0;
-  font-size: 0.8rem;
-  opacity: 0.9;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.stat-block-divider {
-  height: 3px;
-  background: linear-gradient(to right, #a82020 0%, #a82020 50%, transparent 50%);
-  background-size: 8px 100%;
-}
-
-.stat-block-ac-hp {
-  display: flex;
-  padding: 0.75rem 1rem;
-  gap: 2rem;
-  justify-content: center;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.stat-item .stat-label {
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #666;
-  font-weight: 600;
-}
-
-.stat-item .stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #a82020;
-  line-height: 1;
-}
-
-.stat-block-abilities {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
-  padding: 0.75rem 1rem 1rem;
-}
-
-.ability {
-  background: #ece4d0;
-  border: 1px solid #a82020;
-  border-radius: 4px;
-  padding: 0.5rem;
-  text-align: center;
-}
-
-.ability-name {
-  display: block;
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #666;
-  font-weight: 600;
-}
-
-.ability-score {
-  display: block;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #222;
-  line-height: 1.1;
-}
-
-.ability-mod {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #a82020;
+  .skills-label {
+    color: #999;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -869,5 +839,14 @@ button {
 
   .wiki-list-item.selected {
     background: #4a4a4a;
+  }
+
+  .ability-box {
+    background: #2a2a2a;
+    border-color: #444;
+  }
+
+  .abilities-label {
+    color: #999;
   }
 }

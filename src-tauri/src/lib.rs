@@ -38,6 +38,16 @@ pub struct EntityType {
     pub description: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Skill {
+    pub id: String,
+    pub system_id: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub associated_stat: Option<String>,
+    pub mechanics_blob: Option<String>,
+}
+
 fn get_db_path() -> Result<std::path::PathBuf, String> {
     std::env::current_dir()
         .map_err(|e| e.to_string())?
@@ -180,11 +190,64 @@ fn get_entity_entries(system_id: Option<String>) -> Result<Vec<EntityEntry>, Str
     Ok(entries)
 }
 
+#[tauri::command]
+fn get_skills(system_id: Option<String>) -> Result<Vec<Skill>, String> {
+    let db_path = get_db_path()?;
+    let conn = Connection::open(&db_path).map_err(|e| e.to_string())?;
+
+    let skills: Vec<Skill> = match system_id {
+        Some(sid) => {
+            let mut stmt = conn
+                .prepare("SELECT id, system_id, name, description, associated_stat, mechanics_blob FROM skills WHERE system_id = ?1")
+                .map_err(|e| e.to_string())?;
+            let rows = stmt.query_map([sid], |row| {
+                Ok(Skill {
+                    id: row.get(0)?,
+                    system_id: row.get(1)?,
+                    name: row.get(2)?,
+                    description: row.get(3)?,
+                    associated_stat: row.get(4)?,
+                    mechanics_blob: row.get(5)?,
+                })
+            }).map_err(|e| e.to_string())?;
+            rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())?
+        }
+        None => {
+            let mut stmt = conn
+                .prepare("SELECT id, system_id, name, description, associated_stat, mechanics_blob FROM skills")
+                .map_err(|e| e.to_string())?;
+            let rows = stmt.query_map([], |row| {
+                Ok(Skill {
+                    id: row.get(0)?,
+                    system_id: row.get(1)?,
+                    name: row.get(2)?,
+                    description: row.get(3)?,
+                    associated_stat: row.get(4)?,
+                    mechanics_blob: row.get(5)?,
+                })
+            }).map_err(|e| e.to_string())?;
+            rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())?
+        }
+    };
+
+    Ok(skills)
+}
+
+#[tauri::command]
+fn reset_database() -> Result<(), String> {
+    let source = get_db_path()?;
+    let destination = std::env::current_dir()
+        .map_err(|e| e.to_string())?
+        .join("../src/assets/main.db");
+    std::fs::copy(&source, &destination).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![get_actors, get_game_systems, get_entity_entries])
+        .invoke_handler(tauri::generate_handler![get_actors, get_game_systems, get_entity_entries, get_skills, reset_database])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

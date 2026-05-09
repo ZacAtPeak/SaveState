@@ -36,6 +36,15 @@ interface EntityEntry {
   tags: string | null;
 }
 
+interface Skill {
+  id: string;
+  system_id: string;
+  name: string;
+  description: string | null;
+  associated_stat: string | null;
+  mechanics_blob: string | null;
+}
+
 let currentSystemId: string | null = null;
 let actors: Actor[] = [];
 let encounter: Combatant[] = [];
@@ -44,6 +53,7 @@ let pendingActorId: string | null = null;
 let isDraggingActor = false;
 let currentActorId: string | null = null;
 let entityEntries: EntityEntry[] = [];
+let skills: Skill[] = [];
 
 async function loadGameSystems() {
   try {
@@ -70,6 +80,7 @@ async function loadActors() {
   try {
     actors = await invoke("get_actors", { systemId: currentSystemId });
     await loadEntityEntries();
+    await loadSkills();
     renderActorList();
     renderActorDetail();
   } catch (error) {
@@ -82,6 +93,14 @@ async function loadEntityEntries() {
     entityEntries = await invoke("get_entity_entries", { systemId: currentSystemId });
   } catch (error) {
     console.error("Failed to load entity entries:", error);
+  }
+}
+
+async function loadSkills() {
+  try {
+    skills = await invoke("get_skills", { systemId: currentSystemId });
+  } catch (error) {
+    console.error("Failed to load skills:", error);
   }
 }
 
@@ -119,13 +138,102 @@ function renderActorDetail(id?: string) {
     return;
   }
 
+  let abilitiesHtml = "";
+  let skillsHtml = "";
+  if (actor.stats_blob) {
+    try {
+      const stats = JSON.parse(actor.stats_blob);
+      const isCoC = actor.system_id === 'sys_coc';
+      const dndAbilityNames: Record<string, string> = {
+        str: "Strength",
+        dex: "Dexterity",
+        con: "Constitution",
+        int: "Intelligence",
+        wis: "Wisdom",
+        cha: "Charisma"
+      };
+      const cocAbilityNames: Record<string, string> = {
+        str: "STR",
+        dex: "DEX",
+        con: "CON",
+        siz: "SIZ",
+        int: "INT",
+        pow: "POW",
+        app: "APP",
+        edu: "EDU"
+      };
+      const abilityNames = isCoC ? cocAbilityNames : dndAbilityNames;
+      
+      abilitiesHtml = `
+        <div class="abilities-section">
+          <div class="abilities-header">
+            <span class="abilities-label">Abilities</span>
+          </div>
+          <div class="abilities-grid">
+            ${Object.entries(stats).map(([key, value]) => {
+              const score = Number(value);
+              const name = abilityNames[key] || key.toUpperCase();
+              if (isCoC) {
+                const half = Math.floor(score / 2);
+                const fifth = Math.floor(score / 5);
+                return `
+                  <div class="ability-box">
+                    <span class="ability-name ${isCoC ? 'no-transform' : ''}">${name}</span>
+                    <span class="ability-score">${score}</span>
+                    <span class="ability-mod coc-mod">${half} / ${fifth}</span>
+                  </div>
+                `;
+              } else {
+                const mod = Math.floor((score - 10) / 2);
+                const modStr = mod >= 0 ? `+${mod}` : `${mod}`;
+                return `
+                  <div class="ability-box">
+                    <span class="ability-name">${name}</span>
+                    <span class="ability-score">${score}</span>
+                    <span class="ability-mod">${modStr}</span>
+                  </div>
+                `;
+              }
+            }).join("")}
+          </div>
+        </div>
+      `;
+    } catch {
+      abilitiesHtml = "";
+    }
+  }
+
+  const actorSkills = skills.filter(s => s.system_id === actor.system_id);
+  if (actorSkills.length > 0) {
+    skillsHtml = `
+      <div class="skills-section">
+        <div class="skills-header">
+          <span class="skills-label">Skills</span>
+        </div>
+        <div class="skills-grid">
+          ${actorSkills.map(skill => `
+            <div class="skill-box">
+              <span class="skill-name">${escapeHtml(skill.name)}</span>
+              ${skill.associated_stat ? `<span class="skill-stat">${escapeHtml(skill.associated_stat)}</span>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
   app.innerHTML = `
-    <h1>${escapeHtml(actor.name)}</h1>
-    <p><strong>Type:</strong> ${escapeHtml(actor.actor_type)}</p>
-    <p><strong>HP:</strong> ${actor.base_hp}</p>
-    <p><strong>AC:</strong> ${actor.base_ac}</p>
-    <p><strong>System ID:</strong> ${escapeHtml(actor.system_id)}</p>
-    ${actor.stats_blob ? `<p><strong>Stats:</strong> ${escapeHtml(actor.stats_blob)}</p>` : ""}
+    <div class="actor-header">
+      <h1>${escapeHtml(actor.name)}</h1>
+    </div>
+    <div class="actor-divider"></div>
+    <div class="actor-info">
+      <p><strong>Type:</strong> ${escapeHtml(actor.actor_type)}</p>
+      <p><strong>HP:</strong> ${actor.base_hp}</p>
+      <p><strong>AC:</strong> ${actor.base_ac}</p>
+    </div>
+    ${abilitiesHtml}
+    ${skillsHtml}
   `;
 }
 
@@ -376,6 +484,15 @@ window.addEventListener("DOMContentLoaded", () => {
   document.querySelector<HTMLDivElement>("#settings-modal")!.addEventListener("click", (e) => {
     if (e.target === e.currentTarget) {
       (e.currentTarget as HTMLElement).classList.remove("active");
+    }
+  });
+
+  document.querySelector<HTMLButtonElement>("#reset-db-btn")!.addEventListener("click", async () => {
+    try {
+      await invoke("reset_database");
+      alert("Database reset successfully");
+    } catch (error) {
+      alert(`Error: ${error}`);
     }
   });
 
