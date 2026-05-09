@@ -171,6 +171,7 @@ class UtsDbLoader {
         maxHp: 7,
         ac: 15,
         initiative: 14,
+        isBookmarked: 1,
       ),
       Entity(
         name: 'Orc Warrior',
@@ -179,6 +180,7 @@ class UtsDbLoader {
         maxHp: 15,
         ac: 13,
         initiative: 12,
+        lastViewedAt: DateTime.now().subtract(Duration(hours: 3)),
       ),
       Entity(
         name: 'Dragon (Young Red)',
@@ -187,6 +189,7 @@ class UtsDbLoader {
         maxHp: 178,
         ac: 18,
         initiative: 12,
+        isBookmarked: 1,
       ),
       Entity(
         name: 'Troll',
@@ -195,6 +198,7 @@ class UtsDbLoader {
         maxHp: 84,
         ac: 15,
         initiative: 11,
+        lastViewedAt: DateTime.now().subtract(Duration(hours: 1)),
       ),
       Entity(
         name: 'Displacer Beast',
@@ -211,6 +215,7 @@ class UtsDbLoader {
         maxHp: 135,
         ac: 17,
         initiative: 16,
+        lastViewedAt: DateTime.now().subtract(Duration(minutes: 5)),
       ),
     ];
 

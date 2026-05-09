@@ -45,9 +45,9 @@ class _MainLayoutState extends State<MainLayout> {
               Expanded(
                 child: Column(
                   children: [
-                    // Initiative strip (~120px high, ~1/3 of remaining)
+                    // Initiative strip (~180px high, ~1/3 of remaining)
                     SizedBox(
-                      height: 120,
+                      height: 180,
                       child: InitiativeStripWidget(
                         onEntitySelected: _onEntitySelected,
                       ),
