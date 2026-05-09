@@ -171,7 +171,7 @@ class UtsDbLoader {
         maxHp: 7,
         ac: 15,
         initiative: 14,
-        isBookmarked: 1,
+        isBookmarked: true,
       ),
       Entity(
         name: 'Orc Warrior',
@@ -189,7 +189,7 @@ class UtsDbLoader {
         maxHp: 178,
         ac: 18,
         initiative: 12,
-        isBookmarked: 1,
+        isBookmarked: true,
       ),
       Entity(
         name: 'Troll',
