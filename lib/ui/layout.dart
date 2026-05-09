@@ -1,7 +1,25 @@
 import 'package:flutter/material.dart';
+import '../data/models.dart';
+import '../data/database.dart';
+import 'initiative_strip.dart';
+import 'sidebar.dart';
+import 'detail_view.dart';
 
-class MainLayout extends StatelessWidget {
+class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
+
+  @override
+  State<MainLayout> createState() => _MainLayoutState();
+}
+
+class _MainLayoutState extends State<MainLayout> {
+  Entity? _selectedEntity;
+
+  void _onEntitySelected(Entity entity) {
+    setState(() {
+      _selectedEntity = entity;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,9 +36,9 @@ class MainLayout extends StatelessWidget {
           return Row(
             children: [
               // Left: Sidebar (~250px fixed)
-              const SizedBox(
+              SizedBox(
                 width: 250,
-                child: SidebarWidget(),
+                child: SidebarWidget(onEntitySelected: _onEntitySelected),
               ),
               const VerticalDivider(width: 1),
               // Right: Column with initiative strip + detail view
@@ -28,14 +46,19 @@ class MainLayout extends StatelessWidget {
                 child: Column(
                   children: [
                     // Initiative strip (~120px high, ~1/3 of remaining)
-                    const SizedBox(
+                    SizedBox(
                       height: 120,
-                      child: InitiativeStripWidget(),
+                      child: InitiativeStripWidget(
+                        onEntitySelected: _onEntitySelected,
+                      ),
                     ),
                     const Divider(height: 1),
                     // Detail view (expanded, ~2/3 of remaining)
-                    const Expanded(
-                      child: DetailViewWidget(),
+                    Expanded(
+                      child: DetailViewWidget(
+                        selectedEntity: _selectedEntity,
+                        onEntityChanged: _onEntitySelected,
+                      ),
                     ),
                   ],
                 ),
@@ -43,49 +66,6 @@ class MainLayout extends StatelessWidget {
             ],
           );
         },
-      ),
-    );
-  }
-}
-
-// Placeholder widgets - implemented in subsequent tasks
-class SidebarWidget extends StatelessWidget {
-  const SidebarWidget({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: const Center(
-        child: Text('Sidebar'),
-      ),
-    );
-  }
-}
-
-class InitiativeStripWidget extends StatelessWidget {
-  const InitiativeStripWidget({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Theme.of(context).colorScheme.surfaceContainerHigh,
-      child: const Center(
-        child: Text('Initiative Strip'),
-      ),
-    );
-  }
-}
-
-class DetailViewWidget extends StatelessWidget {
-  const DetailViewWidget({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Theme.of(context).colorScheme.surface,
-      child: const Center(
-        child: Text('Detail View'),
       ),
     );
   }
