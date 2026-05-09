@@ -209,6 +209,16 @@ class DatabaseHelper {
     return result.map((map) => GameSystem.fromMap(map)).toList();
   }
 
+  Future<List<Entity>> getEntitiesByGameSystem(int gameSystemId) async {
+    final db = await database;
+    final result = await db.query(
+      'entities',
+      where: 'gameSystemId = ?',
+      whereArgs: [gameSystemId],
+    );
+    return result.map((map) => Entity.fromMap(map)).toList();
+  }
+
   // Roll History
   Future<int> insertRollHistory(RollHistory roll) async {
     final db = await database;

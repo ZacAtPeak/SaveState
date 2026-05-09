@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../data/models.dart';
-import '../data/database.dart';
+import 'entity_browser_modal.dart';
 import 'initiative_strip.dart';
+import 'settings_modal.dart';
 import 'sidebar.dart';
 import 'detail_view.dart';
 
@@ -24,9 +25,33 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        toolbarHeight: 56,
+        title: Row(
+          children: [
+            Icon(
+              Icons.shield,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'DM Screen',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ],
+        ),
+        actions: [
+          _TopBarButton(icon: Icons.auto_stories, tooltip: 'Book', onTap: () => showEntityBrowserSheet(context)),
+          _TopBarButton(icon: Icons.casino, tooltip: 'Dice', onTap: () {}),
+          _TopBarButton(icon: Icons.search, tooltip: 'Search', onTap: () {}),
+          _TopBarButton(icon: Icons.settings, tooltip: 'Settings', onTap: () => showSettingsSheet(context)),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          // Minimum window width: 768px
           if (constraints.maxWidth < 768) {
             return const Center(
               child: Text('Minimum window width is 768px'),
@@ -35,17 +60,14 @@ class _MainLayoutState extends State<MainLayout> {
 
           return Row(
             children: [
-              // Left: Sidebar (~250px fixed)
               SizedBox(
                 width: 250,
                 child: SidebarWidget(onEntitySelected: _onEntitySelected),
               ),
               const VerticalDivider(width: 1),
-              // Right: Column with initiative strip + detail view
               Expanded(
                 child: Column(
                   children: [
-                    // Initiative strip (~180px high, ~1/3 of remaining)
                     SizedBox(
                       height: 180,
                       child: InitiativeStripWidget(
@@ -53,7 +75,6 @@ class _MainLayoutState extends State<MainLayout> {
                       ),
                     ),
                     const Divider(height: 1),
-                    // Detail view (expanded, ~2/3 of remaining)
                     Expanded(
                       child: DetailViewWidget(
                         selectedEntity: _selectedEntity,
@@ -66,6 +87,39 @@ class _MainLayoutState extends State<MainLayout> {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _TopBarButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  const _TopBarButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Tooltip(
+            message: tooltip,
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Icon(icon, size: 22),
+            ),
+          ),
+        ),
       ),
     );
   }

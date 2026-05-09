@@ -51,17 +51,11 @@ class InitiativeCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header with name and remove button
+            // Header with name and initiative value
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
               child: Row(
                 children: [
-                  if (isDraggable)
-                    Icon(
-                      Icons.drag_handle,
-                      size: 14,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
                   Expanded(
                     child: Text(
                       entity.name,
@@ -70,21 +64,18 @@ class InitiativeCard extends StatelessWidget {
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
+                      textAlign: TextAlign.left,
                     ),
                   ),
-                  GestureDetector(
-                    onTap: onRemove,
-                    child: Icon(
-                      Icons.close,
-                      size: 14,
-                      color: theme.colorScheme.error,
+                  Text(
+                    entity.initiative.toString(),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
             ),
-            const Divider(height: 1),
             // HP display with adjustment buttons
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
@@ -116,15 +107,13 @@ class InitiativeCard extends StatelessWidget {
                 ],
               ),
             ),
-            // AC and Initiative values
+            // AC value
             Padding(
               padding: const EdgeInsets.only(bottom: 6),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _buildStatBadge(context, 'AC', entity.ac.toString()),
-                  _buildStatBadge(
-                      context, 'INIT', entity.initiative.toString()),
                 ],
               ),
             ),
