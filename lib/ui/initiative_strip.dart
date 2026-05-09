@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../data/app_settings.dart';
 import '../data/database.dart';
 import '../data/models.dart';
 import 'initiative_card.dart';
@@ -20,13 +21,42 @@ class _InitiativeStripWidgetState extends State<InitiativeStripWidget> {
   @override
   void initState() {
     super.initState();
+    appSettings.addListener(_onSettingsChanged);
+    _loadInitiativeEntries();
+  }
+
+  @override
+  void dispose() {
+    appSettings.removeListener(_onSettingsChanged);
+    super.dispose();
+  }
+
+  void _onSettingsChanged() {
     _loadInitiativeEntries();
   }
 
   Future<void> _loadInitiativeEntries() async {
     final entries = await DatabaseHelper.instance.getInitiativeEntries();
+    final selectedSystem = appSettings.selectedGameSystem;
+    final systemId = selectedSystem?.id;
+
+    final filteredEntries = systemId != null
+        ? entries.where((e) {
+            // We'll filter when we fetch entities
+            return true;
+          }).toList()
+        : entries;
+
+    final entities = await DatabaseHelper.instance.getAllEntities();
+    final entityMap = {for (var e in entities) e.id: e};
+
+    final filtered = filteredEntries.where((entry) {
+      final entity = entityMap[entry.entityId];
+      return entity != null && entity.gameSystemId == systemId;
+    }).toList();
+
     setState(() {
-      _initiativeEntries = entries;
+      _initiativeEntries = filtered;
     });
   }
 
@@ -193,7 +223,15 @@ class _AddEntityButton extends StatelessWidget {
   }
 
   void _showEntityPicker(BuildContext context) async {
-    final entities = await DatabaseHelper.instance.getAllEntities();
+    final selectedSystem = appSettings.selectedGameSystem;
+    List<Entity> entities;
+
+    if (selectedSystem != null) {
+      entities = await DatabaseHelper.instance.getEntitiesByGameSystem(selectedSystem.id!);
+    } else {
+      entities = await DatabaseHelper.instance.getAllEntities();
+    }
+
     if (!context.mounted) return;
 
     showDialog(

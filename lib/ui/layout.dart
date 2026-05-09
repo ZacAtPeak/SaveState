@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../data/models.dart';
-import 'entity_browser_modal.dart';
 import 'initiative_strip.dart';
 import 'settings_modal.dart';
 import 'sidebar.dart';
@@ -43,7 +42,6 @@ class _MainLayoutState extends State<MainLayout> {
           ],
         ),
         actions: [
-          _TopBarButton(icon: Icons.auto_stories, tooltip: 'Book', onTap: () => showEntityBrowserSheet(context)),
           _TopBarButton(icon: Icons.casino, tooltip: 'Dice', onTap: () {}),
           _TopBarButton(icon: Icons.search, tooltip: 'Search', onTap: () {}),
           _TopBarButton(icon: Icons.settings, tooltip: 'Settings', onTap: () => showSettingsSheet(context)),

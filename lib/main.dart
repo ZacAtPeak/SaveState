@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'data/app_settings.dart';
 import 'data/database.dart';
 import 'data/uts_db_loader.dart';
 import 'ui/layout.dart';
@@ -8,6 +9,9 @@ void main() async {
 
   // Initialize database
   await DatabaseHelper.instance.database;
+
+  // Initialize app settings
+  await appSettings.initialize();
 
   // Load demo data on first launch
   await UtsDbLoader.loadDemoData();

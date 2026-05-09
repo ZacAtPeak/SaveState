@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../data/database.dart';
+import '../data/app_settings.dart';
 import '../data/models.dart';
 
 class SettingsSheet extends StatelessWidget {
@@ -44,30 +44,18 @@ class SettingsContent extends StatefulWidget {
 }
 
 class _SettingsContentState extends State<SettingsContent> {
-  List<GameSystem> _gameSystems = [];
   GameSystem? _selectedSystem;
 
   @override
   void initState() {
     super.initState();
-    _loadGameSystems();
-  }
-
-  Future<void> _loadGameSystems() async {
-    final systems = await DatabaseHelper.instance.getAllGameSystems();
-    setState(() {
-      _gameSystems = systems;
-      if (systems.isNotEmpty) {
-        _selectedSystem = systems.firstWhere(
-          (s) => s.name == 'D&D 5e',
-          orElse: () => systems.first,
-        );
-      }
-    });
+    _selectedSystem = appSettings.selectedGameSystem;
   }
 
   @override
   Widget build(BuildContext context) {
+    final gameSystems = appSettings.gameSystems;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -121,7 +109,7 @@ class _SettingsContentState extends State<SettingsContent> {
                         ),
                   ),
                 ),
-                ..._gameSystems.map((system) {
+                ...gameSystems.map((system) {
                   final isSelected = _selectedSystem?.id == system.id;
                   return ListTile(
                     title: Text(system.name),
@@ -138,6 +126,7 @@ class _SettingsContentState extends State<SettingsContent> {
                           )
                         : null,
                     onTap: () {
+                      appSettings.setGameSystem(system);
                       setState(() {
                         _selectedSystem = system;
                       });

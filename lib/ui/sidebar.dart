@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../data/app_settings.dart';
 import '../data/database.dart';
 import '../data/models.dart';
 
@@ -14,19 +15,46 @@ class SidebarWidget extends StatefulWidget {
 class _SidebarWidgetState extends State<SidebarWidget> {
   List<Entity> _bookmarkedEntities = [];
   List<Entity> _recentEntities = [];
+  List<Entity> _allEntities = [];
 
   @override
   void initState() {
     super.initState();
+    appSettings.addListener(_onSettingsChanged);
+    _loadSidebarEntities();
+  }
+
+  @override
+  void dispose() {
+    appSettings.removeListener(_onSettingsChanged);
+    super.dispose();
+  }
+
+  void _onSettingsChanged() {
     _loadSidebarEntities();
   }
 
   Future<void> _loadSidebarEntities() async {
-    final bookmarked = await DatabaseHelper.instance.getBookmarkedEntities();
-    final recent = await DatabaseHelper.instance.getRecentEntities(limit: 10);
+    final selectedSystem = appSettings.selectedGameSystem;
+    if (selectedSystem == null) {
+      setState(() {
+        _bookmarkedEntities = [];
+        _recentEntities = [];
+        _allEntities = [];
+      });
+      return;
+    }
+
+    final systemId = selectedSystem.id!;
+
+    final allBookmarked = await DatabaseHelper.instance.getBookmarkedEntities();
+    final allRecent = await DatabaseHelper.instance.getRecentEntities(limit: 10);
+    final allSystemEntities = await DatabaseHelper.instance.getEntitiesByGameSystem(systemId);
+
     setState(() {
-      _bookmarkedEntities = bookmarked;
-      _recentEntities = recent;
+      _bookmarkedEntities = allBookmarked.where((e) => e.gameSystemId == systemId).toList();
+      _recentEntities = allRecent.where((e) => e.gameSystemId == systemId).toList();
+      _allEntities = allSystemEntities;
     });
   }
 
@@ -49,7 +77,6 @@ class _SidebarWidgetState extends State<SidebarWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Divider(height: 1),
-          // Bookmarked section
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -74,7 +101,6 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                       ),
                     ),
                   const SizedBox(height: 16),
-                  // Recent section
                   _SectionHeader(
                     title: 'Recent',
                     icon: Icons.history,
@@ -86,6 +112,25 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                     )
                   else
                     ..._recentEntities.map(
+                      (entity) => _EntityListItem(
+                        entity: entity,
+                        onTap: () => _openEntity(entity),
+                        onBookmarkTap: () => _toggleBookmark(entity),
+                        isBookmarked: entity.isBookmarked,
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                  _SectionHeader(
+                    title: 'All Entities',
+                    icon: Icons.list,
+                    count: _allEntities.length,
+                  ),
+                  if (_allEntities.isEmpty)
+                    const _EmptySectionMessage(
+                      message: 'No entities',
+                    )
+                  else
+                    ..._allEntities.map(
                       (entity) => _EntityListItem(
                         entity: entity,
                         onTap: () => _openEntity(entity),
@@ -192,7 +237,6 @@ class _EntityListItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           children: [
-            // Entity icon
             Container(
               width: 32,
               height: 32,
@@ -212,7 +256,6 @@ class _EntityListItem extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            // Entity info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -234,7 +277,6 @@ class _EntityListItem extends StatelessWidget {
                 ],
               ),
             ),
-            // Bookmark button
             GestureDetector(
               onTap: onBookmarkTap,
               child: Icon(
