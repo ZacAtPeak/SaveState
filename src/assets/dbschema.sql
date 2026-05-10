@@ -1,370 +1,231 @@
-PRAGMA foreign_keys = ON;
-
--- ----------------------------
--- Source / rule text
--- ----------------------------
-CREATE TABLE source_books (
-    id INTEGER PRIMARY KEY,
-    code TEXT NOT NULL UNIQUE,
-    title TEXT NOT NULL,
-    edition TEXT,
-    published_year INTEGER
-);
-
-CREATE TABLE book_sections (
-    id INTEGER PRIMARY KEY,
-    book_id INTEGER NOT NULL REFERENCES source_books(id) ON DELETE CASCADE,
-    parent_section_id INTEGER REFERENCES book_sections(id) ON DELETE CASCADE,
-    kind TEXT NOT NULL CHECK (kind IN ('chapter','section','subsection','appendix','table','sidebar')),
-    title TEXT NOT NULL,
-    ordinal TEXT,
-    body TEXT
-);
-
-CREATE TABLE rules_entries (
-    id INTEGER PRIMARY KEY,
-    section_id INTEGER REFERENCES book_sections(id) ON DELETE SET NULL,
-    category TEXT NOT NULL CHECK (
-        category IN (
-            'core_rule','combat_rule','adventuring_rule','condition',
-            'action','activity','glossary','variant_rule'
-        )
-    ),
-    name TEXT NOT NULL,
-    short_text TEXT,
-    full_text TEXT NOT NULL,
-    UNIQUE(category, name)
-);
-
--- ----------------------------
--- Character options
--- ----------------------------
-CREATE TABLE classes (
-    id INTEGER PRIMARY KEY,
-    source_book_id INTEGER REFERENCES source_books(id) ON DELETE SET NULL,
-    source_page INTEGER,
-    name TEXT NOT NULL UNIQUE,
-    hit_die INTEGER NOT NULL,
-    primary_ability TEXT,
-    spellcasting_ability TEXT,
-    armor_prof_text TEXT,
-    weapon_prof_text TEXT,
-    tool_prof_text TEXT,
-    saving_throw_prof_text TEXT,
-    skill_choice_count INTEGER DEFAULT 0,
+create table condition_types
+(
+    system_id   TEXT,
+    id          INTEGER not null
+        primary key,
+    name        TEXT,
     description TEXT
 );
 
-CREATE TABLE subclasses (
-    id INTEGER PRIMARY KEY,
-    class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
-    source_book_id INTEGER REFERENCES source_books(id) ON DELETE SET NULL,
-    source_page INTEGER,
-    name TEXT NOT NULL,
-    unlock_level INTEGER,
-    description TEXT,
-    UNIQUE(class_id, name)
-);
-
-CREATE TABLE class_features (
-    id INTEGER PRIMARY KEY,
-    class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
-    subclass_id INTEGER REFERENCES subclasses(id) ON DELETE CASCADE,
-    source_book_id INTEGER REFERENCES source_books(id) ON DELETE SET NULL,
-    source_page INTEGER,
-    level INTEGER NOT NULL,
-    name TEXT NOT NULL,
-    feature_type TEXT NOT NULL CHECK (feature_type IN ('base','optional','subclass')),
-    uses_formula TEXT,
-    recharge TEXT,
-    description TEXT NOT NULL,
-    UNIQUE(class_id, subclass_id, level, name)
-);
-
-CREATE TABLE races (
-    id INTEGER PRIMARY KEY,
-    source_book_id INTEGER REFERENCES source_books(id) ON DELETE SET NULL,
-    source_page INTEGER,
-    name TEXT NOT NULL UNIQUE,
-    size TEXT,
-    speed_ft INTEGER,
-    ability_score_text TEXT,
-    language_text TEXT,
+create table entity_types
+(
+    id          TEXT not null
+        primary key,
+    name        TEXT not null
+        unique,
     description TEXT
 );
 
-CREATE TABLE subraces (
-    id INTEGER PRIMARY KEY,
-    race_id INTEGER NOT NULL REFERENCES races(id) ON DELETE CASCADE,
-    source_book_id INTEGER REFERENCES source_books(id) ON DELETE SET NULL,
-    source_page INTEGER,
-    name TEXT NOT NULL,
-    ability_score_text TEXT,
-    description TEXT,
-    UNIQUE(race_id, name)
+create table game_systems
+(
+    id                    TEXT    not null
+        primary key,
+    name                  TEXT    not null,
+    action_economy_type   TEXT    not null,
+    uses_bounded_accuracy INTEGER not null,
+    check (action_economy_type IN ('Standard', 'Action_Points', 'Three_Action')),
+    check (uses_bounded_accuracy IN (0, 1))
 );
 
-CREATE TABLE backgrounds (
-    id INTEGER PRIMARY KEY,
-    source_book_id INTEGER REFERENCES source_books(id) ON DELETE SET NULL,
-    source_page INTEGER,
-    name TEXT NOT NULL UNIQUE,
-    skill_prof_text TEXT,
-    tool_prof_text TEXT,
-    language_prof_text TEXT,
-    equipment_text TEXT,
-    feature_name TEXT,
-    feature_text TEXT,
-    description TEXT
+create table actors
+(
+    id              TEXT    not null
+        primary key,
+    system_id       TEXT    not null
+        references game_systems
+            on delete cascade,
+    name            TEXT    not null,
+    actor_type      TEXT    not null,
+    base_hp         INTEGER not null,
+    base_ac         INTEGER not null,
+    stats_blob      TEXT,
+    quick_view_blob JSON,
+    check (actor_type IN ('Player', 'NPC', 'Hazard'))
 );
 
-CREATE TABLE feats (
-    id INTEGER PRIMARY KEY,
-    source_book_id INTEGER REFERENCES source_books(id) ON DELETE SET NULL,
-    source_page INTEGER,
-    name TEXT NOT NULL UNIQUE,
-    prerequisite_text TEXT,
-    description TEXT NOT NULL
+create table abilities_and_actions
+(
+    id             TEXT    not null
+        primary key,
+    actor_id       TEXT    not null
+        references actors
+            on delete cascade,
+    name           TEXT    not null,
+    action_cost    INTEGER not null,
+    traits         TEXT,
+    effect_payload TEXT
 );
 
--- ----------------------------
--- Proficiencies / reference data
--- ----------------------------
-CREATE TABLE proficiencies (
-    id INTEGER PRIMARY KEY,
-    kind TEXT NOT NULL CHECK (kind IN ('skill','save','armor','weapon','tool','language')),
-    name TEXT NOT NULL,
-    UNIQUE(kind, name)
+create table encounter_combatants
+(
+    id                TEXT    not null
+        primary key,
+    encounter_id      TEXT    not null,
+    actor_id          TEXT    not null
+        references actors
+            on delete cascade,
+    initiative_score  REAL,
+    current_hp        INTEGER not null,
+    temporary_hp      INTEGER default 0,
+    available_actions INTEGER
 );
 
-CREATE TABLE class_proficiencies (
-    class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
-    proficiency_id INTEGER NOT NULL REFERENCES proficiencies(id) ON DELETE CASCADE,
-    PRIMARY KEY (class_id, proficiency_id)
+create table combatant_conditions
+(
+    id                  TEXT not null
+        primary key,
+    combatant_id        TEXT not null
+        references encounter_combatants
+            on delete cascade,
+    condition_name      TEXT not null,
+    value               INTEGER,
+    duration_rounds     INTEGER,
+    source_combatant_id TEXT
+        references encounter_combatants
 );
 
-CREATE TABLE race_proficiencies (
-    race_id INTEGER NOT NULL REFERENCES races(id) ON DELETE CASCADE,
-    proficiency_id INTEGER NOT NULL REFERENCES proficiencies(id) ON DELETE CASCADE,
-    PRIMARY KEY (race_id, proficiency_id)
+create table encounters
+(
+    id                  TEXT not null
+        primary key,
+    name                TEXT not null,
+    status              TEXT not null,
+    current_round       INTEGER default 1,
+    active_combatant_id TEXT
+        references encounter_combatants,
+    check (status IN ('Draft', 'Active', 'Completed'))
 );
 
-CREATE TABLE background_proficiencies (
-    background_id INTEGER NOT NULL REFERENCES backgrounds(id) ON DELETE CASCADE,
-    proficiency_id INTEGER NOT NULL REFERENCES proficiencies(id) ON DELETE CASCADE,
-    PRIMARY KEY (background_id, proficiency_id)
+create table combat_log
+(
+    id                  TEXT not null
+        primary key,
+    encounter_id        TEXT not null
+        references encounters
+            on delete cascade,
+    source_combatant_id TEXT not null
+        references encounter_combatants,
+    target_combatant_id TEXT
+        references encounter_combatants,
+    action_id           TEXT
+        references abilities_and_actions,
+    event_type          TEXT not null,
+    raw_roll            INTEGER,
+    calculated_result   INTEGER,
+    timestamp           DATETIME default CURRENT_TIMESTAMP,
+    check (event_type IN ('Roll', 'Damage', 'Heal', 'Condition_Applied', 'Turn_Start'))
 );
 
--- ----------------------------
--- Equipment / items
--- ----------------------------
-CREATE TABLE item_categories (
-    id INTEGER PRIMARY KEY,
-    parent_id INTEGER REFERENCES item_categories(id) ON DELETE SET NULL,
-    name TEXT NOT NULL UNIQUE
+alter table encounter_combatants
+    add foreign key(encounter_id) references encounters
+    on
+delete
+cascade;
+
+create table entity_entries
+(
+    id             TEXT not null
+        primary key,
+    entity_type_id TEXT not null
+        references entity_types,
+    name           TEXT not null,
+    description    TEXT,
+    system_id      TEXT
+                        references game_systems
+                            on delete set null,
+    metadata_blob  TEXT,
+    tags           JSON,
+    entity_type    TEXT
 );
 
-CREATE TABLE items (
-    id INTEGER PRIMARY KEY,
-    source_book_id INTEGER REFERENCES source_books(id) ON DELETE SET NULL,
-    source_page INTEGER,
-    category_id INTEGER REFERENCES item_categories(id) ON DELETE SET NULL,
-    item_type TEXT NOT NULL CHECK (
-        item_type IN (
-            'gear','weapon','armor','shield','tool','pack','consumable',
-            'ammunition','focus','holy_symbol','vehicle','mount',
-            'trade_good','magic_item','wondrous_item','potion','ring',
-            'rod','staff','wand','scroll'
-        )
-    ),
-    name TEXT NOT NULL UNIQUE,
-    rarity TEXT,
-    requires_attunement INTEGER NOT NULL DEFAULT 0 CHECK (requires_attunement IN (0,1)),
-    cost_amount REAL,
-    cost_unit TEXT CHECK (cost_unit IN ('cp','sp','ep','gp','pp')),
-    weight_lb REAL,
-    description TEXT
+create table actor_conditions
+(
+    actor_id     TEXT not null
+        references entity_entries
+            on delete cascade,
+    condition_id TEXT not null,
+    primary key (actor_id, condition_id)
 );
 
-CREATE TABLE weapons (
-    item_id INTEGER PRIMARY KEY REFERENCES items(id) ON DELETE CASCADE,
-    weapon_class TEXT NOT NULL CHECK (weapon_class IN ('simple','martial')),
-    weapon_kind TEXT NOT NULL CHECK (weapon_kind IN ('melee','ranged')),
-    damage_dice TEXT,
-    damage_type TEXT,
-    versatile_damage_dice TEXT,
-    normal_range_ft INTEGER,
-    long_range_ft INTEGER
+create table actor_entity_relations
+(
+    actor_id     TEXT not null
+        references actors
+            on delete cascade,
+    entity_id    TEXT not null
+        references entity_entries
+            on delete cascade,
+    quantity     INTEGER default 1,
+    is_equipped  INTEGER default 0,
+    custom_notes TEXT,
+    primary key (actor_id, entity_id),
+    check (is_equipped IN (0, 1))
 );
 
-CREATE TABLE weapon_properties (
-    id INTEGER PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE,
-    description TEXT
+create table entity_tags
+(
+    entity_id TEXT not null
+        references entity_entries
+            on delete cascade,
+    tag_name  TEXT not null,
+    primary key (entity_id, tag_name)
 );
 
-CREATE TABLE weapon_property_map (
-    item_id INTEGER NOT NULL REFERENCES weapons(item_id) ON DELETE CASCADE,
-    property_id INTEGER NOT NULL REFERENCES weapon_properties(id) ON DELETE CASCADE,
-    value_text TEXT,
-    PRIMARY KEY (item_id, property_id)
+create table location_data
+(
+    entity_id          TEXT not null
+        primary key
+        references entity_entries
+            on delete cascade,
+    parent_location_id TEXT
+        references location_data,
+    is_discovered      INTEGER default 0,
+    coordinate_blob    TEXT,
+    check (is_discovered IN (0, 1))
 );
 
-CREATE TABLE armors (
-    item_id INTEGER PRIMARY KEY REFERENCES items(id) ON DELETE CASCADE,
-    armor_type TEXT NOT NULL CHECK (armor_type IN ('light','medium','heavy','shield')),
-    base_ac INTEGER NOT NULL,
-    dex_bonus_cap INTEGER,
-    min_strength INTEGER,
-    stealth_disadvantage INTEGER NOT NULL DEFAULT 0 CHECK (stealth_disadvantage IN (0,1))
+create table skills
+(
+    id              TEXT not null
+        primary key,
+    system_id       TEXT not null
+        references game_systems
+            on delete cascade,
+    name            TEXT not null,
+    description     TEXT,
+    associated_stat TEXT,
+    mechanics_blob  TEXT
 );
 
-CREATE TABLE tools (
-    item_id INTEGER PRIMARY KEY REFERENCES items(id) ON DELETE CASCADE,
-    tool_type TEXT NOT NULL
+create table actors_skills
+(
+    actor_id          TEXT not null
+        references actors
+            on delete cascade,
+    skill_id          TEXT not null
+        references skills
+            on delete cascade,
+    base_value        INTEGER default 0,
+    proficiency_level TEXT,
+    modifier          INTEGER default 0,
+    primary key (actor_id, skill_id)
 );
 
-CREATE TABLE pack_items (
-    pack_item_id INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,
-    child_item_id INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,
-    quantity INTEGER NOT NULL DEFAULT 1,
-    PRIMARY KEY (pack_item_id, child_item_id)
+create table systems
+(
+    system_id     INTEGER
+        primary key,
+    name          TEXT not null
+        unique,
+    version       TEXT,
+    mechanic_type TEXT
 );
 
-CREATE TABLE magic_items (
-    item_id INTEGER PRIMARY KEY REFERENCES items(id) ON DELETE CASCADE,
-    magic_item_type TEXT,
-    charges INTEGER,
-    recharge_text TEXT
+create table tags
+(
+    tag_id INTEGER
+        primary key,
+    name   TEXT not null
+        unique
 );
 
--- ----------------------------
--- Spells
--- ----------------------------
-CREATE TABLE spells (
-    id INTEGER PRIMARY KEY,
-    source_book_id INTEGER REFERENCES source_books(id) ON DELETE SET NULL,
-    source_page INTEGER,
-    name TEXT NOT NULL UNIQUE,
-    level INTEGER NOT NULL CHECK (level BETWEEN 0 AND 9),
-    school TEXT NOT NULL,
-    ritual INTEGER NOT NULL DEFAULT 0 CHECK (ritual IN (0,1)),
-    concentration INTEGER NOT NULL DEFAULT 0 CHECK (concentration IN (0,1)),
-    casting_time_text TEXT NOT NULL,
-    range_text TEXT NOT NULL,
-    duration_text TEXT NOT NULL,
-    components_v INTEGER NOT NULL DEFAULT 0 CHECK (components_v IN (0,1)),
-    components_s INTEGER NOT NULL DEFAULT 0 CHECK (components_s IN (0,1)),
-    components_m INTEGER NOT NULL DEFAULT 0 CHECK (components_m IN (0,1)),
-    material_text TEXT,
-    attack_type TEXT CHECK (attack_type IN ('melee','ranged','save','none')),
-    save_ability TEXT,
-    damage_type TEXT,
-    description TEXT NOT NULL,
-    higher_levels_text TEXT
-);
-
-CREATE TABLE spell_classes (
-    spell_id INTEGER NOT NULL REFERENCES spells(id) ON DELETE CASCADE,
-    class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
-    PRIMARY KEY (spell_id, class_id)
-);
-
--- ----------------------------
--- Monsters
--- ----------------------------
-CREATE TABLE monsters (
-    id INTEGER PRIMARY KEY,
-    source_book_id INTEGER REFERENCES source_books(id) ON DELETE SET NULL,
-    source_page INTEGER,
-    name TEXT NOT NULL UNIQUE,
-    size TEXT NOT NULL,
-    type TEXT NOT NULL,
-    subtype TEXT,
-    alignment TEXT,
-    armor_class INTEGER,
-    armor_text TEXT,
-    hit_points INTEGER,
-    hit_dice TEXT,
-    challenge_rating TEXT,
-    xp INTEGER,
-    proficiency_bonus INTEGER,
-    str_score INTEGER NOT NULL,
-    dex_score INTEGER NOT NULL,
-    con_score INTEGER NOT NULL,
-    int_score INTEGER NOT NULL,
-    wis_score INTEGER NOT NULL,
-    cha_score INTEGER NOT NULL,
-    passive_perception INTEGER,
-    senses_text TEXT,
-    languages_text TEXT,
-    damage_vulnerabilities_text TEXT,
-    damage_resistances_text TEXT,
-    damage_immunities_text TEXT,
-    condition_immunities_text TEXT
-);
-
-CREATE TABLE monster_speeds (
-    monster_id INTEGER NOT NULL REFERENCES monsters(id) ON DELETE CASCADE,
-    movement_type TEXT NOT NULL CHECK (movement_type IN ('walk','burrow','climb','fly','swim')),
-    speed_ft INTEGER NOT NULL,
-    PRIMARY KEY (monster_id, movement_type)
-);
-
-CREATE TABLE monster_saves (
-    monster_id INTEGER NOT NULL REFERENCES monsters(id) ON DELETE CASCADE,
-    ability TEXT NOT NULL CHECK (ability IN ('STR','DEX','CON','INT','WIS','CHA')),
-    bonus INTEGER NOT NULL,
-    PRIMARY KEY (monster_id, ability)
-);
-
-CREATE TABLE monster_skills (
-    monster_id INTEGER NOT NULL REFERENCES monsters(id) ON DELETE CASCADE,
-    skill_name TEXT NOT NULL,
-    bonus INTEGER NOT NULL,
-    PRIMARY KEY (monster_id, skill_name)
-);
-
-CREATE TABLE monster_traits (
-    id INTEGER PRIMARY KEY,
-    monster_id INTEGER NOT NULL REFERENCES monsters(id) ON DELETE CASCADE,
-    trait_type TEXT NOT NULL CHECK (
-        trait_type IN ('trait','action','bonus_action','reaction','legendary_action','lair_action')
-    ),
-    name TEXT NOT NULL,
-    sort_order INTEGER NOT NULL DEFAULT 0,
-    recharge_text TEXT,
-    attack_bonus INTEGER,
-    save_dc INTEGER,
-    description TEXT NOT NULL
-);
-
--- ----------------------------
--- Search
--- ----------------------------
-CREATE VIRTUAL TABLE search_index USING fts5(
-    entity_type,
-    entity_id UNINDEXED,
-    title,
-    body
-);
-
--- ----------------------------
--- Useful indexes
--- ----------------------------
-CREATE INDEX idx_book_sections_book_parent ON book_sections(book_id, parent_section_id);
-CREATE INDEX idx_rules_entries_category_name ON rules_entries(category, name);
-
-CREATE INDEX idx_class_features_class_level ON class_features(class_id, level);
-CREATE INDEX idx_subclasses_class ON subclasses(class_id);
-
-CREATE INDEX idx_items_type_name ON items(item_type, name);
-CREATE INDEX idx_items_category ON items(category_id);
-CREATE INDEX idx_weapons_class_kind ON weapons(weapon_class, weapon_kind);
-CREATE INDEX idx_armors_type ON armors(armor_type);
-
-CREATE INDEX idx_spells_level_school ON spells(level, school);
-CREATE INDEX idx_spell_classes_class ON spell_classes(class_id);
-
-CREATE INDEX idx_monsters_cr ON monsters(challenge_rating);
-CREATE INDEX idx_monster_traits_monster_type ON monster_traits(monster_id, trait_type, sort_order);
