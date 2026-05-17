@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react";
+import type { StarredMonster } from "../App";
 import "./BestiaryViewer.css";
+
+const ALL_SOURCES_VALUE = "all";
 
 interface Monster {
   name: string;
   source: string;
   page?: number;
   size?: string[];
-  type: string;
+  type: string | { type?: string; tags?: string[] };
   alignment?: string[];
-  ac?: { ac: number; from?: string[] }[];
+  ac?: Array<number | { ac: number; from?: string[] }>;
   hp?: { average: number; formula?: string; special?: string };
   speed?: { walk?: number; fly?: number; [key: string]: number | undefined };
   str?: number;
@@ -34,58 +37,126 @@ interface Monster {
   hasToken?: boolean;
 }
 
-function BestiaryViewer({ onClose }: { onClose?: () => void }) {
+interface BestiaryViewerProps {
+  onClose?: () => void;
+  starredMonsterIds: Set<string>;
+  onToggleStar: (monster: StarredMonster) => void;
+}
+
+function BestiaryViewer({ onClose, starredMonsterIds, onToggleStar }: BestiaryViewerProps) {
   const [sources, setSources] = useState<string[]>([]);
+  const [sourceFiles, setSourceFiles] = useState<Record<string, string>>({});
   const [selectedSource, setSelectedSource] = useState<string>("");
   const [monsters, setMonsters] = useState<Monster[]>([]);
   const [selectedMonster, setSelectedMonster] = useState<Monster | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<string>("all");
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    fetch("/src/assets/data/bestiary/index.json")
+    setIsReady(false);
+    fetch("/data/bestiary/index.json")
       .then((res) => res.json())
       .then((data) => {
         const sourceList = Object.keys(data);
+        setSourceFiles(data);
         setSources(sourceList);
-        setSelectedSource(sourceList[0]);
-        setLoading(false);
+        setSelectedSource(ALL_SOURCES_VALUE);
+        setIsReady(true);
       })
-      .catch((err) => console.error("Failed to load index:", err));
+      .catch((err) => {
+        console.error("Failed to load index:", err);
+        setIsReady(true);
+      });
   }, []);
 
   useEffect(() => {
     if (!selectedSource) return;
 
-    const indexMap: Record<string, string> = {
-      PHB: "bestiary-phb.json",
-      VGM: "bestiary-vgm.json",
-      MM: "bestiary-mm.json",
-    };
+    const loadMonsters = async () => {
+      try {
+        if (selectedSource === ALL_SOURCES_VALUE) {
+          const filenames = Object.values(sourceFiles);
+          const allBestiaries = await Promise.all(
+            filenames.map((filename) =>
+              fetch(`/data/bestiary/${filename}`).then((res) => res.json()),
+            ),
+          );
+          const monsterList = allBestiaries.flatMap((data) => data.monster || []);
+          setMonsters(monsterList);
+          setSelectedMonster(null);
+          return;
+        }
 
-    const filename = indexMap[selectedSource] || `bestiary-${selectedSource.toLowerCase()}.json`;
+        const filename = sourceFiles[selectedSource];
+        if (!filename) {
+          console.error(`No bestiary filename found for source "${selectedSource}"`);
+          setMonsters([]);
+          setSelectedMonster(null);
+          return;
+        }
 
-    fetch(`/src/assets/data/bestiary/${filename}`)
-      .then((res) => res.json())
-      .then((data) => {
+        const data = await fetch(`/data/bestiary/${filename}`).then((res) => res.json());
         const monsterList = data.monster || [];
         setMonsters(monsterList);
         setSelectedMonster(null);
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error("Failed to load bestiary:", err);
         setMonsters([]);
-      });
-  }, [selectedSource]);
+      }
+    };
+
+    void loadMonsters();
+  }, [selectedSource, sourceFiles]);
+
+  const normalizeMonsterType = (
+    value: Monster["type"] | string[] | { choose?: string[] } | undefined,
+  ): string => {
+    if (!value) return "unknown";
+    if (typeof value === "string") return value;
+    if (Array.isArray(value)) return value.join(", ");
+    if ("choose" in value && Array.isArray(value.choose)) return value.choose.join(" / ");
+    if ("type" in value) return normalizeMonsterType(value.type);
+    return "unknown";
+  };
+
+  const getMonsterType = (monster: Monster): string => {
+    return normalizeMonsterType(monster.type);
+  };
+
+  const getMonsterId = (monster: Monster): string => {
+    return `${monster.name}::${monster.source}`;
+  };
+
+  const toStarredMonster = (monster: Monster): StarredMonster => {
+    return {
+      id: getMonsterId(monster),
+      name: monster.name,
+      source: monster.source,
+      type: getMonsterType(monster),
+      cr: monster.cr,
+    };
+  };
+
+  const formatArmorClass = (acList?: Monster["ac"]): string => {
+    if (!acList?.length) return "—";
+
+    return acList
+      .map((entry) => {
+        if (typeof entry === "number") return `${entry}`;
+        return `${entry.ac}${entry.from?.length ? ` (${entry.from.join(", ")})` : ""}`;
+      })
+      .join(", ");
+  };
 
   const filteredMonsters = monsters.filter((m) => {
     const matchesSearch = m.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = filterType === "all" || m.type.toLowerCase().includes(filterType.toLowerCase());
+    const monsterType = getMonsterType(m);
+    const matchesType = filterType === "all" || monsterType.toLowerCase().includes(filterType.toLowerCase());
     return matchesSearch && matchesType;
   });
 
-  const types = ["all", ...new Set(monsters.map((m) => m.type))].sort();
+  const types = ["all", ...new Set(monsters.map((m) => getMonsterType(m)))].sort();
 
   const getModifier = (stat: number | undefined) => {
     if (!stat) return "—";
@@ -105,11 +176,19 @@ function BestiaryViewer({ onClose }: { onClose?: () => void }) {
       .replace(/[{}]/g, "");
   };
 
-  if (loading) {
+  if (!isReady) {
     return (
       <div className="bestiary-loading">
         <div className="loading-spinner" />
         <span>Opening the grimoire...</span>
+      </div>
+    );
+  }
+
+  if (sources.length === 0) {
+    return (
+      <div className="bestiary-loading">
+        <span>Failed to load bestiary data</span>
       </div>
     );
   }
@@ -138,6 +217,7 @@ function BestiaryViewer({ onClose }: { onClose?: () => void }) {
             value={selectedSource}
             onChange={(e) => setSelectedSource(e.target.value)}
           >
+            <option value={ALL_SOURCES_VALUE}>All Sources</option>
             {sources.map((source) => (
               <option key={source} value={source}>
                 {source}
@@ -182,14 +262,31 @@ function BestiaryViewer({ onClose }: { onClose?: () => void }) {
           </div>
           <div className="list-scroll">
             {filteredMonsters.map((monster) => (
-              <button
+              <div
                 key={`${monster.name}-${monster.source}`}
                 className={`monster-item ${selectedMonster?.name === monster.name ? "selected" : ""}`}
-                onClick={() => setSelectedMonster(monster)}
               >
-                <span className="monster-name">{monster.name}</span>
-                <span className="monster-type">{monster.type}</span>
-              </button>
+                <button
+                  className="monster-select-btn"
+                  onClick={() => setSelectedMonster(monster)}
+                >
+                  <span className="monster-name">{monster.name}</span>
+                  <span className="monster-type">{getMonsterType(monster)}</span>
+                </button>
+                <button
+                  className={`star-toggle ${starredMonsterIds.has(getMonsterId(monster)) ? "active" : ""}`}
+                  onClick={() => onToggleStar(toStarredMonster(monster))}
+                  aria-label={
+                    starredMonsterIds.has(getMonsterId(monster))
+                      ? `Remove ${monster.name} from starred monsters`
+                      : `Star ${monster.name}`
+                  }
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.4">
+                    <path d="M12 3.4l2.67 5.41 5.98.87-4.33 4.22 1.02 5.96L12 17.05 6.66 19.86l1.02-5.96-4.33-4.22 5.98-.87L12 3.4z" />
+                  </svg>
+                </button>
+              </div>
             ))}
           </div>
         </aside>
@@ -206,19 +303,32 @@ function BestiaryViewer({ onClose }: { onClose?: () => void }) {
                       <span className="meta-page">p. {selectedMonster.page}</span>
                     )}
                     <span className="meta-size">
-                      {selectedMonster.size?.join(" ")} {selectedMonster.type}
+                      {selectedMonster.size?.join(" ")} {getMonsterType(selectedMonster)}
                     </span>
                     {selectedMonster.alignment?.map((a, i) => (
                       <span key={i} className="meta-alignment">{a}</span>
                     ))}
                   </div>
                 </div>
-                {selectedMonster.cr && (
-                  <div className="cr-badge">
-                    <span className="cr-label">CR</span>
-                    <span className="cr-value">{selectedMonster.cr}</span>
-                  </div>
-                )}
+                <div className="card-header-actions">
+                  <button
+                    className={`detail-star-toggle ${starredMonsterIds.has(getMonsterId(selectedMonster)) ? "active" : ""}`}
+                    onClick={() => onToggleStar(toStarredMonster(selectedMonster))}
+                  >
+                    <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.4">
+                      <path d="M12 3.4l2.67 5.41 5.98.87-4.33 4.22 1.02 5.96L12 17.05 6.66 19.86l1.02-5.96-4.33-4.22 5.98-.87L12 3.4z" />
+                    </svg>
+                    <span>
+                      {starredMonsterIds.has(getMonsterId(selectedMonster)) ? "Starred" : "Star"}
+                    </span>
+                  </button>
+                  {selectedMonster.cr && (
+                    <div className="cr-badge">
+                      <span className="cr-label">CR</span>
+                      <span className="cr-value">{selectedMonster.cr}</span>
+                    </div>
+                  )}
+                </div>
               </header>
 
               <div className="stats-block">
@@ -260,13 +370,7 @@ function BestiaryViewer({ onClose }: { onClose?: () => void }) {
                 <div className="combat-row">
                   <div className="combat-stat">
                     <span className="combat-label">Armor Class</span>
-                    <span className="combat-value">
-                      {selectedMonster.ac?.map((a, i) => (
-                        <span key={i}>
-                          {a.ac} {a.from && `(${a.from.join(", ")})`}
-                        </span>
-                      ))}
-                    </span>
+                    <span className="combat-value">{formatArmorClass(selectedMonster.ac)}</span>
                   </div>
                   <div className="combat-stat">
                     <span className="combat-label">Hit Points</span>

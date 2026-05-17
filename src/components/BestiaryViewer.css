@@ -239,16 +239,13 @@ body {
 
 .monster-item {
   width: 100%;
-  text-align: left;
   background: transparent;
-  border: none;
   border-bottom: 1px solid var(--border-subtle);
-  padding: 1rem 1.2rem;
-  cursor: pointer;
   transition: all 0.15s ease;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .monster-item:hover {
@@ -258,6 +255,17 @@ body {
 .monster-item.selected {
   background: var(--bg-selected);
   border-left: 3px solid var(--accent-gold);
+}
+
+.monster-select-btn {
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 1rem 1.2rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
 }
 
 .monster-item .monster-name {
@@ -271,6 +279,41 @@ body {
   font-size: 0.85rem;
   color: var(--text-muted);
   font-style: italic;
+}
+
+.star-toggle,
+.detail-star-toggle {
+  border: 1px solid var(--border-subtle);
+  background: rgba(201, 162, 39, 0.04);
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.star-toggle {
+  margin-right: 1rem;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.star-toggle svg,
+.detail-star-toggle svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.star-toggle:hover,
+.detail-star-toggle:hover,
+.star-toggle.active,
+.detail-star-toggle.active {
+  color: var(--accent-gold);
+  border-color: var(--border-gold);
+  background: rgba(201, 162, 39, 0.12);
+  box-shadow: 0 0 20px rgba(201, 162, 39, 0.12);
 }
 
 .monster-detail {
@@ -330,6 +373,24 @@ body {
   background: var(--bg-tertiary);
   border-radius: 3px;
   font-size: 0.8rem !important;
+}
+
+.card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.detail-star-toggle {
+  border-radius: 999px;
+  padding: 0.75rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .cr-badge {
@@ -606,6 +667,16 @@ body {
 
   .monster-list {
     max-height: 300px;
+  }
+
+  .card-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .card-header-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .stat-row {
