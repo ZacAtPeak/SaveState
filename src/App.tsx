@@ -1,105 +1,147 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import BestiaryViewer from "./components/BestiaryViewer";
+import MonsterDetail from "./components/MonsterDetail";
+import {
+  fetchAllMonsters,
+  fetchBestiaryIndex,
+  getMonsterId,
+  isPointInRect,
+  type Monster,
+  type StarredMonster,
+} from "./components/bestiaryShared";
+import { useLocalStorageState } from "./hooks/useLocalStorageState";
 import "./App.css";
 
 const STARRED_MONSTERS_STORAGE_KEY = "savestate.starred-monsters";
 const ENCOUNTER_STRIP_STORAGE_KEY = "savestate.encounter-strip";
 
-export interface StarredMonster {
-  id: string;
-  name: string;
-  source: string;
-  type: string;
-  cr?: string;
+const byName = (a: StarredMonster, b: StarredMonster) => a.name.localeCompare(b.name);
+
+interface InitiativeEntry {
+  entryId: string;
+  monster: StarredMonster;
 }
+
+const createEntryId = (monsterId: string) => {
+  const randomPart =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return `${monsterId}::${randomPart}`;
+};
+
+const createInitiativeEntry = (monster: StarredMonster): InitiativeEntry => ({
+  entryId: createEntryId(monster.id),
+  monster,
+});
+
+const isStarredMonster = (value: unknown): value is StarredMonster => {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<StarredMonster>;
+  return typeof candidate.id === "string" && typeof candidate.name === "string";
+};
+
+const isInitiativeEntry = (value: unknown): value is InitiativeEntry => {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<InitiativeEntry>;
+  return typeof candidate.entryId === "string" && isStarredMonster(candidate.monster);
+};
+
+const normalizeInitiativeEntries = (value: unknown): InitiativeEntry[] => {
+  if (!Array.isArray(value)) return [];
+
+  return value.flatMap((entry) => {
+    if (isInitiativeEntry(entry)) return [entry];
+    if (isStarredMonster(entry)) return [createInitiativeEntry(entry)];
+    return [];
+  });
+};
 
 function App() {
   const encounterStripRef = useRef<HTMLElement | null>(null);
+
   const [showBestiary, setShowBestiary] = useState(false);
-  const [starredMonsters, setStarredMonsters] = useState<StarredMonster[]>(() => {
-    if (typeof window === "undefined") return [];
-
-    try {
-      const stored = window.localStorage.getItem(STARRED_MONSTERS_STORAGE_KEY);
-      return stored ? (JSON.parse(stored) as StarredMonster[]) : [];
-    } catch (error) {
-      console.error("Failed to load starred monsters:", error);
-      return [];
-    }
-  });
-  const [encounterStripMonsters, setEncounterStripMonsters] = useState<StarredMonster[]>(() => {
-    if (typeof window === "undefined") return [];
-
-    try {
-      const stored = window.localStorage.getItem(ENCOUNTER_STRIP_STORAGE_KEY);
-      return stored ? (JSON.parse(stored) as StarredMonster[]) : [];
-    } catch (error) {
-      console.error("Failed to load encounter strip monsters:", error);
-      return [];
-    }
-  });
+  const [starredMonsters, setStarredMonsters] = useLocalStorageState<StarredMonster[]>(
+    STARRED_MONSTERS_STORAGE_KEY,
+    [],
+  );
+  const [rawEncounterStripMonsters, setRawEncounterStripMonsters] = useLocalStorageState<unknown[]>(
+    ENCOUNTER_STRIP_STORAGE_KEY,
+    [],
+  );
   const [isStripActive, setIsStripActive] = useState(false);
   const [draggedMonster, setDraggedMonster] = useState<StarredMonster | null>(null);
   const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null);
+  const [monsterDetails, setMonsterDetails] = useState<Record<string, Monster>>({});
+  const [selectedPinnedMonsterId, setSelectedPinnedMonsterId] = useState<string | null>(null);
+
+  const starredMonsterIds = useMemo(
+    () => new Set(starredMonsters.map((monster) => monster.id)),
+    [starredMonsters],
+  );
+  const encounterStripMonsters = useMemo(
+    () => normalizeInitiativeEntries(rawEncounterStripMonsters),
+    [rawEncounterStripMonsters],
+  );
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(STARRED_MONSTERS_STORAGE_KEY, JSON.stringify(starredMonsters));
-    } catch (error) {
-      console.error("Failed to save starred monsters:", error);
+    const normalizedEntries = normalizeInitiativeEntries(rawEncounterStripMonsters);
+    const needsMigration =
+      normalizedEntries.length !== rawEncounterStripMonsters.length ||
+      normalizedEntries.some((entry, index) => entry !== rawEncounterStripMonsters[index]);
+
+    if (needsMigration) {
+      setRawEncounterStripMonsters(normalizedEntries);
     }
-  }, [starredMonsters]);
+  }, [rawEncounterStripMonsters, setRawEncounterStripMonsters]);
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(ENCOUNTER_STRIP_STORAGE_KEY, JSON.stringify(encounterStripMonsters));
-    } catch (error) {
-      console.error("Failed to save encounter strip monsters:", error);
-    }
-  }, [encounterStripMonsters]);
-
-  useEffect(() => {
-    setEncounterStripMonsters((current) =>
-      current.filter((monster) => starredMonsters.some((entry) => entry.id === monster.id)),
+    setRawEncounterStripMonsters((current) =>
+      normalizeInitiativeEntries(current).filter((entry) => starredMonsterIds.has(entry.monster.id)),
     );
-  }, [starredMonsters]);
+  }, [starredMonsterIds, setRawEncounterStripMonsters]);
+
+  useEffect(() => {
+    const loadMonsterDetails = async () => {
+      try {
+        const index = await fetchBestiaryIndex();
+        const monsters = await fetchAllMonsters(index);
+        const byId = Object.fromEntries(monsters.map((monster) => [getMonsterId(monster), monster]));
+        setMonsterDetails(byId);
+      } catch (error) {
+        console.error("Failed to load monster details:", error);
+      }
+    };
+
+    void loadMonsterDetails();
+  }, []);
+
+  useEffect(() => {
+    if (starredMonsters.length === 0) {
+      setSelectedPinnedMonsterId(null);
+      return;
+    }
+
+    setSelectedPinnedMonsterId((current) =>
+      current && starredMonsterIds.has(current) ? current : starredMonsters[0].id,
+    );
+  }, [starredMonsters, starredMonsterIds]);
 
   useEffect(() => {
     if (!draggedMonster) return;
 
-    const updateDragState = (clientX: number, clientY: number) => {
-      setDragPosition({ x: clientX, y: clientY });
-
-      const stripBounds = encounterStripRef.current?.getBoundingClientRect();
-      const isOverStrip = stripBounds
-        ? clientX >= stripBounds.left &&
-          clientX <= stripBounds.right &&
-          clientY >= stripBounds.top &&
-          clientY <= stripBounds.bottom
-        : false;
-
-      setIsStripActive(isOverStrip);
-    };
+    const isOverStrip = (clientX: number, clientY: number) =>
+      isPointInRect(clientX, clientY, encounterStripRef.current?.getBoundingClientRect());
 
     const handlePointerMove = (event: PointerEvent) => {
-      updateDragState(event.clientX, event.clientY);
+      setDragPosition({ x: event.clientX, y: event.clientY });
+      setIsStripActive(isOverStrip(event.clientX, event.clientY));
     };
 
     const handlePointerUp = (event: PointerEvent) => {
-      updateDragState(event.clientX, event.clientY);
-
-      const stripBounds = encounterStripRef.current?.getBoundingClientRect();
-      const droppedInStrip = stripBounds
-        ? event.clientX >= stripBounds.left &&
-          event.clientX <= stripBounds.right &&
-          event.clientY >= stripBounds.top &&
-          event.clientY <= stripBounds.bottom
-        : false;
-
-      if (droppedInStrip) {
+      if (isOverStrip(event.clientX, event.clientY)) {
         addMonsterToStrip(draggedMonster);
       }
-
       setDraggedMonster(null);
       setDragPosition(null);
       setIsStripActive(false);
@@ -114,45 +156,39 @@ function App() {
     };
   }, [draggedMonster]);
 
-  const starredMonsterIds = useMemo(
-    () => new Set(starredMonsters.map((monster) => monster.id)),
-    [starredMonsters],
-  );
-
   const handleToggleStar = (monster: StarredMonster) => {
     setStarredMonsters((current) => {
       const exists = current.some((entry) => entry.id === monster.id);
-      if (exists) {
-        return current.filter((entry) => entry.id !== monster.id);
-      }
-
-      return [...current, monster].sort((a, b) => a.name.localeCompare(b.name));
+      if (exists) return current.filter((entry) => entry.id !== monster.id);
+      return [...current, monster].sort(byName);
     });
   };
 
   const addMonsterToStrip = (monster: StarredMonster) => {
-    setEncounterStripMonsters((current) => {
-      if (current.some((entry) => entry.id === monster.id)) {
-        return current;
-      }
-
-      return [...current, monster];
-    });
+    setRawEncounterStripMonsters((current) => [
+      ...normalizeInitiativeEntries(current),
+      createInitiativeEntry(monster),
+    ]);
   };
 
-  const removeMonsterFromStrip = (monsterId: string) => {
-    setEncounterStripMonsters((current) => current.filter((monster) => monster.id !== monsterId));
+  const removeMonsterFromStrip = (entryId: string) => {
+    setRawEncounterStripMonsters((current) =>
+      normalizeInitiativeEntries(current).filter((entry) => entry.entryId !== entryId),
+    );
   };
 
   const handlePinnedMonsterPointerDown =
     (monster: StarredMonster) => (event: ReactPointerEvent<HTMLElement>) => {
       if (event.button !== 0) return;
-
       event.preventDefault();
       setDraggedMonster(monster);
       setDragPosition({ x: event.clientX, y: event.clientY });
       setIsStripActive(false);
     };
+
+  const selectedPinnedMonster = selectedPinnedMonsterId
+    ? monsterDetails[selectedPinnedMonsterId] ?? null
+    : null;
 
   if (showBestiary) {
     return (
@@ -173,12 +209,22 @@ function App() {
         </div>
 
         <div className="app-bar-actions">
-          <div className="hero-stat-card">
-            <span className="hero-stat-value">{starredMonsters.length}</span>
-            <span className="hero-stat-label">Starred Entries</span>
-          </div>
+          <button className="book-icon-btn" type="button" aria-label="Open Dice Roller">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round">
+              <path d="M12 2.75 20.25 7.5v9L12 21.25 3.75 16.5v-9L12 2.75Z" />
+              <circle cx="9" cy="9" r="1" fill="currentColor" stroke="none" />
+              <circle cx="15" cy="9" r="1" fill="currentColor" stroke="none" />
+              <circle cx="9" cy="15" r="1" fill="currentColor" stroke="none" />
+              <circle cx="15" cy="15" r="1" fill="currentColor" stroke="none" />
+            </svg>
+          </button>
 
-          <button className="book-icon-btn" onClick={() => setShowBestiary(true)} aria-label="Open Bestiary">
+          <button
+            className="book-icon-btn"
+            type="button"
+            onClick={() => setShowBestiary(true)}
+            aria-label="Open Bestiary"
+          >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
               <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15z" />
@@ -195,15 +241,15 @@ function App() {
       >
         {encounterStripMonsters.length > 0 && (
           <div className="encounter-strip-list">
-            {encounterStripMonsters.map((monster) => (
-              <article key={monster.id} className="encounter-chip">
+            {encounterStripMonsters.map(({ entryId, monster }) => (
+              <article key={entryId} className="encounter-chip">
                 <div>
                   <h2>{monster.name}</h2>
                   <p>{monster.type}</p>
                 </div>
                 <button
                   className="encounter-chip-remove"
-                  onClick={() => removeMonsterFromStrip(monster.id)}
+                  onClick={() => removeMonsterFromStrip(entryId)}
                   aria-label={`Remove ${monster.name} from encounter strip`}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -225,22 +271,27 @@ function App() {
 
           {starredMonsters.length > 0 ? (
             <div className="starred-list">
-              {starredMonsters.map((monster) => (
-                <article
-                  key={monster.id}
-                  className={`starred-card ${draggedMonster?.id === monster.id ? "dragging" : ""}`}
-                  onPointerDown={handlePinnedMonsterPointerDown(monster)}
-                >
-                  <div>
-                    <h3>{monster.name}</h3>
-                    <p>{monster.type}</p>
-                  </div>
-                  <div className="starred-meta">
-                    <span>{monster.source}</span>
-                    <span>{monster.cr ? `CR ${monster.cr}` : "Unrated"}</span>
-                  </div>
-                </article>
-              ))}
+              {starredMonsters.map((monster) => {
+                const isDragging = draggedMonster?.id === monster.id;
+                const isSelected = selectedPinnedMonsterId === monster.id;
+                return (
+                  <article
+                    key={monster.id}
+                    className={`starred-card ${isDragging ? "dragging" : ""} ${isSelected ? "selected" : ""}`}
+                    onPointerDown={handlePinnedMonsterPointerDown(monster)}
+                    onClick={() => setSelectedPinnedMonsterId(monster.id)}
+                  >
+                    <div>
+                      <h3>{monster.name}</h3>
+                      <p>{monster.type}</p>
+                    </div>
+                    <div className="starred-meta">
+                      <span>{monster.source}</span>
+                      <span>{monster.cr ? `CR ${monster.cr}` : "Unrated"}</span>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           ) : (
             <div className="starred-empty">
@@ -249,15 +300,19 @@ function App() {
             </div>
           )}
         </aside>
+
+        <MonsterDetail
+          monster={selectedPinnedMonster}
+          starredMonsterIds={starredMonsterIds}
+          onToggleStar={handleToggleStar}
+          emptyMessage="Select a pinned creature to inspect it here"
+        />
       </section>
 
       {draggedMonster && dragPosition && (
         <div
           className="drag-ghost"
-          style={{
-            left: `${dragPosition.x}px`,
-            top: `${dragPosition.y}px`,
-          }}
+          style={{ left: `${dragPosition.x}px`, top: `${dragPosition.y}px` }}
         >
           <h3>{draggedMonster.name}</h3>
           <p>{draggedMonster.type}</p>
