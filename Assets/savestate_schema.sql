@@ -193,3 +193,78 @@ CREATE TABLE entity_conditions (
     PRIMARY KEY (entity_id, condition_name),
     FOREIGN KEY (entity_id) REFERENCES entities(id) ON DELETE CASCADE
 );
+
+CREATE TABLE skills (
+    id text primary key,
+    name text,
+    description text,
+    associated_ability_score text
+);
+
+CREATE TABLE entity_skills (
+    entity_id text,
+    skill_id text,
+    is_proficient int,
+    is_expert int
+);
+
+CREATE TABLE classes (
+    id TEXT PRIMARY KEY,       -- e.g., 'fighter', 'wizard', 'cleric'
+    name TEXT NOT NULL UNIQUE,  -- e.g., 'Fighter'
+    hit_die TEXT NOT NULL CHECK (hit_die IN ('d6', 'd8', 'd10', 'd12')),
+    -- Primary ability scores for multiclassing prerequisites (optional data)
+    primary_ability TEXT,       -- e.g., 'STR or DEX' for Fighter, 'INT' for Wizard
+    -- Default saving throw proficiencies granted at level 1
+    saving_throw_1 TEXT NOT NULL CHECK (saving_throw_1 IN ('STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA')),
+    saving_throw_2 TEXT NOT NULL CHECK (saving_throw_2 IN ('STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA')),
+    description TEXT
+);
+
+CREATE TABLE subclasses (
+    id TEXT PRIMARY KEY,
+    class_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
+);
+
+CREATE TABLE class_level_progression (
+    class_id TEXT,
+    level INTEGER NOT NULL CHECK (level BETWEEN 1 AND 20),
+    proficiency_bonus INTEGER NOT NULL,
+    features TEXT, -- JSON array string of feature IDs unlocked at this level, e.g., "['action_surge', 'indomitable']"
+
+    -- Standard Spell Slot Progression Lookup for this level
+    slots_lvl_1 INTEGER NOT NULL DEFAULT 0,
+    slots_lvl_2 INTEGER NOT NULL DEFAULT 0,
+    slots_lvl_3 INTEGER NOT NULL DEFAULT 0,
+    slots_lvl_4 INTEGER NOT NULL DEFAULT 0,
+    slots_lvl_5 INTEGER NOT NULL DEFAULT 0,
+    slots_lvl_6 INTEGER NOT NULL DEFAULT 0,
+    slots_lvl_7 INTEGER NOT NULL DEFAULT 0,
+    slots_lvl_8 INTEGER NOT NULL DEFAULT 0,
+    slots_lvl_9 INTEGER NOT NULL DEFAULT 0,
+
+    PRIMARY KEY (class_id, level),
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
+);
+
+CREATE TABLE character_classes (
+    entity_id TEXT,
+    class_id TEXT,
+    subclass_id TEXT, -- Can be NULL if they haven't picked a subclass yet
+    class_level INTEGER NOT NULL DEFAULT 1 CHECK (class_level BETWEEN 1 AND 20),
+    is_primary INTEGER NOT NULL DEFAULT 0 CHECK (is_primary IN (0, 1)), -- 1 if it was their starting level 1 class
+
+    PRIMARY KEY (entity_id, class_id),
+    FOREIGN KEY (entity_id) REFERENCES entities(id) ON DELETE CASCADE,
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
+    FOREIGN KEY (subclass_id) REFERENCES subclasses(id) ON DELETE SET NULL
+);
+
+
+
+
+
+
+

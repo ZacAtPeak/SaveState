@@ -215,4 +215,153 @@ INSERT INTO entity_damage_modifiers (entity_id, damage_type, modifier_type) VALU
 INSERT INTO entity_conditions (entity_id, condition_name) VALUES
 ('mon-4', 'Prone');
 
+INSERT INTO skills (id, name, associated_ability_score, description) values
+('acr', 'Acrobatics', 'dexterity', 'Acrobatics is a skill used when trying to maintain balance or general nimbleness. Examples include walking across a thin or rickety bridge, running along a slippery surface, or moving out of the way of a projectile. It can also be used to break free of a grapple.'),
+('ani', 'Animal Handling', 'wisdom', 'When dealing with animals, Animal Handling is called upon to determine how well that goes. Situations that might call for it range from calming a spooked horse or agitated wild animal, or petting a creature you find. It may also be used when trying to figure out an animal''s intentions and instincts.'),
+('arc', 'Arcana', 'intelligence', 'Arcana is used for recalling magical lore. This can include but is not limited to deciphering spells or summoning circles, determining magic items, knowing the planes of existence and its inhabitants, reading eldritch symbols, and remembering or understanding magic rites or rituals.'),
+('ath', 'Athletics', 'strength', 'Athletics checks are used when determining feats of endurance, usually when difficulty is encountered while climbing, jumping, or swimming. Examples include trying to scale a steep or slippery cliff, trying to make an unusually long jump, and resisting the pull of tides or monsters while swimming. It''s also used when grappling a creature, and can be used to break free of a grapple.'),
+('dec', 'Deception', 'charisma', 'Deception is used when lying. This can be verbally or not. If you''re attempting to convince others of something untrue, Deception is called for. Using disguises, hiding the truth of situations, conning someone, and other situations of ambiguous truth all use Deception.'),
+('his', 'History', 'intelligence', 'Much like the name suggests, History is used when recalling lore of the past. This can include wars big or small, legendary people, ancient kingdoms or lost civilizations, and miscellaneous historical events. It''s also occasionally used when the name of an obscure land is brought up and determining if anyone knows of it.'),
+('ins', 'Insight', 'wisdom', 'Insight is a famous and frequently used skill. Primarily, it''s used to determine if someone is being truthful or not. It can also be used to glean how suspicious someone may be, if they''re hiding something even if not lying, and any other situation which calls for studying a creature''s behaviors and what can be learned from it.'),
+('int', 'Intimidation', 'charisma', 'When trying to scare someone through threats, Intimidation is used. This can be through words alone, threatening to do something violent; or pulling out a dagger in a silent show. Intimidation can be applied to multiple situations, such as trying to get information out of a prisoner, convincing someone to reconsider their decisions, or showing off your lack of tolerance for nonsense.'),
+('inv', 'Investigation', 'intelligence', 'Not to be confused with Perception, Investigation determines what you''re able to deduce about your surroundings or what you''re studying. You might be able to figure out what weapon killed someone, locations of hidden doors or objects, weak points in structure, or the important bit of knowledge in a large book of text.'),
+('med', 'Medicine', 'wisdom', 'Medicine checks are mostly used to stabilize a dying creature. The DC to do so is 10. It can also be used to diagnose illnesses and occasionally used when determining how something died.'),
+('nat', 'Nature', 'intelligence', 'Nature checks are used when remembering lore about nature. This includes terrain, plants and which might be safe to eat, animals and their behaviors, the weather, and natural cycles.'),
+('prc', 'Perception', 'wisdom', 'Perception is among the most well-known skills, and is frequently mistakenly used in place of investigation. It''s used to determine how much a character notices of their surroundings. This can be intentional or not. It relies on basic senses rather than contemplative thought or deductions. Situations that might call for perception include standing guard, eavesdropping, and detecting hidden creatures or subtle sights.'),
+('prf', 'Performance', 'charisma', 'Performance checks are used when entertaining audiences. This can range from playing music to telling stories. It can, on occasion, also replace Deception or Intimidation if the act is dramatic enough. It determines how well a character can exaggerate to impress others.'),
+('prs', 'Persuasion', 'charisma', 'Persuasion is used when trying to convince others your way. It is distinct from Deception and Intimidation because it''s not through lies or threats, but convincing arguments, tact, social graces, and good nature. It''s used when acting in good, honest faith. Situations that call for persuasion include convincing guards to let you speak to a noble, settling disputes between warring groups, or inspiring crowds into action.'),
+('rel', 'Religion', 'intelligence', 'Religion is used when remembering religious lore, such as deities of your pantheon or not, rites and prayers, holy symbols, religious hierarchies and organizations, and even the practices of cults.'),
+('slh', 'Sleight of Hand', 'dexterity', 'Commonly associated with thievery, Sleight of Hand is used in situations that requires careful hand work. While attempting to pickpocket someone does require it, other examples include hiding an object on your person or planting something on someone else. It may also be called upon when doing activities that require fine movements, such as carving.'),
+('ste', 'Stealth', 'dexterity', 'Stealth checks are among the most common. They are used to determine how sneaky a character is being. Situations that use Stealth include slipping past guards, escaping situations unnoticed, hiding from enemies, or sneaking up on someone for a surprise.'),
+('sur', 'Survival', 'wisdom', 'Survival is a skill used for dealing with the wilds. Situations that can call for Survival include tracking footprints, foraging for food or water, navigating wilderness, identifying signs of creatures nearby or living in the area, predicting the weather, and avoiding hazards such as pits or quicksand.')
+
+insert into abilities (id, name, description)
+values
+('str', 'strength', 'Physical power'),
+('dex', 'Dexterity', 'Agility'),
+('con', 'Constitution', 'endurance'),
+('int', 'Intelligence', 'Reasoning and memory'),
+('wis', 'Wisdom', 'Perception and insight'),
+('cha', 'Charisma', 'Force of personality')
+
+INSERT INTO entity_skills (entity_id, skill_id, is_proficient, is_expert)
+values
+('pc-1', 'slh', 1, 1),
+('pc-1', 'prs', 1, 0),
+('pc-2', 'arc', 1, 0)
+
+
+-- ---------------------------------------------------------
+-- 1. INSERT CLASSES
+-- Descriptions directly referenced from dungeonsanddragonsfan.com
+-- ---------------------------------------------------------
+
+INSERT INTO classes (id, name, hit_die, primary_ability, saving_throw_1, saving_throw_2, description) VALUES
+(
+    'artificer',
+    'Artificer',
+    'd8',
+    'INT',
+    'CON',
+    'INT',
+    'DnD 5e Artificers are masters of magical invention, merging technology with arcane power. As an Artificer, you can craft magical objects and mechanical companions and provide support to your party through magical gear and enhancements.'
+),
+(
+    'barbarian',
+    'Barbarian',
+    'd12',
+    'STR',
+    'STR',
+    'CON',
+    'DnD 5e Barbarians are fierce warriors who excel in combat through sheer rage and physical prowess. As a Barbarian, you can both deal and absorb an incredible amount of damage, making you a formidable tank on the battlefield.'
+),
+(
+    'druid',
+    'Druid',
+    'd8',
+    'WIS',
+    'INT',
+    'WIS',
+    'DnD 5e Druids draw their power from nature and are able to harness its raw energy to command the elements, summon beasts and even change into an animal form known as a Wild Shape.'
+),
+(
+    'fighter',
+    'Fighter',
+    'd10',
+    'STR or DEX',
+    'STR',
+    'CON',
+    'DnD 5e Fighters are masters of martial combat, proficient with a wide variety of weapons and armor.'
+),
+(
+    'rogue',
+    'Rogue',
+    'd8',
+    'DEX or INT',
+    'DEX',
+    'INT',
+    'Rogues.'
+);
+
+-- ---------------------------------------------------------
+-- 2. INSERT SUBCLASSES
+-- Names and descriptions directly referenced from dungeonsanddragonsfan.com
+-- ---------------------------------------------------------
+
+-- ARTIFICER SUBCLASSES
+INSERT INTO subclasses (id, class_id, name, description) VALUES
+('artificer_alchemist', 'artificer', 'Alchemist', 'You specialize in experimental potion-making, using your alchemical mastery to craft powerful elixirs. These potions can heal, bolster defenses or provide various enhancements to you and your allies.'),
+('artificer_armorer', 'artificer', 'Armorer', 'You channel your expertise into crafting magical armor, transforming it into a powerful exosuit. This suit enhances your combat abilities, offers exceptional protection and can be customized with various magical effects.'),
+('artificer_artillerist', 'artificer', 'Artillerist', 'You focus on crafting and using magical cannons and other artillery. By summoning arcane turrets, you can deal significant damage from a distance or provide defensive support to your allies.'),
+('artificer_battle_smith', 'artificer', 'Battle Smith', 'You forge a strong bond with a clockwork animal construct that you create and command in battle. Along with some minor combat abilities, you also gain the ability to repair and reinforce both your construct and other equipment.');
+
+-- BARBARIAN SUBCLASSES (Paths)
+INSERT INTO subclasses (id, class_id, name, description) VALUES
+('barbarian_ancestral_guardian', 'barbarian', 'Path of the Ancestral Guardian', 'You invoke the spirits of your ancestors to protect yourself and your allies in battle. These ancestral spirits can shield your allies and deal extensive damage to your enemies.'),
+('barbarian_battlerager', 'barbarian', 'Path of the Battlerager', 'Available only for dwarves, you harness your rage into a reckless and frenzied fighting style, using unique spiked armor as a weapon.'),
+('barbarian_beast', 'barbarian', 'Path of the Beast', 'You channel the power of wild creatures, transforming physical aspects of your body to unleash devastating attacks. This includes sprouting claws, fangs or even a tail.'),
+('barbarian_berserker', 'barbarian', 'Path of the Berserker', 'You give in to the fury of combat, allowing you to fight with a primal ferocity. While in the grips of your battle rage, you can make extra attacks and ignore effects that would otherwise cause damage or slow you down.'),
+('barbarian_giant', 'barbarian', 'Path of the Giant', 'You draw on the might of legendary giants, gaining their strength and abilities. This path allows you to embody different aspects of giantkind, such as frost or fire.'),
+('barbarian_storm_herald', 'barbarian', 'Path of the Storm Herald', 'You tap into the power of the storm, generating a magical aura that affects everything around you. Depending on the environment you choose—tundra, desert, or sea—your aura can chill, scorch or lash your enemies.'),
+('barbarian_wild_heart', 'barbarian', 'Path of the Wild Heart', 'You forge a spiritual bond with a totem animal spirit, emulating the aspects of that being. Each animal spirit—be it bear, eagle, elk, tiger or wolf—provides unique strengths and supernatural abilities.'),
+('barbarian_wild_magic', 'barbarian', 'Path of Wild Magic', 'Your rage taps into the chaotic force of wild magic, resulting in unpredictable arcane side-effects. This path is unique in that that can be both incredibly powerful but also relies heavily on random dice roles.'),
+('barbarian_zealot', 'barbarian', 'Path of the Zealot', 'You are driven by a divine fury, bolstered by the power of the gods. This path not only increases your combat prowess with divine energy but also makes you nearly impossible to kill while raging.'),
+('barbarian_world_tree', 'barbarian', 'Path of the World Tree', 'You draw your power from the World Tree whose vast, endless branches touch all of the realms of the multiverse. This power allows you to be more resilient in combat, heal your allies and teleport across the battlefield.');
+
+-- DRUID SUBCLASSES (Circles)
+INSERT INTO subclasses (id, class_id, name, description) VALUES
+('druid_dreams', 'druid', 'Circle of Dreams', 'You are a guardian of the border between the Feywild and the mortal world, tapping into the magic of nature to heal and aid your allies.'),
+('druid_land', 'druid', 'Circle of the Land', 'You have a deep connection to a specific natural terrain, such as forests, mountains or coastlines. This subclass enhances your magical abilities.'),
+('druid_moon', 'druid', 'Circle of the Moon', 'You specialize in transforming into more powerful animals and even elemental forms. This subclass focuses on improving your combat effectiveness in beast form.'),
+('druid_shepherd', 'druid', 'Circle of the Shepherd', 'You are a protector of nature''s creatures, communicating with and nurturing them. This subclass gives you powers to summon and strengthen spirit totems.'),
+('druid_spores', 'druid', 'Circle of Spores', 'You harness the life and decay aspects of nature, using fungal spores to fuel your magic. This subclass allows you to animate dead plants and creatures, deal necrotic damage to enemies and gain temporary health boosts.'),
+('druid_stars', 'druid', 'Circle of Stars', 'You draw on the mystic power of the stars and constellations, using them to guide and protect. This subclass provides abilities to transform starlight into protective and restorative magic.'),
+('druid_wildfire', 'druid', 'Circle of Wildfire', 'You believe in renewal through fire, using flames to clear decay and make way for new life. This subclass lets you summon a wildfire spirit, cast fire-related spells and heal or bolster your allies.'),
+('druid_sea', 'druid', 'Circle of the Sea', 'You tap into the power of the sea to unleash powerful elemental magic that can harm enemies, protect allies and allow you to traverse beneath the waves themselves for extended periods of time.');
+
+-- FIGHTER SUBCLASSES (Martial Archetypes)
+INSERT INTO subclasses (id, class_id, name, description) VALUES
+('fighter_battle_master', 'fighter', 'Battle Master', 'You are a master of combat techniques and tactics, using maneuvers to outsmart and defeat your enemies. This subclass grants you abilities to enhance your attacks, control the battlefield and provide tactical advantages.'),
+('fighter_cavalier', 'fighter', 'Cavalier', 'You excel in mounted combat and are dedicated to protecting others, especially when riding your steed.'),
+('fighter_champion', 'fighter', 'Champion', 'You focus on refining your martial prowess, becoming a formidable warrior. This subclass enhances your ability to land critical hits more often and increases your physical capabilities.'),
+('fighter_echo_knight', 'fighter', 'Echo Knight', 'You manipulate time and space to summon an echo of yourself from a parallel dimension. This subclass allows you to fight from multiple positions.'),
+('fighter_eldritch_knight', 'fighter', 'Eldritch Knight', 'You blend martial prowess with magical ability, casting spells while also engaging in hand-to-hand combat.'),
+('fighter_psi_warrior', 'fighter', 'Psi Warrior', 'You harness the power of your mind to augment your fighting capabilities. This subclass provides you with psionic energy that you can use to shield yourself, move objects, or strike enemies.'),
+('fighter_purple_dragon_knight', 'fighter', 'Purple Dragon Knight', 'You inspire and lead others in battle, focusing on teamwork and camaraderie. This subclass allows you to extend the benefits of your fighting spirit to your allies.'),
+('fighter_rune_knight', 'fighter', 'Rune Knight', 'You use mystical runes to enhance your combat skills and manipulate various magical effects. This subclass allows you to inscribe runes onto your equipment.'),
+('fighter_samurai', 'fighter', 'Samurai', 'You are a warrior who combines fierce determination with meticulous skill. This subclass provides you with bonuses to accuracy, the ability to withstand damage, and a resolute will.');
+
+INSERT INTO subclasses (id, class_id, name, description) VALUES
+
+
+insert into character_classes
+(entity_id, class_id, subclass_id, class_level, is_primary)
+values
+('pc-1', 'artificer', 'artificer_armorer', 5, 1),
+('pc-2', 'fighter', 'fighter_champion', 5, 1),
+('pc-3', 'druid', 'druid_spores', 3, 1),
+('pc-3', 'barbarian', 'barbarian_wild_magic', 2, 0)
+
+
+
 COMMIT;
