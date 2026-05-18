@@ -1,7 +1,7 @@
 <script lang="ts">
   import { invoke } from '@tauri-apps/api/core';
 
-  let initiativeHeight = $state(33.33);
+  let initiativeHeight = $state(200);
 
   let expandedSections = $state({
     characters: false,
@@ -89,12 +89,10 @@
     event.preventDefault();
     const startY = event.clientY;
     const startHeight = initiativeHeight;
-    const containerHeight = window.innerHeight;
 
     function onMouseMove(e: MouseEvent) {
       const delta = e.clientY - startY;
-      const deltaPercent = (delta / containerHeight) * 100;
-      initiativeHeight = Math.max(10, Math.min(90, startHeight + deltaPercent));
+      initiativeHeight = Math.max(150, Math.min(400, startHeight + delta));
     }
 
     function onMouseUp() {
@@ -240,13 +238,13 @@
   <div class="app-bar-spacer"></div>
   <div class="app-bar-actions">
     <button class="app-bar-btn" onclick={toggleCreateCharacter} aria-label="Add">
-      +
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
     </button>
     <button class="app-bar-btn" onclick={toggleDiceRoller} aria-label="Dice Roller">
-      🎲
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 2.2a1 1 0 0 0-1 1L8.1 8.8a7 7 0 0 0 4.6 8.5l5.2 2.7a1 1 0 0 0 1.2-.5l1-2.3a1 1 0 0 0-.2-1.1L17 10a1 1 0 0 0-.5-.9l-5.6-1.8a7 7 0 0 0-1.4-1.1l.8-4zM5.5 17L4 18.5l1.5 1.5L7 19l-1.5-1.5z"/></svg>
     </button>
     <button class="app-bar-btn" onclick={toggleSettings} aria-label="Settings">
-      ⚙️
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
   </div>
 </div>
@@ -327,7 +325,7 @@
 <main class="container">
   <div
     class="initiative-strip"
-    style="height: {initiativeHeight}%;"
+    style="height: {initiativeHeight}px;"
     ondragover={handleDragOver}
     ondrop={handleDrop}
   >
@@ -353,7 +351,13 @@
       <div class="collapsible-section">
         <button class="section-header" onclick={() => toggleSection('characters')}>
           <span>Characters</span>
-          <span class="chevron">{expandedSections.characters ? '▼' : '▶'}</span>
+          <span class="chevron">
+                {#if expandedSections.characters}
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+                {:else}
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                {/if}
+              </span>
         </button>
         {#if expandedSections.characters}
           <div class="section-content">
@@ -385,7 +389,13 @@
       <div class="collapsible-section">
         <button class="section-header" onclick={() => toggleSection('monsters')}>
           <span>Monsters</span>
-          <span class="chevron">{expandedSections.monsters ? '▼' : '▶'}</span>
+          <span class="chevron">
+                {#if expandedSections.monsters}
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+                {:else}
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                {/if}
+              </span>
         </button>
         {#if expandedSections.monsters}
           <div class="section-content">
@@ -415,7 +425,13 @@
       <div class="collapsible-section">
         <button class="section-header" onclick={() => toggleSection('npcs')}>
           <span>NPCs</span>
-          <span class="chevron">{expandedSections.npcs ? '▼' : '▶'}</span>
+          <span class="chevron">
+                {#if expandedSections.npcs}
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+                {:else}
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                {/if}
+              </span>
         </button>
         {#if expandedSections.npcs}
           <div class="section-content">
@@ -445,7 +461,13 @@
       <div class="collapsible-section">
         <button class="section-header" onclick={() => toggleSection('other')}>
           <span>Other</span>
-          <span class="chevron">{expandedSections.other ? '▼' : '▶'}</span>
+          <span class="chevron">
+                {#if expandedSections.other}
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+                {:else}
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                {/if}
+              </span>
         </button>
         {#if expandedSections.other}
           <div class="section-content">Other content</div>
