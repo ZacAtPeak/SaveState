@@ -20,15 +20,35 @@ SaveState is a Tauri 2 desktop application for TTRPG initiative and combat track
 ## Architecture
 
 ```
-src/routes/+page.svelte       ← All UI (SPA, no SSR)
+src/
+├── routes/+page.svelte          ← Thin shell, composes components
+├── lib/
+│   ├── components/             ← Svelte 5 component library
+│   │   ├── AppBar.svelte
+│   │   ├── InitiativeStrip.svelte
+│   │   ├── CharacterCard.svelte
+│   │   ├── CharacterList.svelte
+│   │   ├── CharacterDetail.svelte
+│   │   ├── CreateCharacterModal.svelte
+│   │   └── DiceRoller.svelte
+│   ├── stores/app.svelte.ts    ← Shared state (Svelte 5 runes)
+│   ├── types/index.ts          ← TypeScript interfaces
+│   └── styles/theme.css        ← CSS custom properties + resets
         │
         │  invoke("command_name", { args })   [Tauri IPC]
         ▼
-src-tauri/src/lib.rs          ← All Tauri commands + DB queries
+src-tauri/src/
+├── lib.rs                      ← Entry point + command registration
+├── models.rs                   ← IPC structs (Serialize/Deserialize)
+├── db.rs                       ← Connection pool + queries + row constants
+└── commands/
+    ├── characters.rs           ← get_player_characters, create_player_character
+    ├── creatures.rs             ← get_monsters, get_npcs
+    └── skills.rs                ← get_character_skills
         │
         │  rusqlite
         ▼
-Assets/5e_data.sqlite         ← SQLite database (bundled at build time)
+Assets/5e_data.sqlite           ← SQLite database (bundled at build time)
 ```
 
 Key constraints:
@@ -56,9 +76,15 @@ npm run tauri          # raw Tauri CLI passthrough
 
 | Path | Role |
 |------|------|
-| `src/routes/+page.svelte` | Entire frontend UI |
-| `src-tauri/src/lib.rs` | All Tauri commands and DB queries |
-| `src-tauri/src/main.rs` | App entry point (minimal) |
+| `src/routes/+page.svelte` | Main UI shell |
+| `src/lib/components/*.svelte` | Reusable UI components |
+| `src/lib/stores/app.svelte.ts` | Shared application state |
+| `src/lib/types/index.ts` | TypeScript interfaces |
+| `src/lib/styles/theme.css` | CSS custom properties |
+| `src-tauri/src/lib.rs` | Tauri entry point + command registration |
+| `src-tauri/src/models.rs` | IPC data structs |
+| `src-tauri/src/db.rs` | DB connection pool + queries |
+| `src-tauri/src/commands/*.rs` | Tauri command handlers |
 | `Assets/savestate_schema.sql` | Canonical DB schema definition |
 | `Assets/5e_data.sqlite` | Bundled SQLite DB (seed + demo data) |
 | `Assets/savestate_demo_data.sql` | Demo data SQL (5 PCs, 25 monsters, 10 NPCs) |
@@ -70,13 +96,16 @@ npm run tauri          # raw Tauri CLI passthrough
 ## Coding conventions
 
 **Rust / Tauri**
-- All new Tauri commands go in `src-tauri/src/lib.rs` and must be registered in the `tauri::Builder::invoke_handler` macro.
-- Resolve the DB path at runtime with `tauri::path::BaseDirectory::Resource` — never hardcode a path.
+- New Tauri commands go in `src-tauri/src/commands/` — one file per domain.
+- Register commands in `src-tauri/src/lib.rs` via `tauri::generate_handler!`.
 - Use `#[derive(Debug, Serialize, Deserialize)]` on every struct that crosses the IPC boundary.
+- Use named constants from `db::row_indexes` for row access — no magic numbers.
 
 **Svelte / TypeScript**
 - Use **Svelte 5 runes** (`$state`, `$derived`, `$effect`, `$props`) — not legacy Svelte 4 store patterns.
-- Keep all application state in `+page.svelte` for now; don't introduce a separate store layer without a specific reason.
+- Application state lives in `src/lib/stores/app.svelte.ts` (Svelte 5 runes-based store).
+- Use typed interfaces from `src/lib/types/index.ts` — don't duplicate structs.
+- Components are in `src/lib/components/` — one file per component.
 - Animations use GSAP — don't add a second animation library.
 - Icons come from [Iconoir](https://iconoir.com) — use Iconoir SVGs for any new icons.
 
@@ -92,4 +121,3 @@ npm run tauri          # raw Tauri CLI passthrough
 - **Don't write to `Assets/5e_data.sqlite` directly** in code — it's the bundled seed DB. Runtime writes go through the Tauri app data directory.
 - **Don't use `@tauri-apps/api` v1 patterns** (e.g., `tauri.invoke` from `@tauri-apps/api/tauri`). Import from `@tauri-apps/api/core` (v2).
 - **Don't add npm dependencies** without verifying they survive `npm run check` and are compatible with the static/SPA build.
-- **Don't hardcode D&D-specific logic** in new features — the v2.0 direction is TTRPG-agnostic.
