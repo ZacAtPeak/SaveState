@@ -5,7 +5,7 @@
   interface Props {
     playerCharacters: PlayerCharacter[];
     npcs: Entity[];
-    monsters: Entity[];
+    creatures: Entity[];
     selectedCharacter: Entity | null;
     totalCount: number;
     onSelect: (entity: Entity) => void;
@@ -16,7 +16,7 @@
   let {
     playerCharacters,
     npcs,
-    monsters,
+    creatures,
     selectedCharacter,
     totalCount,
     onSelect,
@@ -35,7 +35,7 @@
     <button class="filter-btn active">All</button>
     <button class="filter-btn">PCs</button>
     <button class="filter-btn">NPCs</button>
-    <button class="filter-btn">Monsters</button>
+    <button class="filter-btn">Creatures</button>
   </div>
   <div class="elist-scroll">
     {#each playerCharacters as char}
@@ -52,10 +52,10 @@
         {onSelect}
       />
     {/each}
-    {#each monsters as mon}
+    {#each creatures as creature}
       <CharacterCard
-        entity={mon}
-        selected={selectedCharacter?.id === mon.id}
+        entity={creature}
+        selected={selectedCharacter?.id === creature.id}
         {onSelect}
       />
     {/each}

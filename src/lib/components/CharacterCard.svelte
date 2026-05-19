@@ -10,9 +10,13 @@
   let { entity, selected, onSelect }: Props = $props();
 
   function getEntityIcon(): string {
-    if (entity.entity_type === 'pc') return '🧝';
-    if (entity.entity_type === 'npc') return '🧑';
-    return '👾';
+    if (entity.entity_type === 'pc') {
+      return '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+    }
+    if (entity.entity_type === 'npc') {
+      return '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+    }
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-1.5 0-2.5 1-3 2-1 0-2.5 0-4 1.5-1.5 1.5-2 4-1.5 6 .5 2 2 4 3.5 5s3.5 1.5 5 0 3-3 3.5-5 .5-4.5-1.5-6C14.5 4 13 3 12 3z"/><path d="M10 14s.5-1 1-1 1 1 1 1"/><path d="M13 18s.5-1 1-1 1 1 1 1"/><circle cx="12" cy="10" r="1"/></svg>';
   }
 
   function getSubtitle(): string {
@@ -52,7 +56,7 @@
   }}
 >
   <div class="ecard-head">
-    <div class="ecard-av">{getEntityIcon()}</div>
+    <div class="ecard-av">{@html getEntityIcon()}</div>
     <div class="ecard-info">
       <div class="ecard-name">{entity.name}</div>
       <div class="ecard-sub">{getSubtitle()}</div>

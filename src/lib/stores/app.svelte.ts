@@ -1,9 +1,9 @@
 import { invoke } from '@tauri-apps/api/core';
-  import type { Entity, PlayerCharacter, InitiativeEntity, CharacterSkill, CreateCharacterRequest, DiceRoll } from '$lib/types';
+  import type { Entity, PlayerCharacter, Creature, InitiativeEntity, CharacterSkill, CreateCharacterRequest, DiceRoll } from '$lib/types';
 
 function createAppStore() {
   let playerCharacters = $state<PlayerCharacter[]>([]);
-  let monsters = $state<Entity[]>([]);
+  let creatures = $state<Creature[]>([]);
   let npcs = $state<Entity[]>([]);
   let selectedCharacter = $state<Entity | null>(null);
   let characterSkills = $state<CharacterSkill[]>([]);
@@ -11,6 +11,7 @@ function createAppStore() {
   let loading = $state(true);
   let showSettings = $state(false);
   let showDiceRoller = $state(false);
+  let showBook = $state(false);
   let showCreateCharacter = $state(false);
   let diceHistory = $state<DiceRoll[]>([]);
 
@@ -27,9 +28,17 @@ function createAppStore() {
   async function loadCharacters() {
     try {
       loading = true;
-      playerCharacters = await invoke<PlayerCharacter[]>('get_player_characters');
-      monsters = await invoke<Entity[]>('get_monsters');
-      npcs = await invoke<Entity[]>('get_npcs');
+      console.log('[DEBUG] Loading characters...');
+      const pcs = await invoke<PlayerCharacter[]>('get_player_characters');
+      console.log('[DEBUG] Got', pcs.length, 'player characters');
+      playerCharacters = pcs;
+      const creaturesResult = await invoke<Creature[]>('get_monsters');
+      console.log('[DEBUG] Got', creaturesResult.length, 'creatures');
+      creatures = creaturesResult;
+      const npcsResult = await invoke<Entity[]>('get_npcs');
+      console.log('[DEBUG] Got', npcsResult.length, 'npcs');
+      npcs = npcsResult;
+      console.log('[DEBUG] Final state:', { pcs: playerCharacters.length, creatures: creatures.length, npcs: npcs.length });
       expandedSections.characters = true;
       expandedSections.monsters = true;
       expandedSections.npcs = true;
@@ -68,10 +77,17 @@ function createAppStore() {
     const newEntity: InitiativeEntity = {
       id: char.id,
       name: char.name,
+      entity_type: char.entity_type,
       initiative,
       armor_class: char.armor_class,
       hit_points_current: char.hit_points_current,
-      hit_points_max: char.hit_points_max
+      hit_points_max: char.hit_points_max,
+      strength: char.strength,
+      dexterity: char.dexterity,
+      constitution: char.constitution,
+      intelligence: char.intelligence,
+      wisdom: char.wisdom,
+      charisma: char.charisma
     };
     initiativeList = [...initiativeList, newEntity].sort((a, b) => b.initiative - a.initiative);
   }
@@ -160,8 +176,8 @@ function createAppStore() {
   return {
     get playerCharacters() { return playerCharacters; },
     set playerCharacters(v) { playerCharacters = v; },
-    get monsters() { return monsters; },
-    set monsters(v) { monsters = v; },
+    get creatures() { return creatures; },
+    set creatures(v) { creatures = v; },
     get npcs() { return npcs; },
     set npcs(v) { npcs = v; },
     get selectedCharacter() { return selectedCharacter; },
@@ -176,6 +192,8 @@ function createAppStore() {
     set showSettings(v) { showSettings = v; },
     get showDiceRoller() { return showDiceRoller; },
     set showDiceRoller(v) { showDiceRoller = v; },
+    get showBook() { return showBook; },
+    set showBook(v) { showBook = v; },
     get showCreateCharacter() { return showCreateCharacter; },
     set showCreateCharacter(v) { showCreateCharacter = v; },
     get diceHistory() { return diceHistory; },

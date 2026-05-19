@@ -6,29 +6,11 @@
   import CharacterDetail from '$lib/components/CharacterDetail.svelte';
   import CreateCharacterModal from '$lib/components/CreateCharacterModal.svelte';
   import DiceRoller from '$lib/components/DiceRoller.svelte';
+  import CharacterBook from '$lib/components/CharacterBook.svelte';
   import { appStore } from '$lib/stores/app.svelte';
   import type { Entity, CreateCharacterRequest } from '$lib/types';
 
-  let initiativeHeight = $state(200);
-
-  function startResize(event: MouseEvent) {
-    event.preventDefault();
-    const startY = event.clientY;
-    const startHeight = initiativeHeight;
-
-    function onMouseMove(e: MouseEvent) {
-      const delta = e.clientY - startY;
-      initiativeHeight = Math.max(150, Math.min(400, startHeight + delta));
-    }
-
-    function onMouseUp() {
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-    }
-
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-  }
+  let initiativeHeight = $state(230);
 
   function toggleSettings() {
     appStore.showSettings = !appStore.showSettings;
@@ -38,6 +20,13 @@
   function toggleDiceRoller() {
     appStore.showDiceRoller = !appStore.showDiceRoller;
     if (appStore.showSettings) appStore.showSettings = false;
+    if (appStore.showBook) appStore.showBook = false;
+  }
+
+  function toggleBook() {
+    appStore.showBook = !appStore.showBook;
+    if (appStore.showSettings) appStore.showSettings = false;
+    if (appStore.showDiceRoller) appStore.showDiceRoller = false;
   }
 
   function toggleCreateCharacter() {
@@ -83,6 +72,7 @@
   onAddNPC={toggleCreateCharacter}
   onAddOther={toggleCreateCharacter}
   onToggleDiceRoller={toggleDiceRoller}
+  onToggleBook={toggleBook}
   onToggleSettings={toggleSettings}
 />
 
@@ -97,6 +87,10 @@
   <DiceRoller onClose={toggleDiceRoller} />
 {/if}
 
+{#if appStore.showBook}
+  <CharacterBook onClose={toggleBook} />
+{/if}
+
 <main class="container">
   <div
     class="initiative-strip-wrapper"
@@ -109,15 +103,14 @@
       {initiativeHeight}
       onAddCharacter={toggleCreateCharacter}
     />
-    <div class="resize-handle" onmousedown={startResize}></div>
   </div>
   <div class="bottom-pane">
     <CharacterList
       playerCharacters={appStore.playerCharacters}
       npcs={appStore.npcs}
-      monsters={appStore.monsters}
+      creatures={appStore.creatures}
       selectedCharacter={appStore.selectedCharacter}
-      totalCount={appStore.playerCharacters.length + appStore.monsters.length + appStore.npcs.length}
+      totalCount={appStore.playerCharacters.length + appStore.creatures.length + appStore.npcs.length}
       onSelect={appStore.selectCharacter}
       onAddCharacter={toggleCreateCharacter}
     />
@@ -153,22 +146,6 @@
     min-height: 180px;
     width: 100%;
     overflow: visible;
-  }
-
-  .resize-handle {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 6px;
-    cursor: ns-resize;
-    background: linear-gradient(transparent, var(--border));
-    transition: background 150ms;
-    z-index: 10;
-  }
-
-  .resize-handle:hover {
-    background: linear-gradient(transparent, var(--gold));
   }
 
   .bottom-pane {

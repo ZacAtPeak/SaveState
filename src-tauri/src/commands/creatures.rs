@@ -5,9 +5,17 @@ use tauri::State;
 #[tauri::command]
 pub fn get_monsters(state: State<DbPool>) -> Result<Vec<Monster>, String> {
     let conn = state.lock()?;
-    let mut stmt = conn.prepare(queries::GET_MONSTERS).map_err(|e| e.to_string())?;
+    eprintln!("[DEBUG get_monsters] Starting...");
+    let mut stmt = conn.prepare(queries::GET_MONSTERS).map_err(|e| {
+        eprintln!("[DEBUG get_monsters] Prepare error: {}", e);
+        e.to_string()
+    })?;
 
+    eprintln!("[DEBUG get_monsters] Query prepared, executing...");
     let monsters = stmt.query_map([], |row| {
+        let id: String = row.get(row_indexes::IDX).unwrap_or_default();
+        let name: String = row.get(row_indexes::NAME).unwrap_or_default();
+        eprintln!("[DEBUG get_monsters] Row: id={}, name={}", id, name);
         Ok(Monster {
             id: row.get(row_indexes::IDX)?,
             name: row.get(row_indexes::NAME)?,
@@ -28,6 +36,7 @@ pub fn get_monsters(state: State<DbPool>) -> Result<Vec<Monster>, String> {
     .filter_map(|r| r.ok())
     .collect();
 
+    eprintln!("[DEBUG get_monsters] Found {} monsters", monsters.len());
     Ok(monsters)
 }
 

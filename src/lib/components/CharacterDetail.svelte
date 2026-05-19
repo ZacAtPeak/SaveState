@@ -34,9 +34,13 @@
   }
 
   function getEntityIcon(): string {
-    if (character.entity_type === 'pc') return '🧝';
-    if (character.entity_type === 'npc') return '🧑';
-    return '👾';
+    if (character.entity_type === 'pc') {
+      return '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+    }
+    if (character.entity_type === 'npc') {
+      return '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+    }
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-1.5 0-2.5 1-3 2-1 0-2.5 0-4 1.5-1.5 1.5-2 4-1.5 6 .5 2 2 4 3.5 5s3.5 1.5 5 0 3-3 3.5-5 .5-4.5-1.5-6C14.5 4 13 3 12 3z"/><path d="M10 14s.5-1 1-1 1 1 1 1"/><path d="M13 18s.5-1 1-1 1 1 1 1"/><circle cx="12" cy="10" r="1"/></svg>';
   }
 
   function getSubtitle(): string {
@@ -44,7 +48,7 @@
       return `${character.race} ${character.class} · Level ${character.level}`;
     }
     if (character.entity_type === 'npc') return 'NPC';
-    return `Monster · CR ${character.challenge_rating || '?'}`;
+    return `Creature · CR ${character.challenge_rating || '?'}`;
   }
 
   const abilityScores = [
@@ -55,11 +59,15 @@
     { key: 'wisdom', label: 'WIS' },
     { key: 'charisma', label: 'CHA' }
   ] as const;
+
+  function getModifier(score: number): number {
+    return Math.floor((score - 10) / 2);
+  }
 </script>
 
 <div class="detail-body">
   <div class="detail-top">
-    <div class="detail-av">{getEntityIcon()}</div>
+    <div class="detail-av">{@html getEntityIcon()}</div>
     <div class="detail-name-block">
       <div class="detail-name">{character.name}</div>
       <div class="detail-sub">{getSubtitle()}</div>
@@ -109,6 +117,7 @@
         <div class="ability">
           <span class="ability-name">{ability.label}</span>
           <span class="ability-score">{character[ability.key]}</span>
+          <span class="ability-modifier">{getModifier(character[ability.key]) >= 0 ? '+' : ''}{getModifier(character[ability.key])}</span>
         </div>
       {/each}
     </div>
@@ -349,6 +358,13 @@
     font-size: 20px;
     font-weight: 700;
     color: var(--fg);
+  }
+
+  .ability-modifier {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
   }
 
   .detail-conds {

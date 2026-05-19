@@ -16,7 +16,11 @@ export interface Entity {
   level?: number;
   player_name?: string | null;
   proficiency_bonus?: number;
-  challenge_rating?: string;
+  challenge_rating?: number;
+  skills?: { name: string; bonus: number }[];
+  equipment?: string[];
+  spells?: string[];
+  speed?: number;
 }
 
 export interface PlayerCharacter extends Entity {
@@ -27,13 +31,24 @@ export interface PlayerCharacter extends Entity {
   proficiency_bonus: number;
 }
 
+export interface Creature extends Entity {
+  challenge_rating: number;
+}
+
 export interface InitiativeEntity {
   id: string;
   name: string;
+  entity_type: string;
   initiative: number;
   armor_class: number;
   hit_points_current: number;
   hit_points_max: number;
+  strength: number;
+  dexterity: number;
+  constitution: number;
+  intelligence: number;
+  wisdom: number;
+  charisma: number;
 }
 
 export interface CharacterSkill {

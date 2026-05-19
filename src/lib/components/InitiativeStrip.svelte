@@ -31,6 +31,16 @@
     if (ratio <= 0.5) return 'warn';
     return '';
   }
+
+  function getBadgeClass(entity: InitiativeEntity): string {
+    if (entity.entity_type === 'pc') return 'type-pc';
+    if (entity.entity_type === 'npc') return 'type-npc';
+    return 'type-monster';
+  }
+
+  function getModifier(score: number): number {
+    return Math.floor((score - 10) / 2);
+  }
 </script>
 
 <div
@@ -43,12 +53,13 @@
     <span class="init-label">Turn {appStore.currentTurnIndex + 1}</span>
     <div class="spacer"></div>
     <button class="btn-ghost" onclick={appStore.prevTurn}>◀ Prev</button>
-    <button class="btn-ghost" onclick={onAddCharacter}>+ Add</button>
     <button class="btn-primary" onclick={appStore.nextTurn}>Next Turn ▶</button>
   </div>
   {#if initiativeList.length === 0}
     <div class="drag-hint">
-      <span class="drag-hint-icon">⚔</span>
+      <span class="drag-hint-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/></svg>
+      </span>
       <span>Drag characters here to add to initiative</span>
     </div>
   {:else}
@@ -56,41 +67,58 @@
       {#each initiativeList as entity, i}
         <div class="initiative-card" class:active-turn={i === appStore.currentTurnIndex}>
           <span class="init-name">{entity.name}</span>
-          <span class="init-value">{entity.initiative}</span>
-          <span class="type-badge type-pc">PC</span>
-          <div class="mini-hp-text">
-            <span class="mini-hp-current {getHpClass(entity)}">{entity.hit_points_current}</span>
-            <span class="mini-hp-sep">/</span>
-            <span class="mini-hp-max">{entity.hit_points_max}</span>
+          <span class="init-value {getBadgeClass(entity)}">{entity.initiative}</span>
+          <div class="mini-hp-row">
+            <div class="mini-hp-text">
+              <span class="mini-hp-current {getHpClass(entity)}">{entity.hit_points_current}</span>
+              <span class="mini-hp-sep">/</span>
+              <span class="mini-hp-max">{entity.hit_points_max}</span>
+            </div>
+            <div class="spacer"></div>
+            <div class="mini-ac">
+              <span class="stat-label">AC</span>
+              <span class="stat-value">{entity.armor_class}</span>
+            </div>
           </div>
           <div class="mini-hp-bar">
             <div class="mini-hp-fill" style="width: {getHpPercent(entity)}%; background: {getHpColor(entity)}"></div>
           </div>
-          <div class="initiative-stats">
+          <div class="ability-grid">
             <div class="stat-chip">
-              <span class="stat-label">HP</span>
-              <span class="stat-value {getHpClass(entity)}">{entity.hit_points_current}</span>
+              <span class="stat-label">STR</span>
+              <span class="stat-value">{getModifier(entity.strength) >= 0 ? '+' : ''}{getModifier(entity.strength)}</span>
             </div>
             <div class="stat-chip">
-              <span class="stat-label">Max</span>
-              <span class="stat-value">{entity.hit_points_max}</span>
+              <span class="stat-label">DEX</span>
+              <span class="stat-value">{getModifier(entity.dexterity) >= 0 ? '+' : ''}{getModifier(entity.dexterity)}</span>
             </div>
             <div class="stat-chip">
-              <span class="stat-label">AC</span>
-              <span class="stat-value">{entity.armor_class}</span>
+              <span class="stat-label">CON</span>
+              <span class="stat-value">{getModifier(entity.constitution) >= 0 ? '+' : ''}{getModifier(entity.constitution)}</span>
+            </div>
+            <div class="stat-chip">
+              <span class="stat-label">INT</span>
+              <span class="stat-value">{getModifier(entity.intelligence) >= 0 ? '+' : ''}{getModifier(entity.intelligence)}</span>
+            </div>
+            <div class="stat-chip">
+              <span class="stat-label">WIS</span>
+              <span class="stat-value">{getModifier(entity.wisdom) >= 0 ? '+' : ''}{getModifier(entity.wisdom)}</span>
+            </div>
+            <div class="stat-chip">
+              <span class="stat-label">CHA</span>
+              <span class="stat-value">{getModifier(entity.charisma) >= 0 ? '+' : ''}{getModifier(entity.charisma)}</span>
             </div>
           </div>
         </div>
       {/each}
     </div>
   {/if}
-  <div class="resize-handle"></div>
 </div>
 
 <style>
   .initiative-strip {
     flex-shrink: 0;
-    min-height: 190px;
+    min-height: 235px;
     display: flex;
     flex-direction: column;
     background: var(--surface);
@@ -199,7 +227,6 @@
 
   .initiative-card.active-turn {
     border-color: var(--gold);
-    background: color-mix(in oklch, var(--surface-2) 90%, var(--gold) 10%);
   }
 
   .init-name {
@@ -233,17 +260,59 @@
     font-family: var(--font-mono);
     font-size: 18px;
     font-weight: 700;
-    color: var(--gold);
     font-variant-numeric: tabular-nums;
+    color: var(--fg);
   }
 
-  .type-pc { color: var(--green); background: var(--green-dim); }
+  .type-pc { color: var(--green); }
+  .type-npc { color: var(--purple); }
+  .type-monster { color: var(--red); }
+
+  .init-value {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--fg);
+    font-variant-numeric: tabular-nums;
+  }
 
   .mini-hp-text {
     display: flex;
     align-items: baseline;
     gap: 2px;
+  }
+
+  .mini-hp-row {
+    display: flex;
+    align-items: center;
     width: 100%;
+  }
+
+  .mini-hp-row .spacer { flex: 1; }
+
+  .mini-ac {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .mini-ac .stat-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+
+  .mini-ac .stat-value {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--fg);
+    font-variant-numeric: tabular-nums;
   }
 
   .mini-hp-current {
@@ -284,7 +353,7 @@
     transition: width 250ms ease;
   }
 
-  .initiative-stats {
+  .ability-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 4px;
@@ -334,20 +403,5 @@
   .drag-hint-icon {
     font-size: 32px;
     opacity: 0.4;
-  }
-
-  .resize-handle {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 6px;
-    cursor: ns-resize;
-    background: linear-gradient(transparent, var(--border));
-    transition: background 150ms;
-  }
-
-  .resize-handle:hover {
-    background: linear-gradient(transparent, var(--gold));
   }
 </style>
