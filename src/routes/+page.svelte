@@ -124,7 +124,7 @@
         <CharacterDetail
           character={appStore.selectedCharacter}
           skills={appStore.characterSkills}
-          onHpChange={(delta) => appStore.updateInitiativeHp(appStore.selectedCharacter!.id, delta)}
+          onHpChange={(delta) => appStore.updateHp(appStore.selectedCharacter!.id, delta)}
         />
       {/if}
     </div>

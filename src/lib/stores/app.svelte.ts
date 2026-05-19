@@ -165,12 +165,41 @@ function createAppStore() {
       }
       return entity;
     });
-    if (selectedCharacter && selectedCharacter.id === entityId) {
-      selectedCharacter = {
-        ...selectedCharacter,
-        hit_points_current: Math.max(0, Math.min(selectedCharacter.hit_points_max, selectedCharacter.hit_points_current + delta))
-      };
+    const entity = initiativeList.find(e => e.id === entityId);
+    if (entity) {
+      syncHpToDb(entityId, entity.hit_points_current);
     }
+    if (selectedCharacter && selectedCharacter.id === entityId) {
+      const newHp = Math.max(0, Math.min(selectedCharacter.hit_points_max, selectedCharacter.hit_points_current + delta));
+      selectedCharacter = { ...selectedCharacter, hit_points_current: newHp };
+    }
+  }
+
+  async function syncHpToDb(entityId: string, hitPointsCurrent: number) {
+    try {
+      await invoke('update_entity_hp', { entityId, hitPointsCurrent });
+    } catch (e) {
+      console.error('[DEBUG] Failed to sync HP to DB:', e);
+    }
+  }
+
+  async function updateHp(entityId: string, delta: number) {
+    const entity = playerCharacters.find(e => e.id === entityId)
+      || npcs.find(e => e.id === entityId)
+      || creatures.find(e => e.id === entityId);
+    if (!entity) return;
+    const newHp = Math.max(0, Math.min(entity.hit_points_max, entity.hit_points_current + delta));
+    if (playerCharacters.find(e => e.id === entityId)) {
+      playerCharacters = playerCharacters.map(e => e.id === entityId ? { ...e, hit_points_current: newHp } : e);
+    } else if (npcs.find(e => e.id === entityId)) {
+      npcs = npcs.map(e => e.id === entityId ? { ...e, hit_points_current: newHp } : e);
+    } else if (creatures.find(e => e.id === entityId)) {
+      creatures = creatures.map(e => e.id === entityId ? { ...e, hit_points_current: newHp } : e);
+    }
+    if (selectedCharacter && selectedCharacter.id === entityId) {
+      selectedCharacter = { ...selectedCharacter, hit_points_current: newHp };
+    }
+    await syncHpToDb(entityId, newHp);
   }
 
   return {
@@ -215,7 +244,9 @@ function createAppStore() {
     clearDiceHistory,
     nextTurn,
     prevTurn,
-    updateInitiativeHp
+    updateInitiativeHp,
+    updateHp,
+    syncHpToDb
   };
 }
 

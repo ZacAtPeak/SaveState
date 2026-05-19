@@ -13,28 +13,25 @@ pub fn get_monsters(state: State<DbPool>) -> Result<Vec<Monster>, String> {
 
     eprintln!("[DEBUG get_monsters] Query prepared, executing...");
     let monsters = stmt.query_map([], |row| {
-        let id: String = row.get(row_indexes::IDX).unwrap_or_default();
-        let name: String = row.get(row_indexes::NAME).unwrap_or_default();
-        eprintln!("[DEBUG get_monsters] Row: id={}, name={}", id, name);
         Ok(Monster {
-            id: row.get(row_indexes::IDX)?,
-            name: row.get(row_indexes::NAME)?,
-            entity_type: row.get(row_indexes::ENTITY_TYPE)?,
-            armor_class: row.get(row_indexes::ARMOR_CLASS)?,
-            hit_points_max: row.get(row_indexes::HP_MAX)?,
-            hit_points_current: row.get(row_indexes::HP_CURRENT)?,
-            challenge_rating: row.get(row_indexes::CHALLENGE_RATING)?,
-            strength: row.get(row_indexes::STRENGTH)?,
-            dexterity: row.get(row_indexes::DEXTERITY)?,
-            constitution: row.get(row_indexes::CONSTITUTION)?,
-            intelligence: row.get(row_indexes::INTELLIGENCE)?,
-            wisdom: row.get(row_indexes::WISDOM)?,
-            charisma: row.get(row_indexes::CHARISMA)?,
+            id: row.get(0)?,
+            name: row.get(1)?,
+            entity_type: row.get(2)?,
+            armor_class: row.get(3)?,
+            hit_points_max: row.get(4)?,
+            hit_points_current: row.get(5)?,
+            challenge_rating: row.get(6)?,
+            strength: row.get(7)?,
+            dexterity: row.get(8)?,
+            constitution: row.get(9)?,
+            intelligence: row.get(10)?,
+            wisdom: row.get(11)?,
+            charisma: row.get(12)?,
         })
     })
     .map_err(|e| e.to_string())?
-    .filter_map(|r| r.ok())
-    .collect();
+    .collect::<Result<Vec<Monster>, _>>()
+    .map_err(|e| e.to_string())?;
 
     eprintln!("[DEBUG get_monsters] Found {} monsters", monsters.len());
     Ok(monsters)
@@ -62,8 +59,8 @@ pub fn get_npcs(state: State<DbPool>) -> Result<Vec<Npc>, String> {
         })
     })
     .map_err(|e| e.to_string())?
-    .filter_map(|r| r.ok())
-    .collect();
+    .collect::<Result<Vec<Npc>, _>>()
+    .map_err(|e| e.to_string())?;
 
     Ok(npcs)
 }

@@ -79,3 +79,18 @@ pub fn create_player_character(
         proficiency_bonus,
     })
 }
+
+#[tauri::command]
+pub fn update_entity_hp(
+    entity_id: String,
+    hit_points_current: i32,
+    state: State<DbPool>,
+) -> Result<(), String> {
+    let conn = state.lock()?;
+    conn.execute(
+        queries::UPDATE_ENTITY_HP,
+        [&hit_points_current.to_string(), &entity_id],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
