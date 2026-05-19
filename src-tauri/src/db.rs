@@ -110,4 +110,8 @@ pub mod queries {
         INSERT INTO character_profiles (entity_id, class, level, race, player_name, proficiency_bonus)
         VALUES (?1, ?2, ?3, ?4, ?5, ?6)
     "#;
+
+    pub const UPDATE_ENTITY_HP: &str = r#"
+        UPDATE entities SET hit_points_current = ?1 WHERE id = ?2
+    "#;
 }

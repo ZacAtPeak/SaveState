@@ -3,7 +3,7 @@ mod db;
 mod models;
 
 use db::DbPool;
-use commands::characters::{create_player_character, get_player_characters};
+use commands::characters::{create_player_character, get_player_characters, update_entity_hp};
 use commands::creatures::{get_monsters, get_npcs};
 use commands::skills::get_character_skills;
 
@@ -20,6 +20,7 @@ pub fn run() {
             get_monsters,
             get_npcs,
             get_character_skills,
+            update_entity_hp,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

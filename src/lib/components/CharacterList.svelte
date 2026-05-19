@@ -23,6 +23,16 @@
     onDragStart,
     onAddCharacter
   }: Props = $props();
+
+  type Filter = 'all' | 'pc' | 'npc' | 'creature';
+  let activeFilter = $state<Filter>('all');
+
+  let filteredEntities = $derived.by(() => {
+    if (activeFilter === 'pc') return playerCharacters;
+    if (activeFilter === 'npc') return npcs;
+    if (activeFilter === 'creature') return creatures;
+    return [...playerCharacters, ...npcs, ...creatures];
+  });
 </script>
 
 <div class="sidebar">
@@ -32,30 +42,16 @@
     <button class="elist-add" onclick={onAddCharacter}>+</button>
   </div>
   <div class="elist-filters">
-    <button class="filter-btn active">All</button>
-    <button class="filter-btn">PCs</button>
-    <button class="filter-btn">NPCs</button>
-    <button class="filter-btn">Creatures</button>
+    <button class="filter-btn" class:active={activeFilter === 'all'} onclick={() => activeFilter = 'all'}>All</button>
+    <button class="filter-btn" class:active={activeFilter === 'pc'} onclick={() => activeFilter = 'pc'}>PCs</button>
+    <button class="filter-btn" class:active={activeFilter === 'npc'} onclick={() => activeFilter = 'npc'}>NPCs</button>
+    <button class="filter-btn" class:active={activeFilter === 'creature'} onclick={() => activeFilter = 'creature'}>Creatures</button>
   </div>
   <div class="elist-scroll">
-    {#each playerCharacters as char}
+    {#each filteredEntities as entity}
       <CharacterCard
-        entity={char}
-        selected={selectedCharacter?.id === char.id}
-        {onSelect}
-      />
-    {/each}
-    {#each npcs as npc}
-      <CharacterCard
-        entity={npc}
-        selected={selectedCharacter?.id === npc.id}
-        {onSelect}
-      />
-    {/each}
-    {#each creatures as creature}
-      <CharacterCard
-        entity={creature}
-        selected={selectedCharacter?.id === creature.id}
+        {entity}
+        selected={selectedCharacter?.id === entity.id}
         {onSelect}
       />
     {/each}
