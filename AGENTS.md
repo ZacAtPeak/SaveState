@@ -26,6 +26,7 @@ src/
 │   ├── components/             ← Svelte 5 component library
 │   │   ├── AppBar.svelte
 │   │   ├── InitiativeStrip.svelte
+│   │   ├── CharacterBook.svelte
 │   │   ├── CharacterCard.svelte
 │   │   ├── CharacterList.svelte
 │   │   ├── CharacterDetail.svelte
@@ -38,10 +39,12 @@ src/
         │  invoke("command_name", { args })   [Tauri IPC]
         ▼
 src-tauri/src/
+├── main.rs                     ← Binary entry point
 ├── lib.rs                      ← Entry point + command registration
 ├── models.rs                   ← IPC structs (Serialize/Deserialize)
 ├── db.rs                       ← Connection pool + queries + row constants
 └── commands/
+    ├── mod.rs                  ← Module entry point + exports
     ├── characters.rs           ← get_player_characters, create_player_character
     ├── creatures.rs             ← get_monsters, get_npcs
     └── skills.rs                ← get_character_skills
