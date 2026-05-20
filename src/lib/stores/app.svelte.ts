@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-  import type { Entity, PlayerCharacter, Creature, InitiativeEntity, CharacterSkill, CreateCharacterRequest, DiceRoll } from '$lib/types';
+import type { Entity, PlayerCharacter, Creature, InitiativeEntity, CharacterSkill, CreateCharacterRequest, DiceRoll, SavedEncounter } from '$lib/types';
 
 function createAppStore() {
   let playerCharacters = $state<PlayerCharacter[]>([]);
@@ -13,7 +13,12 @@ function createAppStore() {
   let showDiceRoller = $state(false);
   let showBook = $state(false);
   let showCreateCharacter = $state(false);
+  let encounters = $state<SavedEncounter[]>([]);
+  let showEncounterBuilder = $state(false);
   let diceHistory = $state<DiceRoll[]>([]);
+  let characterStatuses = $state<Record<string, string[]>>({});
+  let showCharacterModal = $state(false);
+  let modalCharacter = $state<Entity | null>(null);
 
   let currentTurnIndex = $state(0);
   let currentRound = $state(1);
@@ -75,6 +80,7 @@ function createAppStore() {
     const dexMod = Math.floor((char.dexterity - 10) / 2);
     const initiative = Math.floor(Math.random() * 20) + 1 + dexMod;
     const newEntity: InitiativeEntity = {
+      instance_id: crypto.randomUUID(),
       id: char.id,
       name: char.name,
       entity_type: char.entity_type,
@@ -137,6 +143,102 @@ function createAppStore() {
     diceHistory = [];
   }
 
+  async function saveEncounter(name: string, creatureSelections: { entityId: string; count: number }[]) {
+    const encounter: SavedEncounter = {
+      id: crypto.randomUUID(),
+      name,
+      creatures: creatureSelections.filter(c => c.count > 0)
+    };
+    encounters = [...encounters, encounter];
+    try {
+      await invoke('save_encounter', { data: encounter });
+    } catch (e) {
+      console.error('Failed to save encounter:', e);
+    }
+  }
+
+  function deployEncounter(encounterId: string) {
+    const encounter = encounters.find(e => e.id === encounterId);
+    if (!encounter) return;
+    for (const selection of encounter.creatures) {
+      const creature = creatures.find(c => c.id === selection.entityId);
+      if (!creature) continue;
+      for (let i = 0; i < selection.count; i++) {
+        addToInitiative(creature);
+      }
+    }
+  }
+
+  async function deleteEncounter(encounterId: string) {
+    encounters = encounters.filter(e => e.id !== encounterId);
+    try {
+      await invoke('delete_encounter', { id: encounterId });
+    } catch (e) {
+      console.error('Failed to delete encounter:', e);
+    }
+  }
+
+  async function loadEncounters() {
+    try {
+      encounters = await invoke<SavedEncounter[]>('load_encounters');
+    } catch (e) {
+      console.error('Failed to load encounters:', e);
+    }
+  }
+
+  let modalInstanceId = $state<string | null>(null);
+  let instanceStatOverrides = $state<Record<string, Record<string, number>>>({});
+
+  function openCharacterModal(entity: Entity, instanceId?: string | null) {
+    modalCharacter = entity;
+    modalInstanceId = instanceId ?? null;
+    showCharacterModal = true;
+    if (entity.proficiency_bonus && !instanceId) {
+      loadCharacterSkills(entity.id, entity.proficiency_bonus);
+    }
+    const statusKey = instanceId ?? entity.id;
+    if (!characterStatuses[statusKey]) {
+      characterStatuses = { ...characterStatuses, [statusKey]: [] };
+    }
+  }
+
+  function closeCharacterModal() {
+    showCharacterModal = false;
+    modalCharacter = null;
+    modalInstanceId = null;
+  }
+
+  function addStatus(entityId: string, status: string) {
+    const current = characterStatuses[entityId] ?? [];
+    if (!current.includes(status)) {
+      characterStatuses = { ...characterStatuses, [entityId]: [...current, status] };
+    }
+  }
+
+  function removeStatus(entityId: string, status: string) {
+    const current = characterStatuses[entityId] ?? [];
+    characterStatuses = { ...characterStatuses, [entityId]: current.filter(s => s !== status) };
+  }
+
+  function setInstanceStat(instanceId: string, key: string, value: number) {
+    instanceStatOverrides = {
+      ...instanceStatOverrides,
+      [instanceId]: { ...instanceStatOverrides[instanceId], [key]: value }
+    };
+  }
+
+  function clearInstanceStat(instanceId: string, key: string) {
+    const current = instanceStatOverrides[instanceId];
+    if (!current) return;
+    const { [key]: _, ...rest } = current;
+    instanceStatOverrides = { ...instanceStatOverrides, [instanceId]: rest };
+  }
+
+  function clearAllInstanceStats(instanceId: string) {
+    const { [instanceId]: _, ...rest } = instanceStatOverrides;
+    instanceStatOverrides = rest;
+  }
+
   function nextTurn() {
     if (initiativeList.length === 0) return;
     currentTurnIndex = (currentTurnIndex + 1) % initiativeList.length;
@@ -157,22 +259,46 @@ function createAppStore() {
     }
   }
 
-  function updateInitiativeHp(entityId: string, delta: number) {
+  function updateInitiativeInstanceHp(instanceId: string, delta: number) {
     initiativeList = initiativeList.map(entity => {
-      if (entity.id === entityId) {
+      if (entity.instance_id === instanceId) {
         const newHp = Math.max(0, Math.min(entity.hit_points_max, entity.hit_points_current + delta));
         return { ...entity, hit_points_current: newHp };
       }
       return entity;
     });
-    const entity = initiativeList.find(e => e.id === entityId);
-    if (entity) {
-      syncHpToDb(entityId, entity.hit_points_current);
-    }
-    if (selectedCharacter && selectedCharacter.id === entityId) {
-      const newHp = Math.max(0, Math.min(selectedCharacter.hit_points_max, selectedCharacter.hit_points_current + delta));
-      selectedCharacter = { ...selectedCharacter, hit_points_current: newHp };
-    }
+  }
+
+  function setInitiativeInstanceHp(instanceId: string, current: number, max: number) {
+    initiativeList = initiativeList.map(entity => {
+      if (entity.instance_id === instanceId) {
+        const clamped = Math.max(0, Math.min(max, current));
+        return { ...entity, hit_points_current: clamped, hit_points_max: max };
+      }
+      return entity;
+    });
+  }
+
+  function syncInitiativeInstanceFromOverrides(instanceId: string) {
+    const overrides = instanceStatOverrides[instanceId];
+    if (!overrides) return;
+    initiativeList = initiativeList.map(entity => {
+      if (entity.instance_id === instanceId) {
+        return {
+          ...entity,
+          armor_class: overrides.armor_class ?? entity.armor_class,
+          strength: overrides.strength ?? entity.strength,
+          dexterity: overrides.dexterity ?? entity.dexterity,
+          constitution: overrides.constitution ?? entity.constitution,
+          intelligence: overrides.intelligence ?? entity.intelligence,
+          wisdom: overrides.wisdom ?? entity.wisdom,
+          charisma: overrides.charisma ?? entity.charisma,
+          hit_points_current: overrides.hit_points_current ?? entity.hit_points_current,
+          hit_points_max: overrides.hit_points_max ?? entity.hit_points_max,
+        };
+      }
+      return entity;
+    });
   }
 
   async function syncHpToDb(entityId: string, hitPointsCurrent: number) {
@@ -244,9 +370,31 @@ function createAppStore() {
     clearDiceHistory,
     nextTurn,
     prevTurn,
-    updateInitiativeHp,
+    updateInitiativeInstanceHp,
+    setInitiativeInstanceHp,
+    syncInitiativeInstanceFromOverrides,
     updateHp,
-    syncHpToDb
+    syncHpToDb,
+    get encounters() { return encounters; },
+    set encounters(v) { encounters = v; },
+    get showEncounterBuilder() { return showEncounterBuilder; },
+    set showEncounterBuilder(v) { showEncounterBuilder = v; },
+    saveEncounter,
+    deployEncounter,
+    deleteEncounter,
+    loadEncounters,
+    get characterStatuses() { return characterStatuses; },
+    get showCharacterModal() { return showCharacterModal; },
+    get modalCharacter() { return modalCharacter; },
+    get modalInstanceId() { return modalInstanceId; },
+    openCharacterModal,
+    closeCharacterModal,
+    addStatus,
+    removeStatus,
+    get instanceStatOverrides() { return instanceStatOverrides; },
+    setInstanceStat,
+    clearInstanceStat,
+    clearAllInstanceStats,
   };
 }
 

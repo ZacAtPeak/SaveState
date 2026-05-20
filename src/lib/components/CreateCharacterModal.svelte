@@ -49,42 +49,46 @@
 <div class="modal-overlay" onclick={onClose}>
   <div class="modal" onclick={(e) => e.stopPropagation()}>
     <h2>Create New Character</h2>
-    <div class="form-grid">
-      <label>
+    <div class="info-section">
+      <label class="field-full">
         Name
         <input type="text" bind:value={newChar.name} placeholder="Character name" />
       </label>
-      <label>
-        Class
-        <input type="text" bind:value={newChar.class} placeholder="e.g. Ranger" />
-      </label>
-      <label>
-        Level
-        <input type="number" bind:value={newChar.level} min="1" max="20" />
-      </label>
-      <label>
-        Race
-        <input type="text" bind:value={newChar.race} placeholder="e.g. Elf" />
-      </label>
-      <label>
-        Player Name
-        <input type="text" bind:value={newChar.player_name} placeholder="Optional" />
-      </label>
-      <label>
-        Armor Class
-        <input type="number" bind:value={newChar.armor_class} min="1" />
-      </label>
-      <label>
-        Max HP
-        <input type="number" bind:value={newChar.hit_points_max} min="1" />
-      </label>
-      <label>
-        Current HP
-        <input type="number" bind:value={newChar.hit_points_current} min="0" />
-      </label>
+      <div class="info-row">
+        <label class="field-wide">
+          Classes
+          <input type="text" bind:value={newChar.class} placeholder="Fighter 5 / Wizard 2" />
+        </label>
+        <label>
+          Level
+          <input type="number" bind:value={newChar.level} min="1" max="40" />
+        </label>
+        <label>
+          Race
+          <input type="text" bind:value={newChar.race} placeholder="e.g. Elf" />
+        </label>
+        <label>
+          Player
+          <input type="text" bind:value={newChar.player_name} placeholder="Optional" />
+        </label>
+      </div>
+      <div class="hp-ac-row">
+        <label>
+          Armor Class
+          <input type="number" bind:value={newChar.armor_class} min="1" />
+        </label>
+        <label>
+          Max HP
+          <input type="number" bind:value={newChar.hit_points_max} min="1" />
+        </label>
+        <label>
+          Current HP
+          <input type="number" bind:value={newChar.hit_points_current} min="0" />
+        </label>
+      </div>
     </div>
     <h3>Ability Scores</h3>
-    <div class="form-grid">
+    <div class="ability-grid">
       <label>
         Strength
         <input type="number" bind:value={newChar.strength} min="1" max="30" />
@@ -133,13 +137,13 @@
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    padding: 24px;
-    width: 420px;
+    padding: 20px 24px;
+    width: 460px;
     max-height: 90vh;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
     box-shadow: 0 24px 48px oklch(0% 0 0 / 0.4);
   }
 
@@ -160,16 +164,16 @@
     margin: 4px 0 0;
   }
 
-  .form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-
-  .form-grid label {
+  .info-section {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 10px;
+  }
+
+  .info-section label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
@@ -177,8 +181,8 @@
     color: var(--muted);
   }
 
-  .form-grid input {
-    padding: 10px 12px;
+  .info-section input {
+    padding: 9px 10px;
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
@@ -187,13 +191,63 @@
     transition: border-color 120ms;
   }
 
-  .form-grid input:focus {
+  .info-section input:focus {
     outline: none;
     border-color: var(--gold);
   }
 
-  .form-grid input::placeholder {
+  .info-section input::placeholder {
     color: var(--muted);
+  }
+
+  .field-full {
+    grid-column: 1 / -1;
+  }
+
+  .info-row {
+    display: grid;
+    grid-template-columns: 2fr 70px 1fr 1fr;
+    gap: 8px;
+  }
+
+  .hp-ac-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+
+  .ability-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+
+  .ability-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .ability-grid input {
+    padding: 9px 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--fg);
+    font-size: 14px;
+    text-align: center;
+    transition: border-color 120ms;
+  }
+
+  .ability-grid input:focus {
+    outline: none;
+    border-color: var(--gold);
   }
 
   .modal-actions {

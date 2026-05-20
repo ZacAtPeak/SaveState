@@ -22,6 +22,20 @@ pub struct PlayerCharacter {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct EncounterData {
+    pub id: String,
+    pub name: String,
+    pub creatures: Vec<EncounterCreature>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EncounterCreature {
+    #[serde(rename = "entityId")]
+    pub entity_id: String,
+    pub count: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CharacterSkill {
     pub skill_id: String,
     pub skill_name: String,

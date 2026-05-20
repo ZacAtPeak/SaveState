@@ -10,6 +10,7 @@
 
   let isClosing = $state(false);
   let selectedEntity = $state<Entity | null>(null);
+  let activeTab = $state<'characters' | 'encounters'>('characters');
 
   let allEntities = $derived([
     ...appStore.playerCharacters.map(c => ({ ...c, category: 'character' as const })),
@@ -72,24 +73,59 @@
   <div class="book-content">
     <div class="entity-list">
       <div class="list-header">
-        <span>All Characters</span>
-        <span class="count">{allEntities.length}</span>
+        <div class="tabs">
+          <button class="tab" class:active={activeTab === 'characters'} onclick={() => { activeTab = 'characters'; selectedEntity = null; }}>Characters</button>
+          <button class="tab" class:active={activeTab === 'encounters'} onclick={() => activeTab = 'encounters'}>Encounters</button>
+        </div>
       </div>
-      {#if allEntities.length === 0}
-        <div class="empty-list">No characters yet</div>
-      {:else}
-        <div class="list-items">
-          {#each allEntities as entity}
-            <button
-              class="entity-item"
-              class:selected={selectedEntity?.id === entity.id}
-              onclick={() => selectEntity(entity)}
-            >
-              <span class="entity-icon">{@html getEntityIcon(entity)}</span>
-              <span class="entity-name">{entity.name}</span>
-              <span class="entity-type">{getBadgeLabel(entity)}</span>
-            </button>
+      {#if activeTab === 'characters'}
+        {#if allEntities.length === 0}
+          <div class="empty-list" style="flex:1">No characters yet</div>
+        {:else}
+          <div class="list-items">
+            {#each allEntities as entity}
+              <button
+                class="entity-item"
+                class:selected={selectedEntity?.id === entity.id}
+                onclick={() => selectEntity(entity)}
+              >
+                <span class="entity-icon">{@html getEntityIcon(entity)}</span>
+                <span class="entity-name">{entity.name}</span>
+                <span class="entity-type">{getBadgeLabel(entity)}</span>
+              </button>
+            {/each}
+          </div>
+        {/if}
+      {/if}
+      {#if activeTab === 'encounters'}
+        <div class="encounter-list">
+          {#each appStore.encounters as encounter}
+            <div class="encounter-card">
+              <div class="encounter-header">
+                <span class="encounter-name">{encounter.name}</span>
+                <span class="encounter-count">{encounter.creatures.reduce((a, c) => a + c.count, 0)} creatures</span>
+              </div>
+              <div class="encounter-creatures">
+                {#each encounter.creatures as selection}
+                  <div class="encounter-creature-row">
+                    <span class="creature-ref">{selection.count}x {appStore.creatures.find(c => c.id === selection.entityId)?.name ?? 'Unknown'}</span>
+                  </div>
+                {/each}
+              </div>
+              <div class="encounter-actions">
+                <button class="deploy-btn" onclick={() => { appStore.deployEncounter(encounter.id); }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                  Deploy to Initiative
+                </button>
+                <button class="delete-btn" onclick={() => appStore.deleteEncounter(encounter.id)} aria-label="Delete encounter">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+            </div>
           {/each}
+          {#if appStore.encounters.length === 0}
+            <div class="empty-list" style="flex:1">No saved encounters</div>
+          {/if}
         </div>
       {/if}
     </div>
@@ -329,12 +365,6 @@
     border-bottom: 1px solid var(--border);
   }
 
-  .count {
-    background: var(--surface-2);
-    padding: 2px 8px;
-    border-radius: var(--radius-sm);
-  }
-
   .empty-list {
     flex: 1;
     display: flex;
@@ -569,5 +599,128 @@
     font-family: var(--font-mono);
     font-weight: 600;
     color: var(--gold);
+  }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 8px 12px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 120ms;
+  }
+
+  .tab:hover {
+    color: var(--fg);
+    background: var(--surface-2);
+  }
+
+  .tab.active {
+    color: var(--gold);
+    background: var(--gold-dim);
+  }
+
+  .encounter-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .encounter-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .encounter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .encounter-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+
+  .encounter-count {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+  }
+
+  .encounter-creatures {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .encounter-creature-row {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .encounter-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+  }
+
+  .deploy-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 32px;
+    background: var(--gold);
+    border: none;
+    color: oklch(11% 0.012 250);
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    transition: opacity 120ms;
+    cursor: pointer;
+  }
+
+  .deploy-btn:hover { opacity: 0.85; }
+
+  .delete-btn {
+    width: 32px;
+    height: 32px;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 120ms;
+    cursor: pointer;
+  }
+
+  .delete-btn:hover {
+    color: var(--red);
+    border-color: var(--red);
   }
 </style>

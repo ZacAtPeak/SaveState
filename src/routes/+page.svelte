@@ -7,6 +7,8 @@
   import CreateCharacterModal from '$lib/components/CreateCharacterModal.svelte';
   import DiceRoller from '$lib/components/DiceRoller.svelte';
   import CharacterBook from '$lib/components/CharacterBook.svelte';
+  import EncounterBuilder from '$lib/components/EncounterBuilder.svelte';
+  import CharacterModal from '$lib/components/CharacterModal.svelte';
   import { appStore } from '$lib/stores/app.svelte';
   import type { Entity, CreateCharacterRequest } from '$lib/types';
 
@@ -31,6 +33,12 @@
 
   function toggleCreateCharacter() {
     appStore.showCreateCharacter = !appStore.showCreateCharacter;
+    if (appStore.showSettings) appStore.showSettings = false;
+    if (appStore.showDiceRoller) appStore.showDiceRoller = false;
+  }
+
+  function toggleEncounterBuilder() {
+    appStore.showEncounterBuilder = !appStore.showEncounterBuilder;
     if (appStore.showSettings) appStore.showSettings = false;
     if (appStore.showDiceRoller) appStore.showDiceRoller = false;
   }
@@ -63,7 +71,17 @@
     }
   }
 
+  function handleInitiativeDoubleClick(instanceId: string) {
+    const initEntity = appStore.initiativeList.find(e => e.instance_id === instanceId);
+    if (!initEntity) return;
+    const entity = appStore.playerCharacters.find(e => e.id === initEntity.id)
+      ?? appStore.npcs.find(e => e.id === initEntity.id)
+      ?? appStore.creatures.find(e => e.id === initEntity.id);
+    if (entity) appStore.openCharacterModal(entity, instanceId);
+  }
+
   appStore.loadCharacters();
+  appStore.loadEncounters();
 </script>
 
 <AppBar
@@ -74,6 +92,7 @@
   onToggleDiceRoller={toggleDiceRoller}
   onToggleBook={toggleBook}
   onToggleSettings={toggleSettings}
+  onAddEncounter={toggleEncounterBuilder}
 />
 
 {#if appStore.showCreateCharacter}
@@ -83,12 +102,24 @@
   />
 {/if}
 
+{#if appStore.showEncounterBuilder}
+  <EncounterBuilder onClose={toggleEncounterBuilder} />
+{/if}
+
 {#if appStore.showDiceRoller}
   <DiceRoller onClose={toggleDiceRoller} />
 {/if}
 
 {#if appStore.showBook}
   <CharacterBook onClose={toggleBook} />
+{/if}
+
+{#if appStore.showCharacterModal && appStore.modalCharacter}
+  <CharacterModal
+    character={appStore.modalCharacter}
+    skills={appStore.characterSkills}
+    onClose={appStore.closeCharacterModal}
+  />
 {/if}
 
 <main class="container">
@@ -102,6 +133,7 @@
     <InitiativeStrip
       {initiativeHeight}
       onAddCharacter={toggleCreateCharacter}
+      onEntityDoubleClick={handleInitiativeDoubleClick}
     />
   </div>
   <div class="bottom-pane">

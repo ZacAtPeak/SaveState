@@ -36,6 +36,7 @@ export interface Creature extends Entity {
 }
 
 export interface InitiativeEntity {
+  instance_id: string;
   id: string;
   name: string;
   entity_type: string;
@@ -89,4 +90,10 @@ export interface DiceRoll {
   math: string;
   total: number;
   timestamp: number;
+}
+
+export interface SavedEncounter {
+  id: string;
+  name: string;
+  creatures: { entityId: string; count: number }[];
 }

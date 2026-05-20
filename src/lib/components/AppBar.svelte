@@ -4,12 +4,13 @@
     onAddCreature: () => void;
     onAddNPC: () => void;
     onAddOther: () => void;
+    onAddEncounter: () => void;
     onToggleDiceRoller: () => void;
     onToggleBook: () => void;
     onToggleSettings: () => void;
   }
 
-  let { onAddCharacter, onAddCreature, onAddNPC, onAddOther, onToggleDiceRoller, onToggleBook, onToggleSettings }: Props = $props();
+  let { onAddCharacter, onAddCreature, onAddNPC, onAddOther, onAddEncounter, onToggleDiceRoller, onToggleBook, onToggleSettings }: Props = $props();
 
   let showMenu = $state(false);
   let isClosing = $state(false);
@@ -50,6 +51,11 @@
   function handleAddOther() {
     closeMenu();
     onAddOther();
+  }
+
+  function handleAddEncounter() {
+    closeMenu();
+    onAddEncounter();
   }
 
   function handleClickOutside(e: MouseEvent) {
@@ -97,6 +103,10 @@
           <button class="menu-item" onclick={handleAddNPC}>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <span>NPC</span>
+          </button>
+          <button class="menu-item" onclick={handleAddEncounter}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/></svg>
+            <span>Encounter</span>
           </button>
           <button class="menu-item" onclick={handleAddOther}>
             <span class="menu-icon">✨</span>

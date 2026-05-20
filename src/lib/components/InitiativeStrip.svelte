@@ -5,9 +5,10 @@
   interface Props {
     initiativeHeight: number;
     onAddCharacter: () => void;
+    onEntityDoubleClick?: (instanceId: string) => void;
   }
 
-  let { initiativeHeight, onAddCharacter }: Props = $props();
+  let { initiativeHeight, onAddCharacter, onEntityDoubleClick }: Props = $props();
   let initiativeList = $derived(appStore.initiativeList);
 
   function handleDragOver(e: DragEvent) {
@@ -65,7 +66,7 @@
   {:else}
     <div class="initiative-list">
       {#each initiativeList as entity, i}
-        <div class="initiative-card" class:active-turn={i === appStore.currentTurnIndex}>
+        <div class="initiative-card" class:active-turn={i === appStore.currentTurnIndex} ondblclick={() => onEntityDoubleClick?.(entity.instance_id)}>
           <span class="init-name">{entity.name}</span>
           <span class="init-value {getBadgeClass(entity)}">{entity.initiative}</span>
           <div class="mini-hp-row">
