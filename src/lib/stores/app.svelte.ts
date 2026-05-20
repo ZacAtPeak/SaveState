@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Entity, PlayerCharacter, Creature, InitiativeEntity, CharacterSkill, CreateCharacterRequest, DiceRoll, SavedEncounter } from '$lib/types';
+import type { Entity, PlayerCharacter, Creature, InitiativeEntity, CharacterSkill, CreateCharacterRequest, DiceRoll, SavedEncounter, SavedState } from '$lib/types';
 
 function createAppStore() {
   let playerCharacters = $state<PlayerCharacter[]>([]);
@@ -15,6 +15,10 @@ function createAppStore() {
   let showCreateCharacter = $state(false);
   let encounters = $state<SavedEncounter[]>([]);
   let showEncounterBuilder = $state(false);
+  let savedStates = $state<SavedState[]>([]);
+  let currentEncounterId = $state<string | null>(null);
+  let currentEncounterName = $state<string | null>(null);
+  let showSaveNaming = $state(false);
   let diceHistory = $state<DiceRoll[]>([]);
   let characterStatuses = $state<Record<string, string[]>>({});
   let showCharacterModal = $state(false);
@@ -22,6 +26,8 @@ function createAppStore() {
 
   let currentTurnIndex = $state(0);
   let currentRound = $state(1);
+
+  let newInstanceIds = $state<Set<string>>(new Set());
 
   let expandedSections = $state({
     characters: false,
@@ -77,6 +83,7 @@ function createAppStore() {
   }
 
   function addToInitiative(char: Entity) {
+    if (char.entity_type === 'pc' && initiativeList.some(e => e.id === char.id)) return;
     const dexMod = Math.floor((char.dexterity - 10) / 2);
     const initiative = Math.floor(Math.random() * 20) + 1 + dexMod;
     const newEntity: InitiativeEntity = {
@@ -95,7 +102,9 @@ function createAppStore() {
       wisdom: char.wisdom,
       charisma: char.charisma
     };
+    const id = newEntity.instance_id;
     initiativeList = [...initiativeList, newEntity].sort((a, b) => b.initiative - a.initiative);
+    newInstanceIds = new Set([...newInstanceIds, id]);
   }
 
   async function createCharacter(req: CreateCharacterRequest): Promise<PlayerCharacter> {
@@ -160,13 +169,35 @@ function createAppStore() {
   function deployEncounter(encounterId: string) {
     const encounter = encounters.find(e => e.id === encounterId);
     if (!encounter) return;
+    const newEntities: InitiativeEntity[] = [];
     for (const selection of encounter.creatures) {
       const creature = creatures.find(c => c.id === selection.entityId);
       if (!creature) continue;
       for (let i = 0; i < selection.count; i++) {
-        addToInitiative(creature);
+        const dexMod = Math.floor((creature.dexterity - 10) / 2);
+        const initiative = Math.floor(Math.random() * 20) + 1 + dexMod;
+        newEntities.push({
+          instance_id: crypto.randomUUID(),
+          id: creature.id,
+          name: creature.name,
+          entity_type: creature.entity_type,
+          initiative,
+          armor_class: creature.armor_class,
+          hit_points_current: creature.hit_points_current,
+          hit_points_max: creature.hit_points_max,
+          strength: creature.strength,
+          dexterity: creature.dexterity,
+          constitution: creature.constitution,
+          intelligence: creature.intelligence,
+          wisdom: creature.wisdom,
+          charisma: creature.charisma,
+        });
       }
     }
+    newEntities.sort((a, b) => b.initiative - a.initiative);
+    const ids = newEntities.map(e => e.instance_id);
+    initiativeList = [...initiativeList, ...newEntities].sort((a, b) => b.initiative - a.initiative);
+    newInstanceIds = new Set([...newInstanceIds, ...ids]);
   }
 
   async function deleteEncounter(encounterId: string) {
@@ -183,6 +214,68 @@ function createAppStore() {
       encounters = await invoke<SavedEncounter[]>('load_encounters');
     } catch (e) {
       console.error('Failed to load encounters:', e);
+    }
+  }
+
+  function buildSavedState(name: string): SavedState {
+    return {
+      id: currentEncounterId ?? crypto.randomUUID(),
+      name,
+      saved_at: Date.now(),
+      initiative_entities: initiativeList,
+      current_turn_index: currentTurnIndex,
+      current_round: currentRound,
+      character_statuses: characterStatuses,
+      instance_stat_overrides: instanceStatOverrides,
+    };
+  }
+
+  async function saveCurrentEncounter(name?: string) {
+    const saveName = name ?? currentEncounterName ?? 'Unnamed Encounter';
+    const state = buildSavedState(saveName);
+    currentEncounterId = state.id;
+    currentEncounterName = saveName;
+    try {
+      await invoke('save_state', { data: state });
+    } catch (e) {
+      console.error('Failed to save state:', e);
+    }
+  }
+
+  async function loadSavedEncounter(id: string) {
+    try {
+      const state = await invoke<SavedState>('load_state', { id });
+      initiativeList = state.initiative_entities;
+      currentTurnIndex = state.current_turn_index;
+      currentRound = state.current_round;
+      characterStatuses = state.character_statuses;
+      instanceStatOverrides = state.instance_stat_overrides;
+      currentEncounterId = state.id;
+      currentEncounterName = state.name;
+      newInstanceIds = new Set(state.initiative_entities.map(e => e.instance_id));
+    } catch (e) {
+      console.error('Failed to load state:', e);
+    }
+  }
+
+  async function loadSavedStates() {
+    try {
+      savedStates = await invoke<SavedState[]>('load_states');
+    } catch (e) {
+      console.error('Failed to load saved states:', e);
+    }
+  }
+
+  async function deleteSavedState(id: string) {
+    savedStates = savedStates.filter(s => s.id !== id);
+    if (currentEncounterId === id) {
+      currentEncounterId = null;
+      currentEncounterName = null;
+    }
+    try {
+      await invoke('delete_state', { id });
+    } catch (e) {
+      console.error('Failed to delete state:', e);
     }
   }
 
@@ -239,6 +332,12 @@ function createAppStore() {
     instanceStatOverrides = rest;
   }
 
+  function clearNewInstanceId(id: string) {
+    const next = new Set(newInstanceIds);
+    next.delete(id);
+    newInstanceIds = next;
+  }
+
   function nextTurn() {
     if (initiativeList.length === 0) return;
     currentTurnIndex = (currentTurnIndex + 1) % initiativeList.length;
@@ -259,24 +358,57 @@ function createAppStore() {
     }
   }
 
-  function updateInitiativeInstanceHp(instanceId: string, delta: number) {
+  async function updateInitiativeInstanceHp(instanceId: string, delta: number) {
+    let updatedEntity: InitiativeEntity | undefined;
     initiativeList = initiativeList.map(entity => {
       if (entity.instance_id === instanceId) {
         const newHp = Math.max(0, Math.min(entity.hit_points_max, entity.hit_points_current + delta));
-        return { ...entity, hit_points_current: newHp };
+        updatedEntity = { ...entity, hit_points_current: newHp };
+        return updatedEntity;
       }
       return entity;
     });
+    if (updatedEntity && updatedEntity.entity_type === 'pc') {
+      playerCharacters = playerCharacters.map(e =>
+        e.id === updatedEntity!.id ? { ...e, hit_points_current: updatedEntity!.hit_points_current } : e
+      );
+      if (selectedCharacter?.id === updatedEntity.id) {
+        selectedCharacter = { ...selectedCharacter, hit_points_current: updatedEntity!.hit_points_current };
+      }
+      await syncHpToDb(updatedEntity.id, updatedEntity!.hit_points_current);
+    }
   }
 
-  function setInitiativeInstanceHp(instanceId: string, current: number, max: number) {
+  async function setInitiativeInstanceHp(instanceId: string, current: number, max: number) {
+    let updatedEntity: InitiativeEntity | undefined;
     initiativeList = initiativeList.map(entity => {
       if (entity.instance_id === instanceId) {
         const clamped = Math.max(0, Math.min(max, current));
-        return { ...entity, hit_points_current: clamped, hit_points_max: max };
+        updatedEntity = { ...entity, hit_points_current: clamped, hit_points_max: max };
+        return updatedEntity;
       }
       return entity;
     });
+    if (updatedEntity && updatedEntity.entity_type === 'pc') {
+      playerCharacters = playerCharacters.map(e =>
+        e.id === updatedEntity!.id ? { ...e, hit_points_current: updatedEntity!.hit_points_current, hit_points_max: updatedEntity!.hit_points_max } : e
+      );
+      if (selectedCharacter?.id === updatedEntity.id) {
+        selectedCharacter = { ...selectedCharacter, hit_points_current: updatedEntity!.hit_points_current, hit_points_max: updatedEntity!.hit_points_max };
+      }
+      await syncHpToDb(updatedEntity.id, updatedEntity!.hit_points_current);
+    }
+  }
+
+  function clearEncounter() {
+    initiativeList = [];
+    currentTurnIndex = 0;
+    currentRound = 1;
+    currentEncounterId = null;
+    currentEncounterName = null;
+    characterStatuses = {};
+    instanceStatOverrides = {};
+    newInstanceIds = new Set();
   }
 
   function syncInitiativeInstanceFromOverrides(instanceId: string) {
@@ -383,6 +515,18 @@ function createAppStore() {
     deployEncounter,
     deleteEncounter,
     loadEncounters,
+    get savedStates() { return savedStates; },
+    get currentEncounterId() { return currentEncounterId; },
+    set currentEncounterId(v) { currentEncounterId = v; },
+    get currentEncounterName() { return currentEncounterName; },
+    set currentEncounterName(v) { currentEncounterName = v; },
+    get showSaveNaming() { return showSaveNaming; },
+    set showSaveNaming(v) { showSaveNaming = v; },
+    saveCurrentEncounter,
+    loadSavedEncounter,
+    loadSavedStates,
+    deleteSavedState,
+    clearEncounter,
     get characterStatuses() { return characterStatuses; },
     get showCharacterModal() { return showCharacterModal; },
     get modalCharacter() { return modalCharacter; },
@@ -395,6 +539,8 @@ function createAppStore() {
     setInstanceStat,
     clearInstanceStat,
     clearAllInstanceStats,
+    get newInstanceIds() { return newInstanceIds; },
+    clearNewInstanceId,
   };
 }
 

@@ -5,7 +5,7 @@ mod models;
 use db::DbPool;
 use commands::characters::{create_player_character, get_player_characters, update_entity_hp};
 use commands::creatures::{get_monsters, get_npcs};
-use commands::encounters::{delete_encounter, load_encounters, save_encounter};
+use commands::encounters::{delete_encounter, delete_state, load_encounters, load_state, load_states, save_encounter, save_state};
 use commands::skills::get_character_skills;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -25,6 +25,10 @@ pub fn run() {
             save_encounter,
             load_encounters,
             delete_encounter,
+            save_state,
+            load_states,
+            load_state,
+            delete_state,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

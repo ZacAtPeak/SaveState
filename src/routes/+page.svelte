@@ -8,6 +8,7 @@
   import DiceRoller from '$lib/components/DiceRoller.svelte';
   import CharacterBook from '$lib/components/CharacterBook.svelte';
   import EncounterBuilder from '$lib/components/EncounterBuilder.svelte';
+  import SettingsPanel from '$lib/components/SettingsPanel.svelte';
   import CharacterModal from '$lib/components/CharacterModal.svelte';
   import { appStore } from '$lib/stores/app.svelte';
   import type { Entity, CreateCharacterRequest } from '$lib/types';
@@ -106,6 +107,10 @@
   <EncounterBuilder onClose={toggleEncounterBuilder} />
 {/if}
 
+{#if appStore.showSettings}
+  <SettingsPanel onClose={toggleSettings} />
+{/if}
+
 {#if appStore.showDiceRoller}
   <DiceRoller onClose={toggleDiceRoller} />
 {/if}
@@ -156,7 +161,6 @@
         <CharacterDetail
           character={appStore.selectedCharacter}
           skills={appStore.characterSkills}
-          onHpChange={(delta) => appStore.updateHp(appStore.selectedCharacter!.id, delta)}
         />
       {/if}
     </div>

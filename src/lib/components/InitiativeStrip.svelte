@@ -11,6 +11,25 @@
   let { initiativeHeight, onAddCharacter, onEntityDoubleClick }: Props = $props();
   let initiativeList = $derived(appStore.initiativeList);
 
+  let saveName = $state('');
+
+  function handleSaveNaming() {
+    if (!saveName.trim()) return;
+    appStore.saveCurrentEncounter(saveName.trim());
+    appStore.showSaveNaming = false;
+    saveName = '';
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (appStore.showSaveNaming && e.key === 'Escape') {
+      appStore.showSaveNaming = false;
+      saveName = '';
+    }
+    if (appStore.showSaveNaming && e.key === 'Enter') {
+      handleSaveNaming();
+    }
+  }
+
   function handleDragOver(e: DragEvent) {
     e.preventDefault();
   }
@@ -42,7 +61,48 @@
   function getModifier(score: number): number {
     return Math.floor((score - 10) / 2);
   }
+
+  let processedIds = new Set<string>();
+
+  $effect(() => {
+    const list = initiativeList;
+    if (list.length === 0) {
+      processedIds.clear();
+      return;
+    }
+    const newIds = [...appStore.newInstanceIds].filter(id => !processedIds.has(id));
+    if (newIds.length === 0) return;
+    for (const id of newIds) processedIds.add(id);
+    const elements = newIds.map(id => document.querySelector(`[data-instance-id="${id}"]`) as HTMLElement | null).filter((el): el is HTMLElement => el !== null);
+    if (elements.length === 0) return;
+    for (const el of elements) {
+      el.style.transform = 'scale(0)';
+      el.style.opacity = '0';
+    }
+    import('gsap').then(({ default: gsap }) => {
+      gsap.to(elements, {
+        scale: 1, opacity: 1,
+        duration: 0.4,
+        ease: "elastic.out(1, 0.4)",
+        stagger: newIds.length > 1 ? 0.05 : 0,
+        onComplete: () => {
+          for (const id of newIds) appStore.clearNewInstanceId(id);
+        }
+      });
+    });
+  });
+
+  function selectEntityFromInitiative(instanceId: string) {
+    const initEntity = appStore.initiativeList.find(e => e.instance_id === instanceId);
+    if (!initEntity) return;
+    const entity = appStore.playerCharacters.find(e => e.id === initEntity.id)
+      ?? appStore.npcs.find(e => e.id === initEntity.id)
+      ?? appStore.creatures.find(e => e.id === initEntity.id);
+    if (entity) appStore.selectCharacter(entity);
+  }
 </script>
+
+<svelte:body onkeydown={handleKeydown} />
 
 <div
   class="initiative-strip"
@@ -52,10 +112,42 @@
   <div class="init-header">
     <span class="round-badge">Round {appStore.currentRound}</span>
     <span class="init-label">Turn {appStore.currentTurnIndex + 1}</span>
+    <button class="btn-clear" onclick={appStore.clearEncounter} aria-label="Clear encounter">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+    </button>
     <div class="spacer"></div>
     <button class="btn-ghost" onclick={appStore.prevTurn}>◀ Prev</button>
+    <button class="btn-save" onclick={() => {
+      if (!appStore.currentEncounterId) {
+        appStore.showSaveNaming = true;
+      } else {
+        appStore.saveCurrentEncounter();
+      }
+    }}>
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      {appStore.currentEncounterName ?? '+ save'}
+    </button>
     <button class="btn-primary" onclick={appStore.nextTurn}>Next Turn ▶</button>
   </div>
+
+  {#if appStore.showSaveNaming}
+    <div class="save-overlay" onclick={() => { appStore.showSaveNaming = false; saveName = ''; }}>
+      <div class="save-modal" onclick={(e) => e.stopPropagation()}>
+        <span class="save-modal-title">Save Encounter</span>
+        <input
+          class="save-name-input"
+          type="text"
+          bind:value={saveName}
+          placeholder="Encounter name..."
+          autofocus
+        />
+        <div class="save-modal-actions">
+          <button class="btn-ghost" onclick={() => { appStore.showSaveNaming = false; saveName = ''; }}>Cancel</button>
+          <button class="btn-primary" onclick={handleSaveNaming} disabled={!saveName.trim()}>Save</button>
+        </div>
+      </div>
+    </div>
+  {/if}
   {#if initiativeList.length === 0}
     <div class="drag-hint">
       <span class="drag-hint-icon">
@@ -66,7 +158,7 @@
   {:else}
     <div class="initiative-list">
       {#each initiativeList as entity, i}
-        <div class="initiative-card" class:active-turn={i === appStore.currentTurnIndex} ondblclick={() => onEntityDoubleClick?.(entity.instance_id)}>
+        <div class="initiative-card" class:active-turn={i === appStore.currentTurnIndex} data-instance-id={entity.instance_id} onclick={() => selectEntityFromInitiative(entity.instance_id)} ondblclick={() => onEntityDoubleClick?.(entity.instance_id)}>
           <span class="init-name">{entity.name}</span>
           <span class="init-value {getBadgeClass(entity)}">{entity.initiative}</span>
           <div class="mini-hp-row">
@@ -158,6 +250,25 @@
   }
 
   .init-header .spacer { flex: 1; }
+
+  .btn-clear {
+    height: 30px;
+    width: 30px;
+    background: none;
+    border: 1px solid transparent;
+    color: var(--muted);
+    border-radius: var(--radius-md);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 120ms;
+    margin-left: 4px;
+  }
+
+  .btn-clear:hover {
+    color: var(--red);
+    border-color: var(--red);
+  }
 
   .btn-ghost {
     height: 30px;
@@ -404,5 +515,74 @@
   .drag-hint-icon {
     font-size: 32px;
     opacity: 0.4;
+  }
+
+  .btn-save {
+    height: 30px;
+    padding: 0 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: var(--radius-md);
+    transition: all 120ms;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-save:hover {
+    color: var(--green);
+    border-color: var(--green);
+  }
+
+  .save-overlay {
+    position: fixed;
+    inset: 0;
+    background: oklch(0% 0 0 / 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .save-modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 24px 48px oklch(0% 0 0 / 0.4);
+  }
+
+  .save-modal-title {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+
+  .save-name-input {
+    padding: 10px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--fg);
+    font-size: 14px;
+  }
+
+  .save-name-input:focus {
+    outline: none;
+    border-color: var(--gold);
+  }
+
+  .save-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
   }
 </style>

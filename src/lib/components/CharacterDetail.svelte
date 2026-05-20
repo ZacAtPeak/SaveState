@@ -4,16 +4,9 @@
   interface Props {
     character: Entity;
     skills: CharacterSkill[];
-    onHpChange?: (delta: number) => void;
   }
 
-  let { character, skills, onHpChange }: Props = $props();
-
-  function adjustHp(delta: number) {
-    if (onHpChange) {
-      onHpChange(delta);
-    }
-  }
+  let { character, skills }: Props = $props();
 
   function getHpPercent(): number {
     return Math.max(0, Math.min(100, (character.hit_points_current / character.hit_points_max) * 100));
@@ -85,14 +78,7 @@
     <div class="detail-hp-bar">
       <div class="detail-hp-fill" style="width: {getHpPercent()}%; background: {getHpColor()}"></div>
     </div>
-    <div class="detail-hp-adj">
-      <button class="hp-btn danger-btn" onclick={() => adjustHp(-10)}>−10</button>
-      <button class="hp-btn" onclick={() => adjustHp(-5)}>−5</button>
-      <button class="hp-btn" onclick={() => adjustHp(-1)}>−1</button>
-      <button class="hp-btn" onclick={() => adjustHp(1)}>+1</button>
-      <button class="hp-btn" onclick={() => adjustHp(5)}>+5</button>
-      <button class="hp-btn" onclick={() => adjustHp(10)}>+10</button>
-    </div>
+
   </div>
 
   <div class="detail-stats-grid">
@@ -248,39 +234,6 @@
     height: 100%;
     border-radius: var(--radius-sm);
     transition: width 220ms ease;
-  }
-
-  .detail-hp-adj {
-    display: flex;
-    gap: 6px;
-  }
-
-  .hp-btn {
-    flex: 1;
-    height: 32px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--muted);
-    border-radius: var(--radius-sm);
-    font-size: 12px;
-    font-family: var(--font-mono);
-    font-weight: 500;
-    transition: all 100ms;
-  }
-
-  .hp-btn:hover {
-    color: var(--fg);
-    border-color: var(--gold);
-    background: var(--gold-dim);
-  }
-
-  .hp-btn.danger-btn {
-    border-color: var(--red);
-    color: var(--red);
-  }
-
-  .hp-btn.danger-btn:hover {
-    background: var(--red-dim);
   }
 
   .detail-section-title {

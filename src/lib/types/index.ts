@@ -97,3 +97,14 @@ export interface SavedEncounter {
   name: string;
   creatures: { entityId: string; count: number }[];
 }
+
+export interface SavedState {
+  id: string;
+  name: string;
+  saved_at: number;
+  initiative_entities: InitiativeEntity[];
+  current_turn_index: number;
+  current_round: number;
+  character_statuses: Record<string, string[]>;
+  instance_stat_overrides: Record<string, Record<string, number>>;
+}
