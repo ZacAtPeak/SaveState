@@ -119,10 +119,11 @@
   <CharacterBook onClose={toggleBook} />
 {/if}
 
-{#if appStore.showCharacterModal && appStore.modalCharacter}
+  {#if appStore.showCharacterModal && appStore.modalCharacter}
   <CharacterModal
     character={appStore.modalCharacter}
     skills={appStore.characterSkills}
+    spells={appStore.characterSpells}
     onClose={appStore.closeCharacterModal}
   />
 {/if}
@@ -161,6 +162,7 @@
         <CharacterDetail
           character={appStore.selectedCharacter}
           skills={appStore.characterSkills}
+          spells={appStore.characterSpells}
         />
       {/if}
     </div>

@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Entity, PlayerCharacter, Creature, InitiativeEntity, CharacterSkill, CreateCharacterRequest, DiceRoll, SavedEncounter, SavedState } from '$lib/types';
+import type { Entity, PlayerCharacter, Creature, InitiativeEntity, CharacterSkill, CharacterSpell, Spell, CreateCharacterRequest, DiceRoll, SavedEncounter, SavedState } from '$lib/types';
 
 function createAppStore() {
   let playerCharacters = $state<PlayerCharacter[]>([]);
@@ -7,6 +7,12 @@ function createAppStore() {
   let npcs = $state<Entity[]>([]);
   let selectedCharacter = $state<Entity | null>(null);
   let characterSkills = $state<CharacterSkill[]>([]);
+  let characterSpells = $state<CharacterSpell[]>([]);
+  let characterSpellsLoading = $state(false);
+  let characterSpellsError = $state<string | null>(null);
+  let spellLibrary = $state<Spell[]>([]);
+  let spellLibraryLoading = $state(false);
+  let spellLibraryError = $state<string | null>(null);
   let initiativeList = $state<InitiativeEntity[]>([]);
   let loading = $state(true);
   let showSettings = $state(false);
@@ -71,11 +77,40 @@ function createAppStore() {
     }
   }
 
+  async function loadCharacterSpells(entityId: string) {
+    try {
+      characterSpellsLoading = true;
+      characterSpellsError = null;
+      characterSpells = await invoke<CharacterSpell[]>('get_character_spells', {
+        entityId
+      });
+    } catch (e) {
+      console.error('Failed to load character spells:', e);
+      characterSpellsError = String(e);
+    } finally {
+      characterSpellsLoading = false;
+    }
+  }
+
+  async function loadSpellLibrary() {
+    try {
+      spellLibraryLoading = true;
+      spellLibraryError = null;
+      spellLibrary = await invoke<Spell[]>('get_spell_library');
+    } catch (e) {
+      console.error('Failed to load spell library:', e);
+      spellLibraryError = String(e);
+    } finally {
+      spellLibraryLoading = false;
+    }
+  }
+
   function selectCharacter(char: Entity) {
     selectedCharacter = char;
     if (char.proficiency_bonus) {
       loadCharacterSkills(char.id, char.proficiency_bonus);
     }
+    loadCharacterSpells(char.id);
   }
 
   function toggleSection(section: keyof typeof expandedSections) {
@@ -289,6 +324,7 @@ function createAppStore() {
     if (entity.proficiency_bonus && !instanceId) {
       loadCharacterSkills(entity.id, entity.proficiency_bonus);
     }
+    loadCharacterSpells(entity.id);
     const statusKey = instanceId ?? entity.id;
     if (!characterStatuses[statusKey]) {
       characterStatuses = { ...characterStatuses, [statusKey]: [] };
@@ -471,6 +507,14 @@ function createAppStore() {
     set selectedCharacter(v) { selectedCharacter = v; },
     get characterSkills() { return characterSkills; },
     set characterSkills(v) { characterSkills = v; },
+    get characterSpells() { return characterSpells; },
+    set characterSpells(v) { characterSpells = v; },
+    get characterSpellsLoading() { return characterSpellsLoading; },
+    get characterSpellsError() { return characterSpellsError; },
+    get spellLibrary() { return spellLibrary; },
+    set spellLibrary(v) { spellLibrary = v; },
+    get spellLibraryLoading() { return spellLibraryLoading; },
+    get spellLibraryError() { return spellLibraryError; },
     get initiativeList() { return initiativeList; },
     set initiativeList(v) { initiativeList = v; },
     get loading() { return loading; },
@@ -493,6 +537,8 @@ function createAppStore() {
     set expandedSections(v) { expandedSections = v; },
     loadCharacters,
     loadCharacterSkills,
+    loadCharacterSpells,
+    loadSpellLibrary,
     selectCharacter,
     toggleSection,
     addToInitiative,

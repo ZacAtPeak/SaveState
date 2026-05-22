@@ -116,6 +116,34 @@ pub struct SavedStateEntity {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct CharacterSpell {
+    pub spell_id: String,
+    pub name: String,
+    pub level: i32,
+    pub school: String,
+    pub is_concentration: bool,
+    pub is_ritual: bool,
+    pub description: String,
+    pub is_prepared: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Spell {
+    pub id: String,
+    pub name: String,
+    pub level: i32,
+    pub school: String,
+    pub casting_time: String,
+    pub range: String,
+    pub components: String,
+    pub duration: String,
+    pub is_concentration: bool,
+    pub is_ritual: bool,
+    pub description: String,
+    pub higher_levels_desc: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CreateCharacterRequest {
     pub name: String,
     pub class: String,

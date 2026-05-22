@@ -137,12 +137,45 @@ CREATE TABLE spell_library (
     school TEXT NOT NULL, -- e.g., Evocation, Necromancy
     casting_time TEXT NOT NULL,
     range TEXT NOT NULL,
-    components TEXT NOT NULL, -- e.g., "V, S, M (a pinch of dust)"
+    range_type TEXT,                 -- 'point', 'cone', 'radius', 'cube', 'line', 'sphere', 'hemisphere', 'special'
+    range_distance_type TEXT,        -- 'feet', 'miles', 'touch', 'sight', 'self', 'unlimited'
+    range_distance_amount INTEGER,   -- numeric value when range_distance_type is 'feet' or 'miles'
+    components TEXT NOT NULL,        -- e.g., "V, S, M (a pinch of dust)"
+    material_cost INTEGER,           -- gp value when M component has a cost (e.g., 2500 for Arcane Lock)
+    material_consumed INTEGER NOT NULL DEFAULT 0 CHECK (material_consumed IN (0, 1)),
     duration TEXT NOT NULL,
     is_concentration INTEGER NOT NULL DEFAULT 0 CHECK (is_concentration IN (0, 1)),
     is_ritual INTEGER NOT NULL DEFAULT 0 CHECK (is_ritual IN (0, 1)),
     description TEXT NOT NULL,
-    higher_levels_desc TEXT
+    higher_levels_desc TEXT,
+
+    -- Reference / Provenance
+    source TEXT NOT NULL DEFAULT 'PHB',
+    page INTEGER,
+    srd INTEGER NOT NULL DEFAULT 0 CHECK (srd IN (0, 1)),
+
+    -- Gameplay mechanics (JSON arrays — NULL when inapplicable)
+    saving_throw TEXT,              -- e.g., '["dexterity"]'
+    damage_inflict TEXT,            -- e.g., '["acid"]'
+    condition_inflict TEXT,         -- e.g., '["paralyzed"]'
+    spell_attack TEXT,              -- e.g., '["R"]' (ranged), '["M"]' (melee)
+    damage_immune TEXT,             -- e.g., '["poison"]'
+    damage_resist TEXT,             -- e.g., '["fire"]'
+    damage_vulnerable TEXT,         -- e.g., '["acid","cold"]'
+    condition_immune TEXT,          -- e.g., '["paralyzed","restrained"]'
+    ability_check TEXT,             -- e.g., '["strength"]'
+    affects_creature_type TEXT,     -- e.g., '["undead","celestial"]'
+    misc_tags TEXT,                 -- e.g., '["SCL","SGT"]'
+    area_tags TEXT                  -- e.g., '["MT","ST"]'
+);
+
+-- Cantrip scaling dice per character level
+CREATE TABLE spell_scaling (
+    spell_id TEXT,
+    character_level INTEGER NOT NULL CHECK (character_level IN (1, 5, 11, 17)),
+    dice TEXT NOT NULL,             -- e.g., '2d6'
+    PRIMARY KEY (spell_id, character_level),
+    FOREIGN KEY (spell_id) REFERENCES spell_library(id) ON DELETE CASCADE
 );
 
 -- Tracks an entity's spellcasting stats and current slot inventory

@@ -63,6 +63,32 @@ export interface CharacterSkill {
   total_modifier: number;
 }
 
+export interface CharacterSpell {
+  spell_id: string;
+  name: string;
+  level: number;
+  school: string;
+  is_concentration: boolean;
+  is_ritual: boolean;
+  description: string;
+  is_prepared: boolean;
+}
+
+export interface Spell {
+  id: string;
+  name: string;
+  level: number;
+  school: string;
+  casting_time: string;
+  range: string;
+  components: string;
+  duration: string;
+  is_concentration: boolean;
+  is_ritual: boolean;
+  description: string;
+  higher_levels_desc: string | null;
+}
+
 export interface CreateCharacterRequest {
   name: string;
   class: string;

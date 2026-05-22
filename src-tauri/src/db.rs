@@ -6,6 +6,7 @@ use std::env;
 pub struct DbPool(pub Mutex<Connection>);
 
 impl DbPool {
+    /// Create a pool from a file path (production use).
     pub fn new() -> Result<Self, String> {
         let db_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .parent()
@@ -14,6 +15,11 @@ impl DbPool {
 
         let conn = Connection::open(&db_path).map_err(|e| e.to_string())?;
         Ok(DbPool(Mutex::new(conn)))
+    }
+
+    /// Create a pool from an existing connection (testing use).
+    pub fn from_conn(conn: Connection) -> Self {
+        DbPool(Mutex::new(conn))
     }
 
     pub fn lock(&self) -> Result<std::sync::MutexGuard<Connection>, String> {
@@ -109,6 +115,22 @@ pub mod queries {
     pub const INSERT_CHARACTER_PROFILE: &str = r#"
         INSERT INTO character_profiles (entity_id, class, level, race, player_name, proficiency_bonus)
         VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+    "#;
+
+    pub const GET_CHARACTER_SPELLS: &str = r#"
+        SELECT sl.id, sl.name, sl.level, sl.school, sl.is_concentration, sl.is_ritual, sl.description,
+               COALESCE(es.is_prepared, 0) as is_prepared
+        FROM entity_spells es
+        JOIN spell_library sl ON es.spell_id = sl.id
+        WHERE es.entity_id = ?1
+        ORDER BY sl.level, sl.name
+    "#;
+
+    pub const GET_SPELL_LIBRARY: &str = r#"
+        SELECT id, name, level, school, casting_time, range, components, duration,
+               is_concentration, is_ritual, description, higher_levels_desc
+        FROM spell_library
+        ORDER BY level, name
     "#;
 
     pub const UPDATE_ENTITY_HP: &str = r#"

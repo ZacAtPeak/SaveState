@@ -1,14 +1,15 @@
 <script lang="ts">
-  import type { Entity, CharacterSkill } from '$lib/types';
+  import type { Entity, CharacterSkill, CharacterSpell } from '$lib/types';
   import { appStore } from '$lib/stores/app.svelte';
 
   interface Props {
     character: Entity;
     skills: CharacterSkill[];
+    spells: CharacterSpell[];
     onClose: () => void;
   }
 
-  let { character, skills, onClose }: Props = $props();
+  let { character, skills, spells, onClose }: Props = $props();
 
   let customStatus = $state('');
 
@@ -359,12 +360,12 @@
           </div>
         {/if}
 
-        {#if character.spells && character.spells.length > 0}
+        {#if spells.length > 0}
           <div class="section">
             <div class="section-title">Spells</div>
             <div class="spell-list">
-              {#each character.spells as spell}
-                <div class="spell-item">{spell}</div>
+              {#each spells as spell}
+                <div class="spell-item">{spell.name}</div>
               {/each}
             </div>
           </div>

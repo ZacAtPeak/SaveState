@@ -21,6 +21,7 @@ SaveState is a Tauri 2 desktop application for TTRPG initiative and combat track
 
 ```
 src/
+├── routes/+layout.ts            ← SPA mode config (ssr = false)
 ├── routes/+page.svelte          ← Thin shell, composes components
 ├── lib/
 │   ├── components/             ← Svelte 5 component library
@@ -30,8 +31,11 @@ src/
 │   │   ├── CharacterCard.svelte
 │   │   ├── CharacterList.svelte
 │   │   ├── CharacterDetail.svelte
+│   │   ├── CharacterModal.svelte            ← Detail view with skills, spells, status
 │   │   ├── CreateCharacterModal.svelte
-│   │   └── DiceRoller.svelte
+│   │   ├── DiceRoller.svelte
+│   │   ├── EncounterBuilder.svelte          ← Build encounters from creature library
+│   │   └── SettingsPanel.svelte             ← Save/load encounter states
 │   ├── stores/app.svelte.ts    ← Shared state (Svelte 5 runes)
 │   ├── types/index.ts          ← TypeScript interfaces
 │   └── styles/theme.css        ← CSS custom properties + resets
@@ -45,13 +49,17 @@ src-tauri/src/
 ├── db.rs                       ← Connection pool + queries + row constants
 └── commands/
     ├── mod.rs                  ← Module entry point + exports
-    ├── characters.rs           ← get_player_characters, create_player_character
+    ├── characters.rs           ← get_player_characters, create_player_character, update_entity_hp
     ├── creatures.rs             ← get_monsters, get_npcs
-    └── skills.rs                ← get_character_skills
+    ├── encounters.rs            ← save_encounter, load_encounters, delete_encounter
+    ├── skills.rs                ← get_character_skills
+    └── spells.rs                ← get_character_spells
         │
         │  rusqlite
         ▼
 Assets/5e_data.sqlite           ← SQLite database (bundled at build time)
+Assets/import_spells.py          ← Script to import spells JSON into SQLite
+Assets/spells-phb.json           ← SRD spell data source
 ```
 
 Key constraints:
@@ -79,18 +87,21 @@ npm run tauri          # raw Tauri CLI passthrough
 
 | Path | Role |
 |------|------|
+| `src/routes/+layout.ts` | SPA mode config (ssr = false) |
 | `src/routes/+page.svelte` | Main UI shell |
-| `src/lib/components/*.svelte` | Reusable UI components |
+| `src/lib/components/*.svelte` | Reusable UI components (10 components) |
 | `src/lib/stores/app.svelte.ts` | Shared application state |
-| `src/lib/types/index.ts` | TypeScript interfaces |
+| `src/lib/types/index.ts` | TypeScript interfaces (Entity, Spell, DiceRoll, SavedState, etc.) |
 | `src/lib/styles/theme.css` | CSS custom properties |
 | `src-tauri/src/lib.rs` | Tauri entry point + command registration |
-| `src-tauri/src/models.rs` | IPC data structs |
-| `src-tauri/src/db.rs` | DB connection pool + queries |
-| `src-tauri/src/commands/*.rs` | Tauri command handlers |
+| `src-tauri/src/models.rs` | IPC data structs (PlayerCharacter, EncounterData, SavedStateData, Spells, etc.) |
+| `src-tauri/src/db.rs` | DB connection pool + queries + row constants |
+| `src-tauri/src/commands/*.rs` | Tauri command handlers (characters, creatures, encounters, skills, spells) |
 | `Assets/savestate_schema.sql` | Canonical DB schema definition |
 | `Assets/5e_data.sqlite` | Bundled SQLite DB (seed + demo data) |
 | `Assets/savestate_demo_data.sql` | Demo data SQL (5 PCs, 25 monsters, 10 NPCs) |
+| `Assets/import_spells.py` | Script to import spells JSON into SQLite |
+| `Assets/spells-phb.json` | SRD spell data source |
 | `src-tauri/tauri.conf.json` | Window config, bundle settings, capability grants |
 | `vite.config.js` | Dev server on port 1420, HMR on 1421 |
 

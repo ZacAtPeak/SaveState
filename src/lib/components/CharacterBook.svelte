@@ -1,6 +1,8 @@
 <script lang="ts">
   import { appStore } from '$lib/stores/app.svelte';
-  import type { Entity } from '$lib/types';
+  import type { Entity, CharacterSpell, Spell } from '$lib/types';
+  import { groupByLevel } from '$lib/utils/spells';
+  import SpellCard from '$lib/components/SpellCard.svelte';
 
   interface Props {
     onClose: () => void;
@@ -10,7 +12,11 @@
 
   let isClosing = $state(false);
   let selectedEntity = $state<Entity | null>(null);
-  let activeTab = $state<'characters' | 'encounters'>('characters');
+  let selectedSpell = $state<Spell | null>(null);
+  let activeTab = $state<'characters' | 'encounters' | 'spells'>('characters');
+  let bookSpells = $state<CharacterSpell[]>([]);
+  let bookSpellsLoading = $state(false);
+  let bookSpellsError = $state<string | null>(null);
 
   let allEntities = $derived([
     ...appStore.playerCharacters.map(c => ({ ...c, category: 'character' as const })),
@@ -25,8 +31,27 @@
     }, 250);
   }
 
+  async function loadBookSpells(entityId: string) {
+    const { invoke } = await import('@tauri-apps/api/core');
+    try {
+      bookSpellsLoading = true;
+      bookSpellsError = null;
+      bookSpells = await invoke<CharacterSpell[]>('get_character_spells', { entityId });
+    } catch (e) {
+      console.error('Failed to load book spells:', e);
+      bookSpellsError = String(e);
+    } finally {
+      bookSpellsLoading = false;
+    }
+  }
+
   function selectEntity(entity: Entity) {
     selectedEntity = entity;
+    loadBookSpells(entity.id);
+  }
+
+  function selectSpell(spell: Spell) {
+    selectedSpell = spell;
   }
 
   function getModifier(score: number): number {
@@ -59,6 +84,18 @@
     if (ratio <= 0.5) return 'var(--gold)';
     return 'var(--green)';
   }
+
+  let spellsByLevel = $derived(groupByLevel(bookSpells));
+  let spellLibraryByLevel = $derived(groupByLevel(appStore.spellLibrary));
+
+  function switchTab(tab: typeof activeTab) {
+    activeTab = tab;
+    selectedEntity = null;
+    selectedSpell = null;
+    if (tab === 'spells' && appStore.spellLibrary.length === 0) {
+      appStore.loadSpellLibrary();
+    }
+  }
 </script>
 
 <div class="book-overlay" onclick={handleClose}></div>
@@ -74,8 +111,9 @@
     <div class="entity-list">
       <div class="list-header">
         <div class="tabs">
-          <button class="tab" class:active={activeTab === 'characters'} onclick={() => { activeTab = 'characters'; selectedEntity = null; }}>Characters</button>
-          <button class="tab" class:active={activeTab === 'encounters'} onclick={() => activeTab = 'encounters'}>Encounters</button>
+          <button class="tab" class:active={activeTab === 'characters'} onclick={() => switchTab('characters')}>Characters</button>
+          <button class="tab" class:active={activeTab === 'encounters'} onclick={() => switchTab('encounters')}>Encounters</button>
+          <button class="tab" class:active={activeTab === 'spells'} onclick={() => switchTab('spells')}>Spells</button>
         </div>
       </div>
       {#if activeTab === 'characters'}
@@ -128,13 +166,92 @@
           {/if}
         </div>
       {/if}
+      {#if activeTab === 'spells'}
+        <div class="spell-library-list">
+          {#if appStore.spellLibraryLoading}
+            <div class="empty-list" style="flex:1">Loading spells...</div>
+          {:else if appStore.spellLibraryError}
+            <div class="empty-list" style="flex:1">Failed to load spells. <button class="retry-btn" onclick={() => appStore.loadSpellLibrary()}>Retry</button></div>
+          {:else}
+            {#each spellLibraryByLevel as group}
+              <div class="spell-library-group">
+                <div class="spell-level-header">{group.label}</div>
+                {#each group.spells as spell}
+                  <button
+                    class="spell-lib-item"
+                    class:selected={selectedSpell?.id === spell.id}
+                    onclick={() => selectSpell(spell)}
+                  >
+                    <span class="spell-lib-name">{spell.name}</span>
+                    <div class="spell-lib-tags">
+                      <span class="spell-level-badge">{spell.level === 0 ? 'C' : spell.level}</span>
+                      <span class="spell-lib-school">{spell.school}</span>
+                    </div>
+                  </button>
+                {/each}
+              </div>
+            {/each}
+          {/if}
+        </div>
+      {/if}
     </div>
 
     <div class="entity-detail">
-      {#if !selectedEntity}
+      {#if activeTab === 'spells' && selectedSpell}
+        <div class="detail-header">
+          <div class="detail-title-row">
+            <div class="detail-title">
+              <h3>{selectedSpell.name}</h3>
+              <span class="detail-sub">{selectedSpell.school} · Level {selectedSpell.level}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <div class="spell-detail-meta">
+            <div class="spell-detail-meta-item">
+              <span class="spell-detail-meta-label">Casting Time</span>
+              <span class="spell-detail-meta-value">{selectedSpell.casting_time}</span>
+            </div>
+            <div class="spell-detail-meta-item">
+              <span class="spell-detail-meta-label">Range</span>
+              <span class="spell-detail-meta-value">{selectedSpell.range}</span>
+            </div>
+            <div class="spell-detail-meta-item">
+              <span class="spell-detail-meta-label">Components</span>
+              <span class="spell-detail-meta-value">{selectedSpell.components}</span>
+            </div>
+            <div class="spell-detail-meta-item">
+              <span class="spell-detail-meta-label">Duration</span>
+              <span class="spell-detail-meta-value">{selectedSpell.duration}</span>
+            </div>
+          </div>
+          <div class="spell-detail-badges">
+            {#if selectedSpell.is_concentration}<span class="spell-tag">Concentration</span>{/if}
+            {#if selectedSpell.is_ritual}<span class="spell-tag">Ritual</span>{/if}
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4>Description</h4>
+          <p class="spell-detail-desc">{selectedSpell.description}</p>
+        </div>
+
+        {#if selectedSpell.higher_levels_desc}
+          <div class="detail-section">
+            <h4>At Higher Levels</h4>
+            <p class="spell-detail-desc">{selectedSpell.higher_levels_desc}</p>
+          </div>
+        {/if}
+
+      {:else if !selectedEntity}
         <div class="detail-empty">
           <div class="empty-icon">📖</div>
-          <span>Select a character to view details</span>
+          {#if activeTab === 'spells'}
+            <span>Select a spell to view details</span>
+          {:else}
+            <span>Select a character to view details</span>
+          {/if}
         </div>
       {:else}
         <div class="detail-header">
@@ -230,16 +347,21 @@
           </div>
         {/if}
 
-        {#if selectedEntity.spells && selectedEntity.spells.length > 0}
+        {#if bookSpellsLoading}
+          <div class="detail-section"><h4>Spells</h4><div class="detail-empty">Loading spells...</div></div>
+        {:else if bookSpells.length > 0}
           <div class="detail-section">
             <h4>Spells</h4>
-            <div class="spells-list">
-              {#each selectedEntity.spells as spell}
-                <div class="spell-item">
-                  <span class="spell-name">{spell}</span>
+            {#each spellsByLevel as group}
+              <div class="spell-group">
+                <div class="spell-level-header">{group.label}</div>
+                <div class="spell-grid">
+                  {#each group.spells as spell}
+                    <SpellCard {spell} />
+                  {/each}
                 </div>
-              {/each}
-            </div>
+              </div>
+            {/each}
           </div>
         {/if}
       {/if}
@@ -599,6 +721,147 @@
     font-family: var(--font-mono);
     font-weight: 600;
     color: var(--gold);
+  }
+
+  .spell-group {
+    margin-bottom: 16px;
+  }
+
+  .spell-level-header {
+    font-size: 10px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .spell-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .retry-btn {
+    background: none;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  .retry-btn:hover {
+    background: var(--gold-dim);
+  }
+
+  .spell-lib-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 14px 16px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    color: var(--fg);
+    font-size: 13px;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    transition: all 120ms;
+    margin-bottom: 4px;
+  }
+
+  .spell-lib-item:hover {
+    background: var(--surface-3);
+    border-color: var(--gold-dim);
+  }
+
+  .spell-lib-item.selected {
+    background: var(--gold-dim);
+    border-color: var(--gold);
+  }
+
+  .spell-lib-name {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .spell-lib-tags {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .spell-lib-school {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+
+.spell-library-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+  }
+
+  .spell-library-group {
+    margin-bottom: 12px;
+  }
+
+  .spell-detail-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .spell-detail-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+
+  .spell-detail-meta-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .spell-detail-meta-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+
+  .spell-detail-badges {
+    display: flex;
+    gap: 6px;
+    margin-top: 12px;
+  }
+
+  .spell-detail-desc {
+    font-size: 13px;
+    color: var(--fg);
+    line-height: 1.6;
+    margin: 0;
   }
 
   .tabs {

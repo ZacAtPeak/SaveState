@@ -1,12 +1,15 @@
 <script lang="ts">
-  import type { Entity, CharacterSkill } from '$lib/types';
+  import type { Entity, CharacterSkill, CharacterSpell } from '$lib/types';
+  import { groupByLevel } from '$lib/utils/spells';
+  import SpellCard from '$lib/components/SpellCard.svelte';
 
   interface Props {
     character: Entity;
     skills: CharacterSkill[];
+    spells: CharacterSpell[];
   }
 
-  let { character, skills }: Props = $props();
+  let { character, skills, spells }: Props = $props();
 
   function getHpPercent(): number {
     return Math.max(0, Math.min(100, (character.hit_points_current / character.hit_points_max) * 100));
@@ -56,6 +59,8 @@
   function getModifier(score: number): number {
     return Math.floor((score - 10) / 2);
   }
+
+  let spellsByLevel = $derived(groupByLevel(spells));
 </script>
 
 <div class="detail-body">
@@ -126,6 +131,22 @@
           </div>
         {/each}
       </div>
+    </div>
+  {/if}
+
+  {#if spells.length > 0}
+    <div>
+      <div class="detail-section-title">Spells</div>
+      {#each spellsByLevel as group}
+        <div class="spell-group">
+          <div class="spell-level-header">{group.label}</div>
+          <div class="spell-grid">
+            {#each group.spells as spell}
+              <SpellCard {spell} compact />
+            {/each}
+          </div>
+        </div>
+      {/each}
     </div>
   {/if}
 
@@ -388,4 +409,28 @@
     background: var(--accent-dim);
     color: var(--accent);
   }
+
+  .spell-group {
+    margin-bottom: 8px;
+  }
+
+  .spell-level-header {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+    padding: 2px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .spell-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+
 </style>
