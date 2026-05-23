@@ -203,6 +203,27 @@ pub struct ValidationResult {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct SpellSlotGroup {
+    pub group_type: String,          // "spellcasting" or "pact_magic"
+    pub spellcasting_ability: String, // e.g., "INT", "CHA"
+    pub save_dc: i32,
+    pub attack_bonus: i32,
+    pub slots: Vec<SpellSlot>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SpellSlot {
+    pub level: i32,   // 1-9
+    pub max: i32,     // derived from class_level_progression
+    pub current: i32, // from entity_spell_slot_state (or = max if no row)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SpellSlotsResponse {
+    pub groups: Vec<SpellSlotGroup>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ClassLevelPair {
     pub class_id: String,
     pub level: i32,

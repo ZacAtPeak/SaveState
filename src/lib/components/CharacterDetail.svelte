@@ -1,7 +1,8 @@
 <script lang="ts">
-  import type { Entity, CharacterSkill, CharacterSpell } from '$lib/types';
+  import type { Entity, CharacterSkill, CharacterSpell, SpellSlotGroup } from '$lib/types';
   import { groupByLevel } from '$lib/utils/spells';
   import SpellCard from '$lib/components/SpellCard.svelte';
+  import { appStore } from '$lib/stores/app.svelte';
 
   interface Props {
     character: Entity;
@@ -61,6 +62,21 @@
   }
 
   let spellsByLevel = $derived(groupByLevel(spells));
+
+  let slotGroups = $derived(appStore.spellSlotGroups);
+  let hasSlots = $derived(slotGroups.length > 0 && slotGroups.some(g => g.slots.length > 0));
+
+  function getLevelLabel(level: number): string {
+    const suffix = level === 1 ? 'st' : level === 2 ? 'nd' : level === 3 ? 'rd' : 'th';
+    return `${level}${suffix}`;
+  }
+
+  function getGroupLabel(group: SpellSlotGroup): string {
+    if (group.group_type === 'pact_magic') {
+      return `Pact Magic (${group.spellcasting_ability})`;
+    }
+    return `Spellcasting (${group.spellcasting_ability})`;
+  }
 </script>
 
 <div class="detail-body">
@@ -113,6 +129,33 @@
       {/each}
     </div>
   </div>
+
+  {#if hasSlots}
+    <div>
+      <div class="detail-section-title">Spell Slots</div>
+      {#each slotGroups as group}
+        <div class="slot-group">
+          <div class="slot-group-header">
+            <span class="slot-group-title">{getGroupLabel(group)}</span>
+            <span class="slot-group-stats">DC {group.save_dc} · ATK {group.attack_bonus >= 0 ? '+' : ''}{group.attack_bonus}</span>
+          </div>
+          <div class="slot-levels">
+            {#each group.slots as slot}
+              <div class="slot-level" class:depleted={slot.current === 0}>
+                <span class="slot-lvl-label">{getLevelLabel(slot.level)}</span>
+                <div class="slot-dots">
+                  {#each {length: slot.max} as _}
+                    <span class="slot-dot" class:filled={slot.current > 0}></span>
+                  {/each}
+                </div>
+                <span class="slot-fraction">{slot.current}/{slot.max}</span>
+              </div>
+            {/each}
+          </div>
+        </div>
+      {/each}
+    </div>
+  {/if}
 
   {#if skills.length > 0}
     <div>
@@ -408,6 +451,87 @@
   .skill-badge.expert {
     background: var(--accent-dim);
     color: var(--accent);
+  }
+
+  .slot-group {
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .slot-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .slot-group-title {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+
+  .slot-group-stats {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .slot-levels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .slot-level {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+
+  .slot-level.depleted {
+    opacity: 0.4;
+  }
+
+  .slot-lvl-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--muted);
+    min-width: 16px;
+  }
+
+  .slot-dots {
+    display: flex;
+    gap: 3px;
+  }
+
+  .slot-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+  }
+
+  .slot-dot.filled {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .slot-fraction {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--fg);
+    font-variant-numeric: tabular-nums;
   }
 
   .spell-group {

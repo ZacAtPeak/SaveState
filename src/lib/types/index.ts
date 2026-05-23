@@ -189,6 +189,24 @@ export interface SavedEncounter {
   creatures: { entityId: string; count: number }[];
 }
 
+export interface SpellSlotGroup {
+  group_type: 'spellcasting' | 'pact_magic';
+  spellcasting_ability: string;
+  save_dc: number;
+  attack_bonus: number;
+  slots: SpellSlot[];
+}
+
+export interface SpellSlot {
+  level: number;
+  max: number;
+  current: number;
+}
+
+export interface SpellSlotsResponse {
+  groups: SpellSlotGroup[];
+}
+
 export interface SavedState {
   id: string;
   name: string;

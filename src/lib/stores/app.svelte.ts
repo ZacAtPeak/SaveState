@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Entity, PlayerCharacter, Creature, InitiativeEntity, CharacterSkill, CharacterSpell, Spell, CreateCharacterRequest, DiceRoll, SavedEncounter, SavedState, DndClass, Subclass, Race, Subrace, Background, ValidationResult, StatRollMethod } from '$lib/types';
+import type { Entity, PlayerCharacter, Creature, InitiativeEntity, CharacterSkill, CharacterSpell, Spell, CreateCharacterRequest, DiceRoll, SavedEncounter, SavedState, DndClass, Subclass, Race, Subrace, Background, ValidationResult, StatRollMethod, SpellSlotGroup, SpellSlotsResponse } from '$lib/types';
 
 function createAppStore() {
   let playerCharacters = $state<PlayerCharacter[]>([]);
@@ -10,6 +10,8 @@ function createAppStore() {
   let characterSpells = $state<CharacterSpell[]>([]);
   let characterSpellsLoading = $state(false);
   let characterSpellsError = $state<string | null>(null);
+  let spellSlotGroups = $state<SpellSlotGroup[]>([]);
+  let spellSlotsLoading = $state(false);
   let spellLibrary = $state<Spell[]>([]);
   let spellLibraryLoading = $state(false);
   let spellLibraryError = $state<string | null>(null);
@@ -180,6 +182,40 @@ function createAppStore() {
     }
   }
 
+  async function loadSpellSlots(entityId: string) {
+    try {
+      spellSlotsLoading = true;
+      const response = await invoke<SpellSlotsResponse>('get_spell_slots', { entityId });
+      spellSlotGroups = response.groups;
+    } catch (e) {
+      console.error('Failed to load spell slots:', e);
+      spellSlotGroups = [];
+    } finally {
+      spellSlotsLoading = false;
+    }
+  }
+
+  function consumeSlot(groupType: string, level: number) {
+    // Find the slot group and level, decrement current
+    const group = spellSlotGroups.find(g => g.group_type === groupType);
+    if (!group) return;
+    const slot = group.slots.find(s => s.level === level);
+    if (!slot || slot.current <= 0) return;
+
+    // Optimistically update UI
+    const current = slot.current - 1;
+    slot.current = current;
+    spellSlotGroups = [...spellSlotGroups]; // trigger reactivity
+
+    // Debounced persistence (no debounce for simplicity — direct write)
+    invoke('set_spell_slots', {
+      entityId: selectedCharacter?.id ?? '',
+      slotType: groupType,
+      slotLevel: level,
+      slotsCurr: current
+    }).catch((e: unknown) => console.error('Failed to persist slot consumption:', e));
+  }
+
   async function loadSpellLibrary() {
     try {
       spellLibraryLoading = true;
@@ -199,6 +235,7 @@ function createAppStore() {
       loadCharacterSkills(char.id, char.proficiency_bonus);
     }
     loadCharacterSpells(char.id);
+    loadSpellSlots(char.id);
   }
 
   function toggleSection(section: keyof typeof expandedSections) {
@@ -413,6 +450,7 @@ function createAppStore() {
       loadCharacterSkills(entity.id, entity.proficiency_bonus);
     }
     loadCharacterSpells(entity.id);
+    loadSpellSlots(entity.id);
     const statusKey = instanceId ?? entity.id;
     if (!characterStatuses[statusKey]) {
       characterStatuses = { ...characterStatuses, [statusKey]: [] };
@@ -622,6 +660,9 @@ function createAppStore() {
     set characterSpells(v) { characterSpells = v; },
     get characterSpellsLoading() { return characterSpellsLoading; },
     get characterSpellsError() { return characterSpellsError; },
+    get spellSlotGroups() { return spellSlotGroups; },
+    set spellSlotGroups(v) { spellSlotGroups = v; },
+    get spellSlotsLoading() { return spellSlotsLoading; },
     get spellLibrary() { return spellLibrary; },
     set spellLibrary(v) { spellLibrary = v; },
     get spellLibraryLoading() { return spellLibraryLoading; },
@@ -649,6 +690,8 @@ function createAppStore() {
     loadCharacters,
     loadCharacterSkills,
     loadCharacterSpells,
+    loadSpellSlots,
+    consumeSlot,
     loadSpellLibrary,
     selectCharacter,
     toggleSection,

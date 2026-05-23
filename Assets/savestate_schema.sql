@@ -208,6 +208,17 @@ CREATE TABLE entity_spells (
     FOREIGN KEY (spell_id) REFERENCES spell_library(id) ON DELETE CASCADE
 );
 
+-- Tracks current (remaining) spell slot counts per entity, per slot type, per level
+-- Max slots are always derived from class_level_progression (not stored here)
+CREATE TABLE entity_spell_slot_state (
+    entity_id   TEXT NOT NULL,
+    slot_type   TEXT NOT NULL CHECK (slot_type IN ('spellcasting', 'pact_magic')),
+    slot_level  INTEGER NOT NULL CHECK (slot_level BETWEEN 1 AND 9),
+    slots_curr  INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (entity_id, slot_type, slot_level),
+    FOREIGN KEY (entity_id) REFERENCES entities(id) ON DELETE CASCADE
+);
+
 ---
 -- 5. DEFENSES, CONDITIONS & RESISTANCES
 ---
@@ -258,7 +269,9 @@ CREATE TABLE classes (
     saving_throw_2 TEXT NOT NULL CHECK (saving_throw_2 IN ('STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA')),
     description TEXT,
     -- Number of skill proficiencies the class may select at level 1
-    skill_picks INTEGER NOT NULL DEFAULT 2 CHECK (skill_picks BETWEEN 1 AND 6)
+    skill_picks INTEGER NOT NULL DEFAULT 2 CHECK (skill_picks BETWEEN 1 AND 6),
+    spellcaster_type TEXT NOT NULL DEFAULT 'none'
+        CHECK (spellcaster_type IN ('full', 'half', 'half_up', 'third', 'pact', 'none'))
 );
 
 CREATE TABLE subclasses (
@@ -266,6 +279,8 @@ CREATE TABLE subclasses (
     class_id TEXT NOT NULL,
     name TEXT NOT NULL,
     description TEXT,
+    spellcaster_type TEXT DEFAULT NULL
+        CHECK (spellcaster_type IS NULL OR spellcaster_type IN ('third')),
     FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
 );
 
