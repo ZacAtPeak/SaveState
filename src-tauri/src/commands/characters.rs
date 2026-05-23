@@ -1,5 +1,6 @@
 use crate::db::{queries, row_indexes, DbPool};
-use crate::models::{CreateCharacterRequest, PlayerCharacter};
+use crate::models::{CreateCharacterRequest, PlayerCharacter, ValidationResult};
+use crate::rules;
 use tauri::State;
 
 #[tauri::command]
@@ -42,29 +43,135 @@ pub fn create_player_character(
 ) -> Result<PlayerCharacter, String> {
     let conn = state.lock()?;
     let id = uuid::Uuid::new_v4().to_string();
-    let proficiency_bonus = (req.level - 1) / 4 + 2;
+    let proficiency_bonus = rules::proficiency_bonus(req.level);
 
+    // Insert base entity
     conn.execute(
         queries::INSERT_ENTITY,
-        [&id, &req.name, &req.armor_class.to_string(), &req.hit_points_max.to_string(), &req.hit_points_current.to_string()],
-    ).map_err(|e| e.to_string())?;
+        [
+            &id,
+            &req.name,
+            &req.armor_class.to_string(),
+            &req.hit_points_max.to_string(),
+            &req.hit_points_current.to_string(),
+        ],
+    )
+    .map_err(|e| e.to_string())?;
 
+    // Insert entity stats (ability scores)
     conn.execute(
         queries::INSERT_ENTITY_STATS,
-        [&id, &req.strength.to_string(), &req.dexterity.to_string(), &req.constitution.to_string(), &req.intelligence.to_string(), &req.wisdom.to_string(), &req.charisma.to_string()],
-    ).map_err(|e| e.to_string())?;
+        [
+            &id,
+            &req.strength.to_string(),
+            &req.dexterity.to_string(),
+            &req.constitution.to_string(),
+            &req.intelligence.to_string(),
+            &req.wisdom.to_string(),
+            &req.charisma.to_string(),
+        ],
+    )
+    .map_err(|e| e.to_string())?;
+
+    // Write save proficiencies to entity_stats if provided
+    if let Some(save_ids) = &req.proficient_save_ids {
+        let str_prof = if save_ids.contains(&"strength".to_string()) { 1 } else { 0 };
+        let dex_prof = if save_ids.contains(&"dexterity".to_string()) { 1 } else { 0 };
+        let con_prof = if save_ids.contains(&"constitution".to_string()) { 1 } else { 0 };
+        let int_prof = if save_ids.contains(&"intelligence".to_string()) { 1 } else { 0 };
+        let wis_prof = if save_ids.contains(&"wisdom".to_string()) { 1 } else { 0 };
+        let cha_prof = if save_ids.contains(&"charisma".to_string()) { 1 } else { 0 };
+
+        conn.execute(
+            queries::UPDATE_ENTITY_STATS_SAVE_PROFS,
+            [
+                &id,
+                &str_prof.to_string(),
+                &dex_prof.to_string(),
+                &con_prof.to_string(),
+                &int_prof.to_string(),
+                &wis_prof.to_string(),
+                &cha_prof.to_string(),
+            ],
+        )
+        .map_err(|e| e.to_string())?;
+    }
+
+    // Determine primary class name and total level
+    let (primary_class_name, total_level) = if let Some(class_pairs) = &req.class_ids_and_levels {
+        // Look up the first class name from the classes table
+        let primary_name: String = class_pairs.first().map_or(req.class.clone(), |first_pair| {
+            if let Ok(mut stmt) = conn.prepare("SELECT name FROM classes WHERE id = ?1") {
+                if let Ok(mut rows) = stmt.query_map([&first_pair.class_id], |row| row.get::<_, String>(0)) {
+                    if let Some(Ok(name)) = rows.next() {
+                        return name;
+                    }
+                }
+            }
+            req.class.clone()
+        });
+
+        let total: i32 = class_pairs.iter().map(|p| p.level).sum();
+
+        // Insert character_classes rows
+        for (i, pair) in class_pairs.iter().enumerate() {
+            let subclass_id = if i == 0 {
+                req.subclass_id.clone()
+            } else {
+                None
+            };
+            conn.execute(
+                queries::INSERT_CHARACTER_CLASS,
+                [
+                    &id,
+                    &pair.class_id,
+                    &subclass_id.unwrap_or_default(),
+                    &pair.level.to_string(),
+                    &(if i == 0 { "1" } else { "0" }.to_string()),
+                ],
+            )
+            .map_err(|e| e.to_string())?;
+        }
+
+        (primary_name, total)
+    } else {
+        (req.class.clone(), req.level)
+    };
+
+    // Insert character profile (backward-compatible denormalized write)
+    let final_class = if !req.class.is_empty() {
+        req.class.clone()
+    } else {
+        primary_class_name.clone()
+    };
 
     conn.execute(
         queries::INSERT_CHARACTER_PROFILE,
-        [&id, &req.class, &req.level.to_string(), &req.race, &req.player_name.clone().unwrap_or_default(), &proficiency_bonus.to_string()],
-    ).map_err(|e| e.to_string())?;
+        [
+            &id,
+            &final_class,
+            &total_level.to_string(),
+            &req.race,
+            &req.player_name.clone().unwrap_or_default(),
+            &proficiency_bonus.to_string(),
+        ],
+    )
+    .map_err(|e| e.to_string())?;
+
+    // Write skill proficiencies to entity_skills if provided
+    if let Some(skill_ids) = &req.proficient_skill_ids {
+        for skill_id in skill_ids {
+            conn.execute(queries::INSERT_ENTITY_SKILL, [&id, skill_id])
+                .map_err(|e| e.to_string())?;
+        }
+    }
 
     Ok(PlayerCharacter {
         id,
         name: req.name,
         entity_type: "pc".to_string(),
-        class: req.class,
-        level: req.level,
+        class: primary_class_name,
+        level: total_level,
         race: req.race,
         player_name: req.player_name,
         armor_class: req.armor_class,
@@ -78,6 +185,36 @@ pub fn create_player_character(
         charisma: req.charisma,
         proficiency_bonus,
     })
+}
+
+/// Validate character stats without modifying any database state.
+#[tauri::command]
+pub fn validate_character_stats(
+    stat_roll_method: String,
+    raw_scores: Vec<i32>,
+    class_ids: Vec<String>,
+    subclass_id: Option<String>,
+    selected_skill_count: usize,
+) -> Result<ValidationResult, String> {
+    // Convert scores to fixed array
+    let scores: [i32; 6] = [
+        raw_scores.first().copied().unwrap_or(10),
+        raw_scores.get(1).copied().unwrap_or(10),
+        raw_scores.get(2).copied().unwrap_or(10),
+        raw_scores.get(3).copied().unwrap_or(10),
+        raw_scores.get(4).copied().unwrap_or(10),
+        raw_scores.get(5).copied().unwrap_or(10),
+    ];
+
+    let result = rules::validate_character_stats(
+        &stat_roll_method,
+        &scores,
+        &class_ids,
+        subclass_id.as_deref(),
+        selected_skill_count,
+    );
+
+    Ok(result)
 }
 
 #[tauri::command]

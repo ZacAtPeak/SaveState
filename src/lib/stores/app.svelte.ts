@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Entity, PlayerCharacter, Creature, InitiativeEntity, CharacterSkill, CharacterSpell, Spell, CreateCharacterRequest, DiceRoll, SavedEncounter, SavedState } from '$lib/types';
+import type { Entity, PlayerCharacter, Creature, InitiativeEntity, CharacterSkill, CharacterSpell, Spell, CreateCharacterRequest, DiceRoll, SavedEncounter, SavedState, DndClass, Subclass, Race, Subrace, Background, ValidationResult, StatRollMethod } from '$lib/types';
 
 function createAppStore() {
   let playerCharacters = $state<PlayerCharacter[]>([]);
@@ -35,12 +35,100 @@ function createAppStore() {
 
   let newInstanceIds = $state<Set<string>>(new Set());
 
+  // Character creation reference data
+  let classes = $state<DndClass[]>([]);
+  let subclasses = $state<Subclass[]>([]);
+  let races = $state<Race[]>([]);
+  let subraces = $state<Subrace[]>([]);
+  let backgrounds = $state<Background[]>([]);
+  let selectedClassId = $state<string | null>(null);
+  let selectedRaceId = $state<string | null>(null);
+  let validationResult = $state<ValidationResult | null>(null);
+
   let expandedSections = $state({
     characters: false,
     monsters: false,
     npcs: false,
     other: false
   });
+
+  async function loadClasses(): Promise<DndClass[]> {
+    try {
+      const result = await invoke<DndClass[]>('get_classes');
+      classes = result;
+      return result;
+    } catch (e) {
+      console.error('Failed to load classes:', e);
+      return [];
+    }
+  }
+
+  async function loadSubclasses(classId: string): Promise<Subclass[]> {
+    try {
+      const result = await invoke<Subclass[]>('get_subclasses', { classId });
+      subclasses = result;
+      return result;
+    } catch (e) {
+      console.error('Failed to load subclasses:', e);
+      return [];
+    }
+  }
+
+  async function loadRaces(): Promise<Race[]> {
+    try {
+      const result = await invoke<Race[]>('get_races');
+      races = result;
+      return result;
+    } catch (e) {
+      console.error('Failed to load races:', e);
+      return [];
+    }
+  }
+
+  async function loadSubraces(raceId: string): Promise<Subrace[]> {
+    try {
+      const result = await invoke<Subrace[]>('get_subraces', { raceId });
+      subraces = result;
+      return result;
+    } catch (e) {
+      console.error('Failed to load subraces:', e);
+      return [];
+    }
+  }
+
+  async function loadBackgrounds(): Promise<Background[]> {
+    try {
+      const result = await invoke<Background[]>('get_backgrounds');
+      backgrounds = result;
+      return result;
+    } catch (e) {
+      console.error('Failed to load backgrounds:', e);
+      return [];
+    }
+  }
+
+  async function validateStats(
+    statRollMethod: string,
+    rawScores: number[],
+    classIds: string[],
+    subclassId: string | null,
+    selectedSkillCount: number
+  ): Promise<ValidationResult | null> {
+    try {
+      const result = await invoke<ValidationResult>('validate_character_stats', {
+        statRollMethod,
+        rawScores,
+        classIds,
+        subclassId,
+        selectedSkillCount
+      });
+      validationResult = result;
+      return result;
+    } catch (e) {
+      console.error('Failed to validate stats:', e);
+      return null;
+    }
+  }
 
   async function loadCharacters() {
     try {
@@ -497,6 +585,29 @@ function createAppStore() {
   }
 
   return {
+    // Character creation reference data
+    get classes() { return classes; },
+    set classes(v) { classes = v; },
+    get subclasses() { return subclasses; },
+    set subclasses(v) { subclasses = v; },
+    get races() { return races; },
+    set races(v) { races = v; },
+    get subraces() { return subraces; },
+    set subraces(v) { subraces = v; },
+    get backgrounds() { return backgrounds; },
+    set backgrounds(v) { backgrounds = v; },
+    get selectedClassId() { return selectedClassId; },
+    set selectedClassId(v) { selectedClassId = v; },
+    get selectedRaceId() { return selectedRaceId; },
+    set selectedRaceId(v) { selectedRaceId = v; },
+    get validationResult() { return validationResult; },
+    set validationResult(v) { validationResult = v; },
+    loadClasses,
+    loadSubclasses,
+    loadRaces,
+    loadSubraces,
+    loadBackgrounds,
+    validateStats,
     get playerCharacters() { return playerCharacters; },
     set playerCharacters(v) { playerCharacters = v; },
     get creatures() { return creatures; },

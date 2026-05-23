@@ -256,7 +256,7 @@ values
 -- Descriptions directly referenced from dungeonsanddragonsfan.com
 -- ---------------------------------------------------------
 
-INSERT INTO classes (id, name, hit_die, primary_ability, saving_throw_1, saving_throw_2, description) VALUES
+INSERT INTO classes (id, name, hit_die, primary_ability, saving_throw_1, saving_throw_2, description, skill_picks) VALUES
 (
     'artificer',
     'Artificer',
@@ -264,7 +264,8 @@ INSERT INTO classes (id, name, hit_die, primary_ability, saving_throw_1, saving_
     'INT',
     'CON',
     'INT',
-    'DnD 5e Artificers are masters of magical invention, merging technology with arcane power. As an Artificer, you can craft magical objects and mechanical companions and provide support to your party through magical gear and enhancements.'
+    'DnD 5e Artificers are masters of magical invention, merging technology with arcane power. As an Artificer, you can craft magical objects and mechanical companions and provide support to your party through magical gear and enhancements.',
+    2
 ),
 (
     'barbarian',
@@ -273,7 +274,8 @@ INSERT INTO classes (id, name, hit_die, primary_ability, saving_throw_1, saving_
     'STR',
     'STR',
     'CON',
-    'DnD 5e Barbarians are fierce warriors who excel in combat through sheer rage and physical prowess. As a Barbarian, you can both deal and absorb an incredible amount of damage, making you a formidable tank on the battlefield.'
+    'DnD 5e Barbarians are fierce warriors who excel in combat through sheer rage and physical prowess. As a Barbarian, you can both deal and absorb an incredible amount of damage, making you a formidable tank on the battlefield.',
+    2
 ),
 (
     'druid',
@@ -282,7 +284,8 @@ INSERT INTO classes (id, name, hit_die, primary_ability, saving_throw_1, saving_
     'WIS',
     'INT',
     'WIS',
-    'DnD 5e Druids draw their power from nature and are able to harness its raw energy to command the elements, summon beasts and even change into an animal form known as a Wild Shape.'
+    'DnD 5e Druids draw their power from nature and are able to harness its raw energy to command the elements, summon beasts and even change into an animal form known as a Wild Shape.',
+    2
 ),
 (
     'fighter',
@@ -291,7 +294,8 @@ INSERT INTO classes (id, name, hit_die, primary_ability, saving_throw_1, saving_
     'STR or DEX',
     'STR',
     'CON',
-    'DnD 5e Fighters are masters of martial combat, proficient with a wide variety of weapons and armor.'
+    'DnD 5e Fighters are masters of martial combat, proficient with a wide variety of weapons and armor.',
+    2
 ),
 (
     'rogue',
@@ -300,7 +304,8 @@ INSERT INTO classes (id, name, hit_die, primary_ability, saving_throw_1, saving_
     'DEX or INT',
     'DEX',
     'INT',
-    'Rogues.'
+    'Rogues.',
+    4
 );
 
 -- ---------------------------------------------------------

@@ -144,6 +144,71 @@ pub struct Spell {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct Class {
+    pub id: String,
+    pub name: String,
+    pub hit_die: String,
+    pub saving_throw_1: String,
+    pub saving_throw_2: String,
+    pub primary_ability: Option<String>,
+    pub description: Option<String>,
+    pub skill_picks: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Subclass {
+    pub id: String,
+    pub name: String,
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Race {
+    pub id: String,
+    pub name: String,
+    pub size: String,
+    pub speed_walk: i32,
+    pub darkvision: i32,
+    pub ability_bonuses: Vec<AbilityBonus>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Subrace {
+    pub id: String,
+    pub name: String,
+    pub race_id: String,
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AbilityBonus {
+    pub ability: String,
+    pub bonus: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Background {
+    pub id: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub skill_proficiencies: Option<String>,
+    pub feature_name: Option<String>,
+    pub feature_description: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ValidationResult {
+    pub errors: Vec<String>,
+    pub warnings: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClassLevelPair {
+    pub class_id: String,
+    pub level: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CreateCharacterRequest {
     pub name: String,
     pub class: String,
@@ -159,4 +224,15 @@ pub struct CreateCharacterRequest {
     pub intelligence: i32,
     pub wisdom: i32,
     pub charisma: i32,
+    // Expanded fields for level 2 character creation
+    pub stat_roll_method: Option<String>,
+    pub raw_scores: Option<Vec<i32>>,
+    pub race_id: Option<String>,
+    pub subrace_id: Option<String>,
+    pub class_ids_and_levels: Option<Vec<ClassLevelPair>>,
+    pub subclass_id: Option<String>,
+    pub background_id: Option<String>,
+    pub alignment: Option<String>,
+    pub proficient_skill_ids: Option<Vec<String>>,
+    pub proficient_save_ids: Option<Vec<String>>,
 }

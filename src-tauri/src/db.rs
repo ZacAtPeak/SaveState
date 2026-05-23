@@ -1,18 +1,14 @@
 use rusqlite::Connection;
+use std::fs;
+use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Mutex;
-use std::env;
 
 pub struct DbPool(pub Mutex<Connection>);
 
 impl DbPool {
-    /// Create a pool from a file path (production use).
-    pub fn new() -> Result<Self, String> {
-        let db_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .unwrap()
-            .join("Assets/5e_data.sqlite");
-
+    /// Create a pool from a database file path (production use).
+    pub fn new(db_path: PathBuf) -> Result<Self, String> {
         let conn = Connection::open(&db_path).map_err(|e| e.to_string())?;
         Ok(DbPool(Mutex::new(conn)))
     }
@@ -25,6 +21,42 @@ impl DbPool {
     pub fn lock(&self) -> Result<std::sync::MutexGuard<Connection>, String> {
         self.0.lock().map_err(|e| e.to_string())
     }
+}
+
+/// Ensure a writable copy of the seed database exists at `dest`.
+///
+/// If `dest` already exists, does nothing.
+/// First launch migration: if the old source-tree DB exists (pre-change),
+/// it is copied to preserve any user data already in it.
+/// Otherwise, the bundled `seed` file is copied.
+pub fn seed_database(dest: &Path, seed: &Path) -> Result<(), String> {
+    if dest.exists() {
+        return Ok(());
+    }
+
+    // Ensure parent directory exists
+    if let Some(parent) = dest.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create database directory {:?}: {}", parent, e))?;
+    }
+
+    // One-time migration: if the old source-tree DB exists, copy it
+    // to preserve user data that may have been written before this change.
+    let old_source_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .join("Assets/5e_data.sqlite");
+
+    let source: &Path = if old_source_path.exists() {
+        &old_source_path
+    } else {
+        seed
+    };
+
+    fs::copy(source, dest)
+        .map_err(|e| format!("Failed to copy database from {:?} to {:?}: {}", source, dest, e))?;
+
+    Ok(())
 }
 
 pub mod row_indexes {
@@ -53,8 +85,8 @@ pub mod queries {
         SELECT e.id, e.name, e.entity_type, e.armor_class, e.hit_points_max, e.hit_points_current,
                s.strength, s.dexterity, s.constitution, s.intelligence, s.wisdom, s.charisma,
                cp.player_name, cp.race, cp.proficiency_bonus,
-               GROUP_CONCAT(c.name || ' ' || cc.class_level, ', ') as class_levels,
-               SUM(cc.class_level) as total_level
+               COALESCE(GROUP_CONCAT(c.name || ' ' || cc.class_level, ', '), cp.class, '') as class,
+               COALESCE(SUM(cc.class_level), cp.level, 1) as level
         FROM entities e
         JOIN entity_stats s ON e.id = s.entity_id
         LEFT JOIN character_profiles cp ON e.id = cp.entity_id
@@ -135,5 +167,65 @@ pub mod queries {
 
     pub const UPDATE_ENTITY_HP: &str = r#"
         UPDATE entities SET hit_points_current = ?1 WHERE id = ?2
+    "#;
+
+    pub const GET_CLASSES: &str = r#"
+        SELECT id, name, hit_die, saving_throw_1, saving_throw_2, primary_ability, description, skill_picks
+        FROM classes
+        ORDER BY name
+    "#;
+
+    pub const GET_SUBCLASSES: &str = r#"
+        SELECT id, name, description
+        FROM subclasses
+        WHERE class_id = ?1
+        ORDER BY name
+    "#;
+
+    pub const GET_RACES: &str = r#"
+        SELECT id, name, size, speed_walk, darkvision
+        FROM races
+        WHERE parent_race_id IS NULL
+        ORDER BY name
+    "#;
+
+    pub const GET_RACE_ABILITY_BONUSES: &str = r#"
+        SELECT ability, bonus
+        FROM race_ability_bonuses
+        WHERE race_id = ?1
+    "#;
+
+    pub const GET_SUBRACES: &str = r#"
+        SELECT id, name, race_id, description
+        FROM subraces
+        WHERE race_id = ?1
+        ORDER BY name
+    "#;
+
+    pub const GET_BACKGROUNDS: &str = r#"
+        SELECT id, name, description, skill_proficiencies, feature_name, feature_description
+        FROM backgrounds
+        ORDER BY name
+    "#;
+
+    pub const UPDATE_ENTITY_STATS_SAVE_PROFS: &str = r#"
+        UPDATE entity_stats SET
+            save_prof_strength = ?2,
+            save_prof_dexterity = ?3,
+            save_prof_constitution = ?4,
+            save_prof_intelligence = ?5,
+            save_prof_wisdom = ?6,
+            save_prof_charisma = ?7
+        WHERE entity_id = ?1
+    "#;
+
+    pub const INSERT_CHARACTER_CLASS: &str = r#"
+        INSERT INTO character_classes (entity_id, class_id, subclass_id, class_level, is_primary)
+        VALUES (?1, ?2, ?3, ?4, ?5)
+    "#;
+
+    pub const INSERT_ENTITY_SKILL: &str = r#"
+        INSERT INTO entity_skills (entity_id, skill_id, is_proficient, is_expert)
+        VALUES (?1, ?2, 1, 0)
     "#;
 }

@@ -241,6 +241,12 @@ CREATE TABLE entity_skills (
     is_expert int
 );
 
+CREATE TABLE abilities (
+    id text primary key,
+    name text,
+    description text
+);
+
 CREATE TABLE classes (
     id TEXT PRIMARY KEY,       -- e.g., 'fighter', 'wizard', 'cleric'
     name TEXT NOT NULL UNIQUE,  -- e.g., 'Fighter'
@@ -250,7 +256,9 @@ CREATE TABLE classes (
     -- Default saving throw proficiencies granted at level 1
     saving_throw_1 TEXT NOT NULL CHECK (saving_throw_1 IN ('STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA')),
     saving_throw_2 TEXT NOT NULL CHECK (saving_throw_2 IN ('STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA')),
-    description TEXT
+    description TEXT,
+    -- Number of skill proficiencies the class may select at level 1
+    skill_picks INTEGER NOT NULL DEFAULT 2 CHECK (skill_picks BETWEEN 1 AND 6)
 );
 
 CREATE TABLE subclasses (
@@ -295,9 +303,51 @@ CREATE TABLE character_classes (
     FOREIGN KEY (subclass_id) REFERENCES subclasses(id) ON DELETE SET NULL
 );
 
+--
+-- 6. RACES, SUBRACES, AND ABILITY BONUSES
+--
 
+CREATE TABLE races (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    size TEXT NOT NULL DEFAULT 'Medium',
+    speed_walk INTEGER NOT NULL DEFAULT 30,
+    darkvision INTEGER NOT NULL DEFAULT 0,
+    parent_race_id TEXT,
+    source TEXT DEFAULT 'PHB',
+    FOREIGN KEY (parent_race_id) REFERENCES races(id) ON DELETE SET NULL
+);
 
+CREATE TABLE race_ability_bonuses (
+    race_id TEXT NOT NULL,
+    ability TEXT NOT NULL CHECK (ability IN ('STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA')),
+    bonus INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (race_id, ability),
+    FOREIGN KEY (race_id) REFERENCES races(id) ON DELETE CASCADE
+);
 
+CREATE TABLE subraces (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    race_id TEXT NOT NULL,
+    description TEXT,
+    FOREIGN KEY (race_id) REFERENCES races(id) ON DELETE CASCADE
+);
 
+--
+-- 7. BACKGROUNDS
+--
+
+CREATE TABLE backgrounds (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    skill_proficiencies TEXT, -- JSON array of skill IDs, e.g., '["arc","his"]'
+    tool_proficiencies TEXT, -- JSON array of tool IDs
+    feature_name TEXT,
+    feature_description TEXT,
+    source TEXT DEFAULT 'PHB'
+);
 
 

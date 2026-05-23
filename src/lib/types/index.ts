@@ -89,6 +89,60 @@ export interface Spell {
   higher_levels_desc: string | null;
 }
 
+export interface DndClass {
+  id: string;
+  name: string;
+  hit_die: string;
+  saving_throw_1: string;
+  saving_throw_2: string;
+  primary_ability: string | null;
+  description: string | null;
+  skill_picks: number;
+}
+
+export interface Subclass {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
+export interface Race {
+  id: string;
+  name: string;
+  size: string;
+  speed_walk: number;
+  darkvision: number;
+  ability_bonuses: { ability: string; bonus: number }[];
+}
+
+export interface Subrace {
+  id: string;
+  name: string;
+  race_id: string;
+  description: string | null;
+}
+
+export interface Background {
+  id: string;
+  name: string;
+  description: string | null;
+  skill_proficiencies: string | null;
+  feature_name: string | null;
+  feature_description: string | null;
+}
+
+export interface ValidationResult {
+  errors: string[];
+  warnings: string[];
+}
+
+export type StatRollMethod = 'standard_array' | 'point_buy' | 'rolled' | 'manual';
+
+export interface ClassLevelPair {
+  class_id: string;
+  level: number;
+}
+
 export interface CreateCharacterRequest {
   name: string;
   class: string;
@@ -104,6 +158,17 @@ export interface CreateCharacterRequest {
   intelligence: number;
   wisdom: number;
   charisma: number;
+  // Expanded fields for level 2 character creation
+  stat_roll_method?: string;
+  raw_scores?: number[];
+  race_id?: string;
+  subrace_id?: string;
+  class_ids_and_levels?: ClassLevelPair[];
+  subclass_id?: string;
+  background_id?: string;
+  alignment?: string;
+  proficient_skill_ids?: string[];
+  proficient_save_ids?: string[];
 }
 
 export interface DiceRoll {
