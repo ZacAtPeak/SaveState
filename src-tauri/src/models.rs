@@ -91,6 +91,12 @@ pub struct SavedStateData {
     pub current_round: i32,
     pub character_statuses: HashMap<String, Vec<String>>,
     pub instance_stat_overrides: HashMap<String, HashMap<String, i32>>,
+    #[serde(default)]
+    pub spell_slot_overrides: HashMap<String, HashMap<String, i32>>,
+    #[serde(default)]
+    pub concentration: HashMap<String, String>,
+    #[serde(default)]
+    pub cast_log: Vec<CastEntry>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -113,6 +119,27 @@ pub struct SavedStateEntity {
     pub intelligence: i32,
     pub wisdom: i32,
     pub charisma: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SpellSlotPair {
+    pub max: i32,
+    pub current: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SpellSlotData {
+    pub spellcasting_ability: String,
+    pub slots: HashMap<String, SpellSlotPair>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CastEntry {
+    pub entity_id: String,
+    pub status_key: String,
+    pub spell_name: String,
+    pub level: i32,
+    pub round: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

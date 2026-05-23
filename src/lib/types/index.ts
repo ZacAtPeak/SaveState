@@ -63,6 +63,24 @@ export interface CharacterSkill {
   total_modifier: number;
 }
 
+export interface SpellSlotPair {
+  max: number;
+  current: number;
+}
+
+export interface SpellSlotData {
+  spellcasting_ability: string;
+  slots: Record<string, SpellSlotPair>;
+}
+
+export interface CastEntry {
+  entity_id: string;
+  status_key: string;
+  spell_name: string;
+  level: number;
+  round: number;
+}
+
 export interface CharacterSpell {
   spell_id: string;
   name: string;
@@ -198,4 +216,7 @@ export interface SavedState {
   current_round: number;
   character_statuses: Record<string, string[]>;
   instance_stat_overrides: Record<string, Record<string, number>>;
+  spell_slot_overrides?: Record<string, Record<string, number>>;
+  concentration?: Record<string, string>;
+  cast_log?: CastEntry[];
 }

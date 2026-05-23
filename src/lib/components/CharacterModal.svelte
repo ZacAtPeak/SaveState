@@ -2,6 +2,11 @@
   import type { Entity, CharacterSkill, CharacterSpell } from '$lib/types';
   import { appStore } from '$lib/stores/app.svelte';
 
+  const LEVEL_ORDINALS: Record<number, string> = {
+    1: '1st', 2: '2nd', 3: '3rd', 4: '4th', 5: '5th',
+    6: '6th', 7: '7th', 8: '8th', 9: '9th'
+  };
+
   interface Props {
     character: Entity;
     skills: CharacterSkill[];
@@ -190,6 +195,29 @@
       appStore.addStatus(statusKey, condition);
     }
   }
+
+  let slotLevels = $derived(
+    Object.keys(appStore.spellSlotsMax[character.id] ?? {})
+      .map(Number)
+      .sort((a, b) => a - b)
+      .filter(l => (appStore.spellSlotsMax[character.id]?.[String(l)] ?? 0) > 0)
+  );
+
+  let activeConcentration = $derived(appStore.concentrationMap[statusKey] ?? null);
+
+  let characterCastLog = $derived(
+    appStore.castLog.filter(e => e.status_key === statusKey).slice(0, 8)
+  );
+
+  function castSpell(spell: CharacterSpell) {
+    if (spell.level > 0) {
+      appStore.useSpellSlot(character.id, spell.level);
+    }
+    if (spell.is_concentration) {
+      appStore.setConcentration(statusKey, spell.name);
+    }
+    appStore.logCast(character.id, statusKey, spell.name, spell.level);
+  }
 </script>
 
 <div class="modal-overlay" onclick={onClose} role="presentation">
@@ -360,12 +388,79 @@
           </div>
         {/if}
 
+        {#if slotLevels.length > 0}
+          <div class="section">
+            <div class="section-title">Spell Slots</div>
+            <div class="slot-grid">
+              {#each slotLevels as level}
+                {@const key = String(level)}
+                {@const max = appStore.spellSlotsMax[character.id]?.[key] ?? 0}
+                {@const curr = appStore.spellSlotsCurr[character.id]?.[key] ?? 0}
+                <div class="slot-row">
+                  <span class="slot-level">{LEVEL_ORDINALS[level]}</span>
+                  <div class="slot-pips">
+                    {#each Array(max) as _, i}
+                      <button
+                        class="slot-pip"
+                        class:used={i >= curr}
+                        onclick={() => i < curr
+                          ? appStore.useSpellSlot(character.id, level)
+                          : appStore.restoreSpellSlot(character.id, level)}
+                        aria-label="{i < curr ? 'Use' : 'Restore'} {LEVEL_ORDINALS[level]} slot"
+                      ></button>
+                    {/each}
+                  </div>
+                  <span class="slot-count">{curr}/{max}</span>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+
         {#if spells.length > 0}
           <div class="section">
-            <div class="section-title">Spells</div>
-            <div class="spell-list">
+            <div class="section-title-row">
+              <span class="section-title">Spells</span>
+              {#if activeConcentration}
+                <span class="concentration-badge">
+                  <span class="conc-dot"></span>
+                  {activeConcentration}
+                  <button class="conc-clear" onclick={() => appStore.clearConcentration(statusKey)} aria-label="End concentration">×</button>
+                </span>
+              {/if}
+            </div>
+            <div class="spell-rows">
               {#each spells as spell}
-                <div class="spell-item">{spell.name}</div>
+                <div class="spell-row">
+                  <span class="spell-prep-dot" class:prepared={spell.is_prepared}></span>
+                  <span class="spell-row-name">{spell.name}</span>
+                  <span class="spell-row-level">{spell.level === 0 ? 'C' : spell.level}</span>
+                  {#if spell.is_concentration}
+                    <span class="spell-row-tag conc">Conc</span>
+                  {/if}
+                  <button class="cast-btn" onclick={() => castSpell(spell)} aria-label="Cast {spell.name}">
+                    Cast
+                  </button>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+
+        {#if characterCastLog.length > 0}
+          <div class="section">
+            <div class="section-title">Cast Log</div>
+            <div class="cast-log">
+              {#each characterCastLog as entry}
+                <div class="cast-entry">
+                  <span class="cast-round">R{entry.round}</span>
+                  <span class="cast-spell">{entry.spell_name}</span>
+                  {#if entry.level > 0}
+                    <span class="cast-level">{LEVEL_ORDINALS[entry.level]}</span>
+                  {:else}
+                    <span class="cast-level">Cantrip</span>
+                  {/if}
+                </div>
               {/each}
             </div>
           </div>
@@ -921,18 +1016,268 @@
     color: var(--accent);
   }
 
-  .equip-list, .spell-list {
+  .equip-list {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
   }
 
-  .equip-item, .spell-item {
+  .equip-item {
     padding: 5px 9px;
     background: var(--surface-2);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     font-size: 11px;
     color: var(--fg);
+  }
+
+  /* Spell Slots */
+  .slot-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .slot-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .slot-level {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted);
+    width: 28px;
+    flex-shrink: 0;
+  }
+
+  .slot-pips {
+    display: flex;
+    gap: 3px;
+    flex: 1;
+  }
+
+  .slot-pip {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    flex-shrink: 0;
+    transition: all 100ms;
+  }
+
+  .slot-pip.used {
+    background: transparent;
+    border-color: var(--border);
+  }
+
+  .slot-pip:hover {
+    opacity: 0.7;
+  }
+
+  .slot-count {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted);
+    width: 24px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* Spells section header row */
+  .section-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
+    gap: 8px;
+  }
+
+  .section-title-row .section-title {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+  }
+
+  .concentration-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px 3px 6px;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-sm);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--accent);
+    flex-shrink: 0;
+    max-width: 160px;
+    overflow: hidden;
+  }
+
+  .conc-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .conc-clear {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    opacity: 0.7;
+    flex-shrink: 0;
+  }
+
+  .conc-clear:hover {
+    opacity: 1;
+  }
+
+  /* Spell rows */
+  .spell-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .spell-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+
+  .spell-prep-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .spell-prep-dot.prepared {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .spell-row-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--fg);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .spell-row-level {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .spell-row-tag {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    font-weight: 600;
+    padding: 1px 4px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+
+  .spell-row-tag.conc {
+    background: var(--accent-dim);
+    color: var(--accent);
+    opacity: 0.7;
+  }
+
+  .cast-btn {
+    height: 22px;
+    padding: 0 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: var(--radius-sm);
+    font-size: 10px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    flex-shrink: 0;
+    transition: all 100ms;
+  }
+
+  .cast-btn:hover {
+    color: var(--gold);
+    border-color: var(--gold);
+    background: var(--gold-dim);
+  }
+
+  /* Cast Log */
+  .cast-log {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .cast-entry {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: var(--surface-2);
+    border-radius: var(--radius-sm);
+  }
+
+  .cast-round {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--muted);
+    width: 20px;
+    flex-shrink: 0;
+  }
+
+  .cast-spell {
+    font-size: 11px;
+    color: var(--fg);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cast-level {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--muted);
+    flex-shrink: 0;
   }
 </style>

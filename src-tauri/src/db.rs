@@ -165,6 +165,21 @@ pub mod queries {
         ORDER BY level, name
     "#;
 
+    pub const GET_ENTITY_SPELL_SLOTS: &str = r#"
+        SELECT spellcasting_ability,
+               slots_lvl_1_max, slots_lvl_1_curr,
+               slots_lvl_2_max, slots_lvl_2_curr,
+               slots_lvl_3_max, slots_lvl_3_curr,
+               slots_lvl_4_max, slots_lvl_4_curr,
+               slots_lvl_5_max, slots_lvl_5_curr,
+               slots_lvl_6_max, slots_lvl_6_curr,
+               slots_lvl_7_max, slots_lvl_7_curr,
+               slots_lvl_8_max, slots_lvl_8_curr,
+               slots_lvl_9_max, slots_lvl_9_curr
+        FROM entity_spellcasting
+        WHERE entity_id = ?1
+    "#;
+
     pub const UPDATE_ENTITY_HP: &str = r#"
         UPDATE entities SET hit_points_current = ?1 WHERE id = ?2
     "#;

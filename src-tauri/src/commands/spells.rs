@@ -1,5 +1,6 @@
 use crate::db::{queries, DbPool};
-use crate::models::{CharacterSpell, Spell};
+use crate::models::{CharacterSpell, Spell, SpellSlotData, SpellSlotPair};
+use std::collections::HashMap;
 use tauri::State;
 
 #[tauri::command]
@@ -64,6 +65,38 @@ pub fn get_spell_library(
     .collect();
 
     Ok(spells)
+}
+
+#[tauri::command]
+pub fn get_entity_spell_slots(
+    entity_id: String,
+    state: State<DbPool>,
+) -> Result<Option<SpellSlotData>, String> {
+    let conn = state.lock()?;
+    let result = conn.query_row(
+        queries::GET_ENTITY_SPELL_SLOTS,
+        [&entity_id],
+        |row| {
+            let mut slots: HashMap<String, SpellSlotPair> = HashMap::new();
+            for i in 0..9usize {
+                let max: i32 = row.get(1 + i * 2)?;
+                let curr: i32 = row.get(2 + i * 2)?;
+                if max > 0 {
+                    let level = (i + 1).to_string();
+                    slots.insert(level, SpellSlotPair { max, current: curr });
+                }
+            }
+            Ok(SpellSlotData {
+                spellcasting_ability: row.get(0)?,
+                slots,
+            })
+        },
+    );
+    match result {
+        Ok(data) => Ok(Some(data)),
+        Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+        Err(e) => Err(e.to_string()),
+    }
 }
 
 #[cfg(test)]

@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Entity, PlayerCharacter, Creature, InitiativeEntity, CharacterSkill, CharacterSpell, Spell, CreateCharacterRequest, DiceRoll, SavedEncounter, SavedState, DndClass, Subclass, Race, Subrace, Background, ValidationResult, StatRollMethod } from '$lib/types';
+import type { Entity, PlayerCharacter, Creature, InitiativeEntity, CharacterSkill, CharacterSpell, Spell, SpellSlotData, CastEntry, CreateCharacterRequest, DiceRoll, SavedEncounter, SavedState, DndClass, Subclass, Race, Subrace, Background, ValidationResult, StatRollMethod } from '$lib/types';
 
 function createAppStore() {
   let playerCharacters = $state<PlayerCharacter[]>([]);
@@ -11,6 +11,10 @@ function createAppStore() {
   let characterSpellsLoading = $state(false);
   let characterSpellsError = $state<string | null>(null);
   let spellLibrary = $state<Spell[]>([]);
+  let spellSlotsMax = $state<Record<string, Record<string, number>>>({});
+  let spellSlotsCurr = $state<Record<string, Record<string, number>>>({});
+  let concentrationMap = $state<Record<string, string>>({});
+  let castLog = $state<CastEntry[]>([]);
   let spellLibraryLoading = $state(false);
   let spellLibraryError = $state<string | null>(null);
   let initiativeList = $state<InitiativeEntity[]>([]);
@@ -193,12 +197,75 @@ function createAppStore() {
     }
   }
 
+  async function loadSpellSlots(entityId: string) {
+    try {
+      const data = await invoke<SpellSlotData | null>('get_entity_spell_slots', { entityId });
+      if (!data || Object.keys(data.slots).length === 0) return;
+      const maxSlots: Record<string, number> = {};
+      const currSlots: Record<string, number> = {};
+      for (const [level, pair] of Object.entries(data.slots)) {
+        maxSlots[level] = pair.max;
+        // Prefer any already-tracked current value (from saved state), else use DB value
+        currSlots[level] = spellSlotsCurr[entityId]?.[level] ?? pair.current;
+      }
+      spellSlotsMax = { ...spellSlotsMax, [entityId]: maxSlots };
+      spellSlotsCurr = {
+        ...spellSlotsCurr,
+        [entityId]: { ...currSlots, ...spellSlotsCurr[entityId] }
+      };
+    } catch (e) {
+      console.error('Failed to load spell slots:', e);
+    }
+  }
+
+  function useSpellSlot(entityId: string, level: number) {
+    const key = String(level);
+    const curr = spellSlotsCurr[entityId]?.[key] ?? 0;
+    if (curr <= 0) return;
+    spellSlotsCurr = {
+      ...spellSlotsCurr,
+      [entityId]: { ...spellSlotsCurr[entityId], [key]: curr - 1 }
+    };
+  }
+
+  function restoreSpellSlot(entityId: string, level: number) {
+    const key = String(level);
+    const max = spellSlotsMax[entityId]?.[key] ?? 0;
+    const curr = spellSlotsCurr[entityId]?.[key] ?? 0;
+    if (curr >= max) return;
+    spellSlotsCurr = {
+      ...spellSlotsCurr,
+      [entityId]: { ...spellSlotsCurr[entityId], [key]: curr + 1 }
+    };
+  }
+
+  function setConcentration(statusKey: string, spellName: string) {
+    concentrationMap = { ...concentrationMap, [statusKey]: spellName };
+  }
+
+  function clearConcentration(statusKey: string) {
+    const { [statusKey]: _, ...rest } = concentrationMap;
+    concentrationMap = rest;
+  }
+
+  function logCast(entityId: string, statusKey: string, spellName: string, level: number) {
+    const entry: CastEntry = {
+      entity_id: entityId,
+      status_key: statusKey,
+      spell_name: spellName,
+      level,
+      round: currentRound
+    };
+    castLog = [entry, ...castLog];
+  }
+
   function selectCharacter(char: Entity) {
     selectedCharacter = char;
     if (char.proficiency_bonus) {
       loadCharacterSkills(char.id, char.proficiency_bonus);
     }
     loadCharacterSpells(char.id);
+    loadSpellSlots(char.id);
   }
 
   function toggleSection(section: keyof typeof expandedSections) {
@@ -350,6 +417,9 @@ function createAppStore() {
       current_round: currentRound,
       character_statuses: characterStatuses,
       instance_stat_overrides: instanceStatOverrides,
+      spell_slot_overrides: spellSlotsCurr,
+      concentration: { ...concentrationMap },
+      cast_log: [...castLog],
     };
   }
 
@@ -373,6 +443,9 @@ function createAppStore() {
       currentRound = state.current_round;
       characterStatuses = state.character_statuses;
       instanceStatOverrides = state.instance_stat_overrides;
+      spellSlotsCurr = state.spell_slot_overrides ?? {};
+      concentrationMap = state.concentration ?? {};
+      castLog = state.cast_log ?? [];
       currentEncounterId = state.id;
       currentEncounterName = state.name;
       newInstanceIds = new Set(state.initiative_entities.map(e => e.instance_id));
@@ -413,6 +486,7 @@ function createAppStore() {
       loadCharacterSkills(entity.id, entity.proficiency_bonus);
     }
     loadCharacterSpells(entity.id);
+    loadSpellSlots(entity.id);
     const statusKey = instanceId ?? entity.id;
     if (!characterStatuses[statusKey]) {
       characterStatuses = { ...characterStatuses, [statusKey]: [] };
@@ -533,6 +607,9 @@ function createAppStore() {
     characterStatuses = {};
     instanceStatOverrides = {};
     newInstanceIds = new Set();
+    spellSlotsCurr = {};
+    concentrationMap = {};
+    castLog = [];
   }
 
   function syncInitiativeInstanceFromOverrides(instanceId: string) {
@@ -626,6 +703,16 @@ function createAppStore() {
     set spellLibrary(v) { spellLibrary = v; },
     get spellLibraryLoading() { return spellLibraryLoading; },
     get spellLibraryError() { return spellLibraryError; },
+    get spellSlotsMax() { return spellSlotsMax; },
+    get spellSlotsCurr() { return spellSlotsCurr; },
+    get concentrationMap() { return concentrationMap; },
+    get castLog() { return castLog; },
+    loadSpellSlots,
+    useSpellSlot,
+    restoreSpellSlot,
+    setConcentration,
+    clearConcentration,
+    logCast,
     get initiativeList() { return initiativeList; },
     set initiativeList(v) { initiativeList = v; },
     get loading() { return loading; },
