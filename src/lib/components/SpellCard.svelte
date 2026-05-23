@@ -79,7 +79,6 @@
     {#if spell.is_concentration}<span class="spell-tag">Concentration</span>{/if}
     {#if spell.is_ritual}<span class="spell-tag">Ritual</span>{/if}
   </div>
-  <div class="spell-desc">{spell.description}</div>
 </div>
 
 <style>
@@ -188,15 +187,5 @@
     color: var(--accent);
   }
 
-  .spell-desc {
-    font-size: 11px;
-    color: var(--muted);
-    line-height: 1.4;
-    margin-top: 4px;
-    padding-left: 12px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
+
 </style>

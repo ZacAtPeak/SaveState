@@ -1,3 +1,4 @@
+pub mod actions;
 pub mod characters;
 pub mod creatures;
 pub mod encounters;
@@ -6,6 +7,7 @@ pub mod skills;
 pub mod slots;
 pub mod spells;
 
+pub use actions::get_entity_actions;
 pub use characters::{create_player_character, get_player_characters, update_entity_hp};
 pub use creatures::{get_monsters, get_npcs};
 pub use encounters::{delete_encounter, load_encounters, save_encounter};

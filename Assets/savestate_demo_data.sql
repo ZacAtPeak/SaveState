@@ -178,6 +178,50 @@ INSERT INTO entity_actions (entity_id, action_id, uses_per_day, uses_current, re
 ('mon-7', 'act-4', NULL, NULL, 'Recharge 5-6'),
 ('mon-7', 'act-5', NULL, NULL, NULL);
 
+-- PC class feature actions
+INSERT INTO action_library (id, name, action_type, description, is_attack, attack_bonus, damage_dice, damage_type) VALUES
+('act-pc-1', 'Sneak Attack', 'action', 'Once per turn, you can deal an extra 2d6 damage to one creature you hit with an attack if you have advantage on the attack roll.', 0, NULL, '2d6', NULL),
+('act-pc-2', 'Cunning Action', 'bonus_action', 'You can take the Dash, Disengage, or Hide action as a bonus action.', 0, NULL, NULL, NULL),
+('act-pc-3', 'Second Wind', 'bonus_action', 'You regain 1d10 + 4 hit points.', 0, NULL, NULL, NULL),
+('act-pc-4', 'Action Surge', 'action', 'You can take one additional action on top of your regular action and possible bonus action.', 0, NULL, NULL, NULL),
+('act-pc-5', 'Arcane Recovery', 'action', 'You regain expended spell slots equal to half your wizard level (rounded up, minimum of one).', 0, NULL, NULL, NULL),
+('act-pc-6', 'Channel Divinity: Turn Undead', 'action', 'As an action, you present your holy symbol and speak a prayer censuring the undead.', 0, NULL, NULL, NULL),
+('act-pc-7', 'Bardic Inspiration', 'bonus_action', 'You can inspire another creature within 60 feet who can hear you. That creature gains one Bardic Inspiration die, a d6.', 0, NULL, NULL, NULL),
+('act-pc-8', 'Uncanny Dodge', 'reaction', 'When an attacker that you can see hits you with an attack, you can halve the attack''s damage against you.', 0, NULL, NULL, NULL),
+('act-pc-9', 'Shield', 'reaction', 'When you are hit by an attack or targeted by magic missile, you create an invisible barrier of magical force.', 0, NULL, NULL, NULL);
+
+-- NPC actions
+INSERT INTO action_library (id, name, action_type, description, is_attack, attack_bonus, damage_dice, damage_type) VALUES
+('act-npc-1', 'Shortsword', 'action', 'Melee Weapon Attack.', 1, 4, '1d6+2', 'Piercing'),
+('act-npc-2', 'Crossbow', 'action', 'Ranged Weapon Attack.', 1, 4, '1d8+2', 'Piercing'),
+('act-npc-3', 'Healing Word', 'bonus_action', 'A creature of your choice regains hit points equal to 1d4 + your spellcasting ability modifier.', 0, NULL, NULL, 'Healing'),
+('act-npc-4', 'Warhammer', 'action', 'Melee Weapon Attack.', 1, 5, '1d8+3', 'Bludgeoning'),
+('act-npc-5', 'Dagger', 'action', 'Melee Weapon Attack.', 1, 6, '1d4+3', 'Piercing');
+
+-- Link PC actions
+INSERT INTO entity_actions (entity_id, action_id, uses_per_day, uses_current, recharge_formula) VALUES
+('pc-1', 'act-pc-1', NULL, NULL, NULL),
+('pc-1', 'act-pc-2', NULL, NULL, NULL),
+('pc-1', 'act-pc-8', NULL, NULL, NULL),
+('pc-2', 'act-pc-3', 1, 1, 'Short Rest'),
+('pc-2', 'act-pc-4', 1, 1, 'Short Rest'),
+('pc-3', 'act-pc-5', 1, 1, 'Long Rest'),
+('pc-3', 'act-pc-9', NULL, NULL, NULL),
+('pc-4', 'act-pc-6', 2, 2, 'Short Rest'),
+('pc-5', 'act-pc-7', 4, 4, 'Long Rest'),
+('pc-5', 'act-pc-8', NULL, NULL, NULL);
+
+-- Link NPC actions
+INSERT INTO entity_actions (entity_id, action_id, uses_per_day, uses_current, recharge_formula) VALUES
+('npc-1', 'act-npc-4', NULL, NULL, NULL),
+('npc-2', 'act-npc-1', NULL, NULL, NULL),
+('npc-2', 'act-npc-2', NULL, NULL, NULL),
+('npc-3', 'act-npc-1', NULL, NULL, NULL),
+('npc-4', 'act-pc-9', NULL, NULL, NULL),
+('npc-5', 'act-npc-5', NULL, NULL, NULL),
+('npc-7', 'act-npc-3', 3, 3, 'Long Rest'),
+('npc-10', 'act-npc-4', NULL, NULL, NULL);
+
 
 --------------------------------------------------------------------------------
 -- 5. SAMPLE SPELLS & SPELLCASTING

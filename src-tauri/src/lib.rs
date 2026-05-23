@@ -6,6 +6,7 @@ pub mod rules;
 use db::DbPool;
 use std::path::PathBuf;
 use tauri::Manager;
+use commands::actions::get_entity_actions;
 use commands::characters::{create_player_character, get_player_characters, update_entity_hp, validate_character_stats};
 use commands::creatures::{get_monsters, get_npcs};
 use commands::encounters::{delete_encounter, delete_state, load_encounters, load_state, load_states, save_encounter, save_state};
@@ -62,6 +63,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            get_entity_actions,
             get_player_characters,
             create_player_character,
             get_monsters,

@@ -74,6 +74,20 @@ export interface CharacterSpell {
   is_prepared: boolean;
 }
 
+export interface CharacterAction {
+  action_id: string;
+  name: string;
+  action_type: string;
+  description: string;
+  is_attack: boolean;
+  attack_bonus: number | null;
+  damage_dice: string | null;
+  damage_type: string | null;
+  uses_per_day: number | null;
+  uses_current: number | null;
+  recharge_formula: string | null;
+}
+
 export interface Spell {
   id: string;
   name: string;

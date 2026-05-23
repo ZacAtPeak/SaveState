@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Entity, PlayerCharacter, Creature, InitiativeEntity, CharacterSkill, CharacterSpell, Spell, CreateCharacterRequest, DiceRoll, SavedEncounter, SavedState, DndClass, Subclass, Race, Subrace, Background, ValidationResult, StatRollMethod, SpellSlotGroup, SpellSlotsResponse } from '$lib/types';
+import type { Entity, PlayerCharacter, Creature, InitiativeEntity, CharacterSkill, CharacterSpell, CharacterAction, Spell, CreateCharacterRequest, DiceRoll, SavedEncounter, SavedState, DndClass, Subclass, Race, Subrace, Background, ValidationResult, StatRollMethod, SpellSlotGroup, SpellSlotsResponse } from '$lib/types';
 
 function createAppStore() {
   let playerCharacters = $state<PlayerCharacter[]>([]);
@@ -8,6 +8,9 @@ function createAppStore() {
   let selectedCharacter = $state<Entity | null>(null);
   let characterSkills = $state<CharacterSkill[]>([]);
   let characterSpells = $state<CharacterSpell[]>([]);
+  let characterActions = $state<CharacterAction[]>([]);
+  let characterActionsLoading = $state(false);
+  let characterActionsError = $state<string | null>(null);
   let characterSpellsLoading = $state(false);
   let characterSpellsError = $state<string | null>(null);
   let spellSlotGroups = $state<SpellSlotGroup[]>([]);
@@ -182,6 +185,21 @@ function createAppStore() {
     }
   }
 
+  async function loadCharacterActions(entityId: string) {
+    try {
+      characterActionsLoading = true;
+      characterActionsError = null;
+      characterActions = await invoke<CharacterAction[]>('get_entity_actions', {
+        entityId
+      });
+    } catch (e) {
+      console.error('Failed to load character actions:', e);
+      characterActionsError = String(e);
+    } finally {
+      characterActionsLoading = false;
+    }
+  }
+
   async function loadSpellSlots(entityId: string) {
     try {
       spellSlotsLoading = true;
@@ -206,8 +224,9 @@ function createAppStore() {
         const updated = pcs.find(p => p.id === selectedCharacter!.id);
         if (updated) {
           selectedCharacter = { ...updated } as unknown as Entity;
-          // Also refresh spells and slots for the current view
+          // Also refresh spells, actions, and slots for the current view
           loadCharacterSpells(updated.id);
+          loadCharacterActions(updated.id);
           loadSpellSlots(updated.id);
         }
       }
@@ -285,6 +304,7 @@ function createAppStore() {
       loadCharacterSkills(char.id, char.proficiency_bonus);
     }
     loadCharacterSpells(char.id);
+    loadCharacterActions(char.id);
     loadSpellSlots(char.id);
   }
 
@@ -500,6 +520,7 @@ function createAppStore() {
       loadCharacterSkills(entity.id, entity.proficiency_bonus);
     }
     loadCharacterSpells(entity.id);
+    loadCharacterActions(entity.id);
     loadSpellSlots(entity.id);
     const statusKey = instanceId ?? entity.id;
     if (!characterStatuses[statusKey]) {
@@ -708,6 +729,10 @@ function createAppStore() {
     set characterSkills(v) { characterSkills = v; },
     get characterSpells() { return characterSpells; },
     set characterSpells(v) { characterSpells = v; },
+    get characterActions() { return characterActions; },
+    set characterActions(v) { characterActions = v; },
+    get characterActionsLoading() { return characterActionsLoading; },
+    get characterActionsError() { return characterActionsError; },
     get characterSpellsLoading() { return characterSpellsLoading; },
     get characterSpellsError() { return characterSpellsError; },
     get spellSlotGroups() { return spellSlotGroups; },
@@ -740,6 +765,7 @@ function createAppStore() {
     loadCharacters,
     loadCharacterSkills,
     loadCharacterSpells,
+    loadCharacterActions,
     loadSpellSlots,
     longRest,
     consumeSlot,

@@ -213,6 +213,15 @@ pub mod queries {
         ORDER BY name
     "#;
 
+    pub const GET_ENTITY_ACTIONS: &str = r#"
+        SELECT al.id, al.name, al.action_type, al.description, al.is_attack, al.attack_bonus, al.damage_dice, al.damage_type,
+               ea.uses_per_day, ea.uses_current, ea.recharge_formula
+        FROM entity_actions ea
+        JOIN action_library al ON ea.action_id = al.id
+        WHERE ea.entity_id = ?1
+        ORDER BY al.action_type, al.name
+    "#;
+
     pub const GET_BACKGROUNDS: &str = r#"
         SELECT id, name, description, skill_proficiencies, feature_name, feature_description
         FROM backgrounds

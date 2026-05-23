@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Entity, CharacterSkill, CharacterSpell, SpellSlotGroup } from '$lib/types';
+  import type { Entity, CharacterSkill, CharacterSpell, CharacterAction, SpellSlotGroup } from '$lib/types';
   import { groupByLevel } from '$lib/utils/spells';
   import SpellCard from '$lib/components/SpellCard.svelte';
   import { appStore } from '$lib/stores/app.svelte';
@@ -75,6 +75,28 @@
     const suffix = level === 1 ? 'st' : level === 2 ? 'nd' : level === 3 ? 'rd' : 'th';
     return `${level}${suffix}`;
   }
+
+  let characterActions = $state<CharacterAction[]>([]);
+  $effect(() => {
+    characterActions = appStore.characterActions;
+  });
+
+  let actionGroups = $derived.by(() => {
+    const groups: { label: string; type: string; actions: CharacterAction[] }[] = [];
+    const order = ['action', 'bonus_action', 'reaction'];
+    const labels: Record<string, string> = {
+      action: 'Actions',
+      bonus_action: 'Bonus Actions',
+      reaction: 'Reactions'
+    };
+    for (const t of order) {
+      const filtered = characterActions.filter(a => a.action_type === t);
+      if (filtered.length > 0) {
+        groups.push({ label: labels[t], type: t, actions: filtered });
+      }
+    }
+    return groups;
+  });
 
 
 </script>
@@ -176,19 +198,59 @@
     </div>
   {/if}
 
-  {#if spells.length > 0}
-    <div>
-      <div class="detail-section-title">Spells</div>
-      {#each spellsByLevel as group}
-        <div class="spell-group">
-          <div class="spell-level-header">{group.label}</div>
-          <div class="spell-grid">
-            {#each group.spells as spell}
-              <SpellCard {spell} compact />
-            {/each}
-          </div>
+  {#if spells.length > 0 || actionGroups.length > 0}
+    <div class="spells-actions-grid">
+      {#if spells.length > 0}
+        <div class="col-spells">
+          <div class="detail-section-title">Spells</div>
+          {#each spellsByLevel as group}
+            <div class="spell-group">
+              <div class="spell-level-header">{group.label}</div>
+              <div class="spell-grid">
+                {#each group.spells as spell}
+                  <SpellCard {spell} compact />
+                {/each}
+              </div>
+            </div>
+          {/each}
         </div>
-      {/each}
+      {/if}
+      {#if actionGroups.length > 0}
+        <div class="col-actions">
+          <div class="detail-section-title">Combat Actions</div>
+          {#each actionGroups as group}
+            <div class="action-type-group">
+              <div class="action-type-header">{group.label}</div>
+              <div class="action-list">
+                {#each group.actions as action}
+                  <div class="action-card">
+                    <div class="action-card-name">
+                      {action.name}
+                      {#if action.is_attack && action.attack_bonus}
+                        <span class="action-atk">+{action.attack_bonus} to hit</span>
+                      {/if}
+                    </div>
+                    {#if action.damage_dice}
+                      <div class="action-damage">
+                        {action.damage_dice}{#if action.damage_type} {action.damage_type}{/if}
+                      </div>
+                    {/if}
+                    {#if action.uses_per_day}
+                      <div class="action-uses">
+                        {action.uses_current ?? action.uses_per_day}/{action.uses_per_day} per day
+                      </div>
+                    {/if}
+                    {#if action.recharge_formula}
+                      <div class="action-recharge">{action.recharge_formula}</div>
+                    {/if}
+                    <div class="action-desc">{action.description}</div>
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
     </div>
   {/if}
 
@@ -204,6 +266,16 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
+  }
+
+  .spells-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .spells-actions-grid > :only-child {
+    grid-column: 1 / -1;
   }
 
   .detail-top {
@@ -563,6 +635,84 @@
     display: flex;
     flex-direction: column;
     gap: 3px;
+  }
+
+  .action-type-group {
+    margin-bottom: 10px;
+  }
+
+  .action-type-header {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+    padding: 2px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .action-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .action-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .action-card-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .action-atk {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--accent);
+    background: var(--accent-dim);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+
+  .action-damage {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--red);
+  }
+
+  .action-uses {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .action-recharge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--gold);
+    font-weight: 500;
+  }
+
+  .action-desc {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.4;
   }
 
 

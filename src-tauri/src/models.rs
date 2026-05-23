@@ -230,6 +230,21 @@ pub struct ClassLevelPair {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct EntityAction {
+    pub action_id: String,
+    pub name: String,
+    pub action_type: String,
+    pub description: String,
+    pub is_attack: bool,
+    pub attack_bonus: Option<i32>,
+    pub damage_dice: Option<String>,
+    pub damage_type: Option<String>,
+    pub uses_per_day: Option<i32>,
+    pub uses_current: Option<i32>,
+    pub recharge_formula: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CreateCharacterRequest {
     pub name: String,
     pub class: String,
