@@ -25,33 +25,44 @@ impl DbPool {
 
 /// Ensure a writable copy of the seed database exists at `dest`.
 ///
-/// If `dest` already exists, does nothing.
-/// First launch migration: if the old source-tree DB exists (pre-change),
-/// it is copied to preserve any user data already in it.
-/// Otherwise, the bundled `seed` file is copied.
+/// In development (when the source-tree DB is present), always re-copies
+/// if the source is newer than `dest` so that schema/data changes made to
+/// `Assets/5e_data.sqlite` propagate to the running app automatically.
+/// In production (bundled app where seed comes from resources), only copies
+/// if `dest` doesn't exist yet.
 pub fn seed_database(dest: &Path, seed: &Path) -> Result<(), String> {
-    if dest.exists() {
-        return Ok(());
-    }
-
     // Ensure parent directory exists
     if let Some(parent) = dest.parent() {
         fs::create_dir_all(parent)
             .map_err(|e| format!("Failed to create database directory {:?}: {}", parent, e))?;
     }
 
-    // One-time migration: if the old source-tree DB exists, copy it
-    // to preserve user data that may have been written before this change.
-    let old_source_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+    // In development the source-tree DB takes priority.
+    // In release builds the bundled "seed" path from resources is the only source.
+    let source_tree = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .unwrap()
         .join("Assets/5e_data.sqlite");
 
-    let source: &Path = if old_source_path.exists() {
-        &old_source_path
-    } else {
-        seed
-    };
+    let source: &Path = if source_tree.exists() { &source_tree } else { seed };
+
+    // If dest doesn't exist yet, always copy (first launch).
+    // If source is newer than dest, re-copy so schema/data changes propagate.
+    // Otherwise leave it alone (avoids wiping user data unnecessarily).
+    if dest.exists() {
+        let src_modified = fs::metadata(source)
+            .and_then(|m| m.modified())
+            .ok();
+        let dst_modified = fs::metadata(dest)
+            .and_then(|m| m.modified())
+            .ok();
+
+        match (src_modified, dst_modified) {
+            (Some(src_time), Some(dst_time)) if src_time <= dst_time => return Ok(()),
+            // If we can't compare timestamps (unlikely), fall through and re-copy.
+            (_, _) => {}
+        }
+    }
 
     fs::copy(source, dest)
         .map_err(|e| format!("Failed to copy database from {:?} to {:?}: {}", source, dest, e))?;

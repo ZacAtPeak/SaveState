@@ -76,12 +76,7 @@
     return `${level}${suffix}`;
   }
 
-  function getGroupLabel(group: SpellSlotGroup): string {
-    if (group.group_type === 'pact_magic') {
-      return `Pact Magic (${group.spellcasting_ability})`;
-    }
-    return `Spellcasting (${group.spellcasting_ability})`;
-  }
+
 </script>
 
 <div class="detail-body">
@@ -141,16 +136,15 @@
       {#each slotGroups as group}
         <div class="slot-group">
           <div class="slot-group-header">
-            <span class="slot-group-title">{getGroupLabel(group)}</span>
-            <span class="slot-group-stats">DC {group.save_dc} · ATK {group.attack_bonus >= 0 ? '+' : ''}{group.attack_bonus}</span>
+            <span class="slot-group-title">DC {group.save_dc} · ATK {group.attack_bonus >= 0 ? '+' : ''}{group.attack_bonus}</span>
           </div>
           <div class="slot-levels">
             {#each group.slots as slot}
               <div class="slot-level" class:depleted={slot.current === 0}>
                 <span class="slot-lvl-label">{getLevelLabel(slot.level)}</span>
                 <div class="slot-dots">
-                  {#each {length: slot.max} as _}
-                    <span class="slot-dot" class:filled={slot.current > 0}></span>
+                  {#each {length: slot.max} as _, i}
+                    <span class="slot-dot" class:filled={i < slot.current}></span>
                   {/each}
                 </div>
                 <span class="slot-fraction">{slot.current}/{slot.max}</span>
@@ -493,12 +487,6 @@
     font-size: 11px;
     font-weight: 600;
     color: var(--fg);
-  }
-
-  .slot-group-stats {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--muted);
   }
 
   .slot-levels {
