@@ -63,8 +63,13 @@
 
   let spellsByLevel = $derived(groupByLevel(spells));
 
-  let slotGroups = $derived(appStore.spellSlotGroups);
-  let hasSlots = $derived(slotGroups.length > 0 && slotGroups.some(g => g.slots.length > 0));
+  let slotGroups = $state<SpellSlotGroup[]>([]);
+  let hasSlots = $state(false);
+  $effect(() => {
+    const groups = appStore.spellSlotGroups;
+    slotGroups = groups;
+    hasSlots = groups.length > 0 && groups.some(g => g.slots.length > 0);
+  });
 
   function getLevelLabel(level: number): string {
     const suffix = level === 1 ? 'st' : level === 2 ? 'nd' : level === 3 ? 'rd' : 'th';
@@ -131,7 +136,7 @@
   </div>
 
   {#if hasSlots}
-    <div>
+    <div class="detail-section sticky">
       <div class="detail-section-title">Spell Slots</div>
       {#each slotGroups as group}
         <div class="slot-group">
@@ -307,9 +312,25 @@
     text-transform: uppercase;
     letter-spacing: 0.10em;
     color: var(--muted);
-    padding-bottom: 8px;
+    padding: 0 0 8px 0;
     border-bottom: 1px solid var(--border);
     margin-bottom: 4px;
+  }
+
+  .detail-section.sticky {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--bg);
+    padding: 8px 0 12px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+  }
+
+  .detail-section.sticky .detail-section-title {
+    border-bottom: none;
+    margin-bottom: 8px;
+    padding-bottom: 0;
   }
 
   .detail-stats-grid {

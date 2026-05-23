@@ -94,6 +94,7 @@
   onToggleBook={toggleBook}
   onToggleSettings={toggleSettings}
   onAddEncounter={toggleEncounterBuilder}
+  onLongRest={appStore.longRest}
 />
 
 {#if appStore.showCreateCharacter}

@@ -11,5 +11,5 @@ pub use creatures::{get_monsters, get_npcs};
 pub use encounters::{delete_encounter, load_encounters, save_encounter};
 pub use reference::{get_backgrounds, get_classes, get_races, get_subclasses, get_subraces};
 pub use skills::get_character_skills;
-pub use slots::{get_spell_slots, set_spell_slots};
+pub use slots::{get_spell_slots, long_rest, set_spell_slots};
 pub use spells::get_character_spells;

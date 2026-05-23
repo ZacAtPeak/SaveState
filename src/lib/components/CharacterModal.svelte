@@ -183,8 +183,13 @@
     }
   }
 
-  let slotGroups = $derived(appStore.spellSlotGroups);
-  let hasSlots = $derived(slotGroups.length > 0 && slotGroups.some(g => g.slots.length > 0));
+  let slotGroups = $state<SpellSlotGroup[]>([]);
+  let hasSlots = $state(false);
+  $effect(() => {
+    const groups = appStore.spellSlotGroups;
+    slotGroups = groups;
+    hasSlots = groups.length > 0 && groups.some(g => g.slots.length > 0);
+  });
 
   function getLevelLabel(level: number): string {
     const suffix = level === 1 ? 'st' : level === 2 ? 'nd' : level === 3 ? 'rd' : 'th';

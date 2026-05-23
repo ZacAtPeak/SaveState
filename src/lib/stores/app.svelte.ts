@@ -195,19 +195,69 @@ function createAppStore() {
     }
   }
 
+  async function longRest() {
+    try {
+      await invoke('long_rest');
+      // Refresh all PC data
+      const pcs = await invoke<PlayerCharacter[]>('get_player_characters');
+      playerCharacters = pcs;
+      // Refresh the currently selected character if it's a PC
+      if (selectedCharacter?.entity_type === 'pc') {
+        const updated = pcs.find(p => p.id === selectedCharacter!.id);
+        if (updated) {
+          selectedCharacter = { ...updated } as unknown as Entity;
+          // Also refresh spells and slots for the current view
+          loadCharacterSpells(updated.id);
+          loadSpellSlots(updated.id);
+        }
+      }
+      // Also refresh NPCs/creatures since HP display might reference them
+      const creaturesResult = await invoke<Creature[]>('get_monsters');
+      creatures = creaturesResult;
+      const npcsResult = await invoke<Entity[]>('get_npcs');
+      npcs = npcsResult;
+      // Refresh initiative list HP for any PCs currently in it
+      initiativeList = initiativeList.map(entity => {
+        if (entity.entity_type === 'pc') {
+          const pc = pcs.find(p => p.id === entity.id);
+          if (pc) {
+            return { ...entity, hit_points_current: pc.hit_points_current, hit_points_max: pc.hit_points_max };
+          }
+        }
+        return entity;
+      });
+    } catch (e) {
+      console.error('Failed to perform long rest:', e);
+    }
+  }
+
   function consumeSlot(groupType: string, level: number) {
-    // Find the slot group and level, decrement current
-    const group = spellSlotGroups.find(g => g.group_type === groupType);
-    if (!group) return;
-    const slot = group.slots.find(s => s.level === level);
-    if (!slot || slot.current <= 0) return;
+    // Build an entirely new state tree so Svelte 5's $state reactivity
+    // reliably detects every reference change.
+    let found = false;
+    const updated = spellSlotGroups.map(group => {
+      if (group.group_type !== groupType) return group;
+      return {
+        ...group,
+        slots: group.slots.map(slot => {
+          if (slot.level !== level) return slot;
+          if (slot.current <= 0) return slot;
+          found = true;
+          return { ...slot, current: slot.current - 1 };
+        })
+      };
+    });
 
-    // Optimistically update UI
-    const current = slot.current - 1;
-    slot.current = current;
-    spellSlotGroups = [...spellSlotGroups]; // trigger reactivity
+    if (!found) return;
 
-    // Debounced persistence (no debounce for simplicity — direct write)
+    spellSlotGroups = updated;
+
+    // Find the decremented value for persistence
+    const newSlot = updated
+      .find(g => g.group_type === groupType)
+      ?.slots.find(s => s.level === level);
+    const current = newSlot?.current ?? 0;
+
     invoke('set_spell_slots', {
       entityId: selectedCharacter?.id ?? '',
       slotType: groupType,
@@ -691,6 +741,7 @@ function createAppStore() {
     loadCharacterSkills,
     loadCharacterSpells,
     loadSpellSlots,
+    longRest,
     consumeSlot,
     loadSpellLibrary,
     selectCharacter,

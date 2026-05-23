@@ -10,11 +10,15 @@
 
   let { spell, compact = false, spellSlotGroups = [] }: Props = $props();
 
+  // Determine the source of truth for slot groups:
+  // If a parent explicitly passed spellSlotGroups, use that;
+  // otherwise, read directly from the reactive store.
+  let parentPassedSlots = $derived(spellSlotGroups.length > 0);
+
+  // Sync from the store via $effect for reliable cross-module reactivity.
+  let effectiveSlotGroups = $state<SpellSlotGroup[]>([]);
   $effect(() => {
-    // Use provided groups or fall back to store
-    if (spellSlotGroups.length === 0) {
-      spellSlotGroups = appStore.spellSlotGroups;
-    }
+    effectiveSlotGroups = parentPassedSlots ? spellSlotGroups : appStore.spellSlotGroups;
   });
 
   // Find if a slot is available at the spell's level or any higher level
@@ -22,9 +26,7 @@
     // Cantrips don't consume slots
     if (spell.level === 0) return null;
 
-    const groups = spellSlotGroups.length > 0 ? spellSlotGroups : appStore.spellSlotGroups;
-
-    for (const group of groups) {
+    for (const group of effectiveSlotGroups) {
       const slots = group.slots;
       // Try exact level first
       let exactSlot = slots.find(s => s.level === spell.level);

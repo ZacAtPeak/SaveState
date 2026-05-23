@@ -11,7 +11,7 @@ use commands::creatures::{get_monsters, get_npcs};
 use commands::encounters::{delete_encounter, delete_state, load_encounters, load_state, load_states, save_encounter, save_state};
 use commands::reference::{get_backgrounds, get_classes, get_races, get_subclasses, get_subraces};
 use commands::skills::get_character_skills;
-use commands::slots::{get_spell_slots, set_spell_slots};
+use commands::slots::{get_spell_slots, long_rest, set_spell_slots};
 use commands::spells::{get_character_spells, get_spell_library};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -80,6 +80,7 @@ pub fn run() {
             // Reference data commands
             get_spell_slots,
             set_spell_slots,
+            long_rest,
             get_classes,
             get_subclasses,
             get_races,

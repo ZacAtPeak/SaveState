@@ -402,6 +402,29 @@ pub fn get_spell_slots(
     Ok(SpellSlotsResponse { groups })
 }
 
+/// Tauri command: Perform a long rest — resets HP to max and restores all spell slots
+/// for all player characters.
+#[tauri::command]
+pub fn long_rest(state: State<DbPool>) -> Result<(), String> {
+    let conn = state.lock()?;
+
+    // Reset HP to max for all PCs
+    conn.execute(
+        "UPDATE entities SET hit_points_current = hit_points_max WHERE entity_type = 'pc'",
+        [],
+    )
+    .map_err(|e| e.to_string())?;
+
+    // Delete persisted spell slot state for all PCs so they recompute to max
+    conn.execute(
+        "DELETE FROM entity_spell_slot_state WHERE entity_id IN (SELECT id FROM entities WHERE entity_type = 'pc')",
+        [],
+    )
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
 /// Tauri command: Upsert the current value for a single slot level.
 /// Clamps slots_curr to [0, computed_max] before writing.
 #[tauri::command]
