@@ -409,8 +409,100 @@ values
 ('pc-1', 'artificer', 'artificer_armorer', 5, 1),
 ('pc-2', 'fighter', 'fighter_champion', 5, 1),
 ('pc-3', 'druid', 'druid_spores', 3, 1),
-('pc-3', 'barbarian', 'barbarian_wild_magic', 2, 0)
+('pc-3', 'barbarian', 'barbarian_wild_magic', 2, 0);
 
 
+--------------------------------------------------------------------------------
+-- 8. ITEMS AND INVENTORY (Weapons + Inventory for Demo Entities)
+--------------------------------------------------------------------------------
+
+INSERT INTO item_library (id, name, item_type, description, weight, value_gp, source) VALUES
+('wpn-longsword',     'Longsword',     'weapon', 'A versatile blade, deadly in one or two hands.',      3,   15,   'PHB'),
+('wpn-shortsword',    'Shortsword',    'weapon', 'A light, quick blade.',                               2,   10,   'PHB'),
+('wpn-scimitar',      'Scimitar',      'weapon', 'A curved, light blade.',                              3,   25,   'PHB'),
+('wpn-dagger',        'Dagger',        'weapon', 'A small, easily concealed blade.',                    1,   2,    'PHB'),
+('wpn-shortbow',      'Shortbow',      'weapon', 'A small bow for ranged attacks.',                     2,   25,   'PHB'),
+('wpn-crossbow-light','Light Crossbow','weapon', 'A simple crossbow.',                                  5,   25,   'PHB'),
+('wpn-quarterstaff',  'Quarterstaff',  'weapon', 'A simple wooden staff.',                              4,   0.2,  'PHB'),
+('wpn-handaxe',       'Handaxe',       'weapon', 'A small throwing axe.',                               2,   5,    'PHB'),
+('wpn-warhammer',     'Warhammer',     'weapon', 'A heavy hammer with a wooden haft.',                   5,   15,   'PHB'),
+('wpn-greataxe',      'Greataxe',      'weapon', 'A massive two-handed axe.',                           7,   30,   'PHB'),
+('wpn-battleaxe',     'Battleaxe',     'weapon', 'A versatile axe, deadly in one or two hands.',         4,   10,   'PHB');
+
+INSERT INTO weapon_profiles (item_id, weapon_category, weapon_range, damage_dice, damage_type, range_normal, range_long, versatile_dice, properties) VALUES
+('wpn-longsword',      'martial', 'melee',  '1d8',  'Slashing',   NULL, NULL, '1d10', '["versatile"]'),
+('wpn-shortsword',     'martial', 'melee',  '1d6',  'Piercing',   NULL, NULL, NULL,   '["finesse","light"]'),
+('wpn-scimitar',       'martial', 'melee',  '1d6',  'Slashing',   NULL, NULL, NULL,   '["finesse","light"]'),
+('wpn-dagger',         'simple',  'melee',  '1d4',  'Piercing',   20,  60,  NULL,   '["finesse","light","thrown"]'),
+('wpn-shortbow',       'simple',  'ranged', '1d6',  'Piercing',   80,  320, NULL,   '["two-handed","ammunition"]'),
+('wpn-crossbow-light', 'simple',  'ranged', '1d8',  'Piercing',   80,  320, NULL,   '["two-handed","ammunition","loading"]'),
+('wpn-quarterstaff',   'simple',  'melee',  '1d6',  'Bludgeoning',NULL, NULL, '1d8',  '["versatile"]'),
+('wpn-handaxe',        'simple',  'melee',  '1d6',  'Slashing',   20,  60,  NULL,   '["light","thrown"]'),
+('wpn-warhammer',      'martial', 'melee',  '1d8',  'Bludgeoning',NULL, NULL, '1d10', '["versatile"]'),
+('wpn-greataxe',       'martial', 'melee',  '1d12', 'Slashing',   NULL, NULL, NULL,   '["heavy","two-handed"]'),
+('wpn-battleaxe',      'martial', 'melee',  '1d8',  'Slashing',   NULL, NULL, '1d10', '["versatile"]');
+
+INSERT INTO action_library (id, name, action_type, description, is_attack, attack_bonus, damage_dice, damage_type) VALUES
+('act-wpn-longsword',     'Longsword',              'action', 'Melee Weapon Attack',                                  1, 0, '1d8',  'Slashing'),
+('act-wpn-longsword-2h',  'Longsword (Versatile)',  'action', 'Melee Weapon Attack (two-handed)',                    1, 0, '1d10', 'Slashing'),
+('act-wpn-shortsword',    'Shortsword',             'action', 'Melee Weapon Attack',                                  1, 0, '1d6',  'Piercing'),
+('act-wpn-scimitar',      'Scimitar',               'action', 'Melee Weapon Attack',                                  1, 0, '1d6',  'Slashing'),
+('act-wpn-dagger',        'Dagger',                 'action', 'Melee or Ranged Weapon Attack',                        1, 0, '1d4',  'Piercing'),
+('act-wpn-shortbow',      'Shortbow',               'action', 'Ranged Weapon Attack',                                 1, 0, '1d6',  'Piercing'),
+('act-wpn-crossbow',      'Light Crossbow',         'action', 'Ranged Weapon Attack',                                 1, 0, '1d8',  'Piercing'),
+('act-wpn-quarterstaff',  'Quarterstaff',           'action', 'Melee Weapon Attack',                                  1, 0, '1d6',  'Bludgeoning'),
+('act-wpn-quarterstaff-2h','Quarterstaff (Versatile)','action','Melee Weapon Attack (two-handed)',                    1, 0, '1d8',  'Bludgeoning'),
+('act-wpn-handaxe',       'Handaxe',                'action', 'Melee or Ranged Weapon Attack',                        1, 0, '1d6',  'Slashing'),
+('act-wpn-warhammer',     'Warhammer',              'action', 'Melee Weapon Attack',                                  1, 0, '1d8',  'Bludgeoning'),
+('act-wpn-warhammer-2h',  'Warhammer (Versatile)',  'action', 'Melee Weapon Attack (two-handed)',                    1, 0, '1d10', 'Bludgeoning'),
+('act-wpn-greataxe',      'Greataxe',               'action', 'Melee Weapon Attack',                                  1, 0, '1d12', 'Slashing'),
+('act-wpn-battleaxe',     'Battleaxe',              'action', 'Melee Weapon Attack',                                  1, 0, '1d8',  'Slashing'),
+('act-wpn-battleaxe-2h',  'Battleaxe (Versatile)',  'action', 'Melee Weapon Attack (two-handed)',                    1, 0, '1d10', 'Slashing');
+
+INSERT INTO item_actions (item_id, action_id) VALUES
+('wpn-longsword',      'act-wpn-longsword'),
+('wpn-longsword',      'act-wpn-longsword-2h'),
+('wpn-shortsword',     'act-wpn-shortsword'),
+('wpn-scimitar',       'act-wpn-scimitar'),
+('wpn-dagger',         'act-wpn-dagger'),
+('wpn-shortbow',       'act-wpn-shortbow'),
+('wpn-crossbow-light', 'act-wpn-crossbow'),
+('wpn-quarterstaff',   'act-wpn-quarterstaff'),
+('wpn-quarterstaff',   'act-wpn-quarterstaff-2h'),
+('wpn-handaxe',        'act-wpn-handaxe'),
+('wpn-warhammer',      'act-wpn-warhammer'),
+('wpn-warhammer',      'act-wpn-warhammer-2h'),
+('wpn-greataxe',       'act-wpn-greataxe'),
+('wpn-battleaxe',      'act-wpn-battleaxe'),
+('wpn-battleaxe',      'act-wpn-battleaxe-2h');
+
+INSERT INTO entity_items (entity_id, item_id, quantity, is_equipped, equipped_slot) VALUES
+('pc-1', 'wpn-scimitar', 1, 1, 'weapon_main'),
+('pc-1', 'wpn-shortbow', 1, 0, NULL),
+('pc-1', 'wpn-dagger',   2, 0, NULL),
+('pc-2', 'wpn-warhammer', 1, 1, 'weapon_main'),
+('pc-3', 'wpn-quarterstaff', 1, 1, 'weapon_main'),
+('pc-3', 'wpn-dagger',       1, 0, NULL),
+('pc-4', 'wpn-warhammer', 1, 1, 'weapon_main'),
+('pc-5', 'wpn-shortsword', 1, 1, 'weapon_main'),
+('pc-5', 'wpn-dagger',     1, 0, NULL),
+('mon-1', 'wpn-scimitar', 1, 1, 'weapon_main'),
+('mon-1', 'wpn-shortbow', 1, 0, NULL),
+('mon-2', 'wpn-greataxe', 1, 1, 'weapon_main'),
+('mon-2', 'wpn-handaxe',  2, 0, NULL),
+('mon-3', 'wpn-shortsword', 1, 1, 'weapon_main'),
+('mon-3', 'wpn-shortbow',   1, 0, NULL),
+('mon-5', 'wpn-greataxe', 1, 1, 'weapon_main'),
+('mon-13', 'wpn-dagger',   1, 1, 'weapon_main'),
+('mon-13', 'wpn-shortbow', 1, 0, NULL),
+('mon-19', 'wpn-greataxe', 1, 1, 'weapon_main'),
+('npc-1', 'wpn-longsword', 1, 1, 'weapon_main'),
+('npc-2', 'wpn-shortsword',     1, 1, 'weapon_main'),
+('npc-2', 'wpn-crossbow-light', 1, 0, NULL),
+('npc-3', 'wpn-dagger', 1, 1, 'weapon_main'),
+('npc-5', 'wpn-shortsword', 1, 1, 'weapon_main'),
+('npc-5', 'wpn-dagger',     1, 1, 'weapon_offhand'),
+('npc-10', 'wpn-warhammer', 1, 1, 'weapon_main'),
+('npc-10', 'wpn-handaxe',   1, 0, NULL);
 
 COMMIT;

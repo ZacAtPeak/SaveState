@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Entity, CharacterSkill, CharacterSpell, CharacterAction, SpellSlotGroup } from '$lib/types';
+  import type { Entity, CharacterSkill, CharacterSpell, CharacterActionWithSource, InventoryItemResponse, SpellSlotGroup } from '$lib/types';
   import { appStore } from '$lib/stores/app.svelte';
 
   interface Props {
@@ -196,13 +196,14 @@
     return `${level}${suffix}`;
   }
 
-  let characterActions = $state<CharacterAction[]>([]);
+  // ── Actions with source (innate + item) ──────────────────────────
+  let characterActions = $state<CharacterActionWithSource[]>([]);
   $effect(() => {
-    characterActions = appStore.characterActions;
+    characterActions = appStore.characterActionsWithSource;
   });
 
   let actionGroups = $derived.by(() => {
-    const groups: { label: string; type: string; actions: CharacterAction[] }[] = [];
+    const groups: { label: string; type: string; actions: CharacterActionWithSource[] }[] = [];
     const order = ['action', 'bonus_action', 'reaction'];
     const labels: Record<string, string> = {
       action: 'Actions',
@@ -217,6 +218,42 @@
     }
     return groups;
   });
+
+  // ── Inventory ─────────────────────────────────────────────────────
+  let inventory = $state<InventoryItemResponse[]>([]);
+  $effect(() => {
+    inventory = appStore.characterInventory;
+  });
+
+  let equippedItems = $derived(inventory.filter(i => i.is_equipped));
+  let unequippedItems = $derived(inventory.filter(i => !i.is_equipped));
+
+  function getWeaponDamageLabel(item: InventoryItemResponse): string {
+    const wp = item.weapon_profile;
+    if (!wp) return '';
+    const dmg = `${wp.damage_dice} ${wp.damage_type}`;
+    if (wp.versatile_dice) return `${dmg} (${wp.versatile_dice})`;
+    return dmg;
+  }
+
+  function getWeaponProperties(item: InventoryItemResponse): string {
+    const wp = item.weapon_profile;
+    if (!wp?.properties) return '';
+    try {
+      const props: string[] = JSON.parse(wp.properties);
+      return props.join(', ');
+    } catch {
+      return wp.properties;
+    }
+  }
+
+  function handleEquip(itemId: string, slot: string) {
+    appStore.equipItem(itemId, slot);
+  }
+
+  function handleUnequip(itemId: string) {
+    appStore.unequipItem(itemId);
+  }
 
   function toggleCondition(condition: string) {
     if (entityStatuses.includes(condition)) {
@@ -432,6 +469,69 @@
           </div>
         {/if}
 
+        {#if inventory.length > 0}
+          <div class="section">
+            <div class="section-title">Inventory</div>
+            {#if equippedItems.length > 0}
+              <div class="inv-group">
+                <div class="inv-subtitle">Equipped</div>
+                <div class="inv-list">
+                  {#each equippedItems as item}
+                    <div class="inv-card">
+                      <div class="inv-card-head">
+                        <span class="inv-card-name">{item.item.name}</span>
+                        <span class="inv-card-slot">{item.equipped_slot ?? 'equipped'}</span>
+                      </div>
+                      {#if item.weapon_profile}
+                        <div class="inv-weapon-info">
+                          <span class="inv-damage">{getWeaponDamageLabel(item)}</span>
+                          {#if item.weapon_profile.weapon_range === 'ranged'}
+                            <span class="inv-range">Range {item.weapon_profile.range_normal}/{item.weapon_profile.range_long} ft</span>
+                          {/if}
+                        </div>
+                        {#if getWeaponProperties(item)}
+                          <div class="inv-props">{getWeaponProperties(item)}</div>
+                        {/if}
+                      {/if}
+                      <div class="inv-card-actions">
+                        <button class="inv-btn unequip-btn" onclick={() => handleUnequip(item.item.id)}>Unequip</button>
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+            {#if unequippedItems.length > 0}
+              <div class="inv-group">
+                <div class="inv-subtitle">Inventory</div>
+                <div class="inv-list">
+                  {#each unequippedItems as item}
+                    <div class="inv-card inv-inv">
+                      <div class="inv-card-head">
+                        <span class="inv-card-name">{item.item.name}</span>
+                        <span class="inv-qty-label">×{item.quantity}</span>
+                      </div>
+                      {#if item.weapon_profile}
+                        <div class="inv-weapon-info">
+                          <span class="inv-damage">{getWeaponDamageLabel(item)}</span>
+                        </div>
+                      {/if}
+                      <div class="inv-card-actions">
+                        {#if item.item.item_type === 'weapon'}
+                          <button class="inv-btn equip-btn" onclick={() => handleEquip(item.item.id, 'weapon_main')}>Equip (Main)</button>
+                          <button class="inv-btn" onclick={() => handleEquip(item.item.id, 'weapon_offhand')}>Off-hand</button>
+                        {:else}
+                          <button class="inv-btn equip-btn" onclick={() => handleEquip(item.item.id, 'item')}>Equip</button>
+                        {/if}
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+          </div>
+        {/if}
+
         {#if actionGroups.length > 0}
           <div class="section">
             <div class="section-title">Combat Actions</div>
@@ -440,7 +540,7 @@
                 <div class="action-type-header">{group.label}</div>
                 <div class="action-list">
                   {#each group.actions as action}
-                    <div class="action-card">
+                    <div class="action-card" class:action-source-item={action.source === 'item'}>
                       <div class="action-card-name">
                         {action.name}
                         {#if action.is_attack && action.attack_bonus}
@@ -459,6 +559,9 @@
                       {/if}
                       {#if action.recharge_formula}
                         <div class="action-recharge">{action.recharge_formula}</div>
+                      {/if}
+                      {#if action.source === 'item' && action.source_item_name}
+                        <div class="action-source-badge">from {action.source_item_name}</div>
                       {/if}
                       <div class="action-desc">{action.description}</div>
                     </div>
@@ -1034,6 +1137,138 @@
     color: var(--fg);
   }
 
+  /* ── Inventory Styles ─────────────────────────────────────────── */
+
+  .inv-group {
+    margin-bottom: 10px;
+  }
+
+  .inv-subtitle {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+
+  .inv-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .inv-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .inv-card.inv-inv {
+    border-style: dashed;
+    opacity: 0.85;
+  }
+
+  .inv-card-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .inv-card-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+
+  .inv-card-slot {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    color: var(--accent);
+    background: var(--accent-dim);
+    padding: 1px 5px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .inv-qty-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted);
+    margin-left: auto;
+  }
+
+  .inv-weapon-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .inv-damage {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--red);
+  }
+
+  .inv-range {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--muted);
+  }
+
+  .inv-props {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: lowercase;
+  }
+
+  .inv-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+  }
+
+  .inv-btn {
+    height: 24px;
+    padding: 0 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: var(--radius-sm);
+    font-size: 9px;
+    font-weight: 600;
+    transition: all 120ms;
+  }
+
+  .inv-btn:hover {
+    color: var(--fg);
+    border-color: var(--gold);
+  }
+
+  .inv-btn.equip-btn {
+    color: var(--green);
+  }
+
+  .inv-btn.equip-btn:hover {
+    background: var(--green-dim);
+    border-color: var(--green);
+  }
+
+  .inv-btn.unequip-btn:hover {
+    color: var(--red);
+    border-color: var(--red);
+    background: var(--red-dim);
+  }
+
   .slot-group {
     margin-bottom: 10px;
     display: flex;
@@ -1141,6 +1376,10 @@
     gap: 4px;
   }
 
+  .action-source-item {
+    border-left: 3px solid var(--accent);
+  }
+
   .action-card-name {
     font-size: 13px;
     font-weight: 600;
@@ -1172,6 +1411,16 @@
     font-size: 10px;
     color: var(--muted);
     font-weight: 500;
+  }
+
+  .action-source-badge {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--accent);
+    background: var(--accent-dim);
+    padding: 1px 6px;
+    border-radius: 4px;
+    width: fit-content;
   }
 
   .action-recharge {

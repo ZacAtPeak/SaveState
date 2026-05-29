@@ -8,6 +8,10 @@ use std::path::PathBuf;
 use tauri::Manager;
 use commands::actions::get_entity_actions;
 use commands::characters::{create_player_character, get_player_characters, update_entity_hp, validate_character_stats};
+use commands::items::{
+    add_item_to_entity, equip_item, get_entity_actions_with_items, get_entity_inventory,
+    get_item_library, remove_item_from_entity, unequip_item,
+};
 use commands::creatures::{get_monsters, get_npcs};
 use commands::encounters::{delete_encounter, delete_state, load_encounters, load_state, load_states, save_encounter, save_state};
 use commands::reference::{get_backgrounds, get_classes, get_races, get_subclasses, get_subraces};
@@ -64,6 +68,13 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             get_entity_actions,
+            get_entity_actions_with_items,
+            get_item_library,
+            get_entity_inventory,
+            equip_item,
+            unequip_item,
+            add_item_to_entity,
+            remove_item_from_entity,
             get_player_characters,
             create_player_character,
             get_monsters,

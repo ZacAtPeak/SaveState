@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { Entity, PlayerCharacter, Creature, InitiativeEntity, CharacterSkill, CharacterSpell, CharacterAction, Spell, CreateCharacterRequest, DiceRoll, SavedEncounter, SavedState, DndClass, Subclass, Race, Subrace, Background, ValidationResult, StatRollMethod, SpellSlotGroup, SpellSlotsResponse } from '$lib/types';
+import type { Entity, PlayerCharacter, Creature, InitiativeEntity, CharacterSkill, CharacterSpell, CharacterAction, CharacterActionWithSource, InventoryItemResponse, Spell, CreateCharacterRequest, DiceRoll, SavedEncounter, SavedState, DndClass, Subclass, Race, Subrace, Background, ValidationResult, StatRollMethod, SpellSlotGroup, SpellSlotsResponse } from '$lib/types';
 
 function createAppStore() {
   let playerCharacters = $state<PlayerCharacter[]>([]);
@@ -9,8 +9,11 @@ function createAppStore() {
   let characterSkills = $state<CharacterSkill[]>([]);
   let characterSpells = $state<CharacterSpell[]>([]);
   let characterActions = $state<CharacterAction[]>([]);
+  let characterActionsWithSource = $state<CharacterActionWithSource[]>([]);
+  let characterInventory = $state<InventoryItemResponse[]>([]);
   let characterActionsLoading = $state(false);
   let characterActionsError = $state<string | null>(null);
+  let characterInventoryLoading = $state(false);
   let characterSpellsLoading = $state(false);
   let characterSpellsError = $state<string | null>(null);
   let spellSlotGroups = $state<SpellSlotGroup[]>([]);
@@ -200,6 +203,62 @@ function createAppStore() {
     }
   }
 
+  async function loadCharacterActionsWithItems(entityId: string) {
+    try {
+      characterActionsWithSource = await invoke<CharacterActionWithSource[]>('get_entity_actions_with_items', {
+        entityId
+      });
+    } catch (e) {
+      console.error('Failed to load character actions with items:', e);
+      characterActionsWithSource = [];
+    }
+  }
+
+  async function loadCharacterInventory(entityId: string) {
+    try {
+      characterInventoryLoading = true;
+      characterInventory = await invoke<InventoryItemResponse[]>('get_entity_inventory', {
+        entityId
+      });
+    } catch (e) {
+      console.error('Failed to load character inventory:', e);
+      characterInventory = [];
+    } finally {
+      characterInventoryLoading = false;
+    }
+  }
+
+  async function equipItem(itemId: string, slot: string) {
+    if (!selectedCharacter) return;
+    try {
+      await invoke('equip_item', {
+        entityId: selectedCharacter.id,
+        itemId,
+        equippedSlot: slot,
+      });
+      // Refresh inventory and actions
+      await loadCharacterInventory(selectedCharacter.id);
+      await loadCharacterActionsWithItems(selectedCharacter.id);
+    } catch (e) {
+      console.error('Failed to equip item:', e);
+    }
+  }
+
+  async function unequipItem(itemId: string) {
+    if (!selectedCharacter) return;
+    try {
+      await invoke('unequip_item', {
+        entityId: selectedCharacter.id,
+        itemId,
+      });
+      // Refresh inventory and actions
+      await loadCharacterInventory(selectedCharacter.id);
+      await loadCharacterActionsWithItems(selectedCharacter.id);
+    } catch (e) {
+      console.error('Failed to unequip item:', e);
+    }
+  }
+
   async function loadSpellSlots(entityId: string) {
     try {
       spellSlotsLoading = true;
@@ -305,6 +364,8 @@ function createAppStore() {
     }
     loadCharacterSpells(char.id);
     loadCharacterActions(char.id);
+    loadCharacterActionsWithItems(char.id);
+    loadCharacterInventory(char.id);
     loadSpellSlots(char.id);
   }
 
@@ -521,6 +582,8 @@ function createAppStore() {
     }
     loadCharacterSpells(entity.id);
     loadCharacterActions(entity.id);
+    loadCharacterActionsWithItems(entity.id);
+    loadCharacterInventory(entity.id);
     loadSpellSlots(entity.id);
     const statusKey = instanceId ?? entity.id;
     if (!characterStatuses[statusKey]) {
@@ -731,8 +794,13 @@ function createAppStore() {
     set characterSpells(v) { characterSpells = v; },
     get characterActions() { return characterActions; },
     set characterActions(v) { characterActions = v; },
+    get characterActionsWithSource() { return characterActionsWithSource; },
+    set characterActionsWithSource(v) { characterActionsWithSource = v; },
+    get characterInventory() { return characterInventory; },
+    set characterInventory(v) { characterInventory = v; },
     get characterActionsLoading() { return characterActionsLoading; },
     get characterActionsError() { return characterActionsError; },
+    get characterInventoryLoading() { return characterInventoryLoading; },
     get characterSpellsLoading() { return characterSpellsLoading; },
     get characterSpellsError() { return characterSpellsError; },
     get spellSlotGroups() { return spellSlotGroups; },
@@ -766,6 +834,10 @@ function createAppStore() {
     loadCharacterSkills,
     loadCharacterSpells,
     loadCharacterActions,
+    loadCharacterActionsWithItems,
+    loadCharacterInventory,
+    equipItem,
+    unequipItem,
     loadSpellSlots,
     longRest,
     consumeSlot,

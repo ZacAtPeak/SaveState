@@ -196,6 +196,95 @@ pub struct Background {
     pub feature_description: Option<String>,
 }
 
+// ── Items / Inventory ────────────────────────────────────────────────
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ItemLibrary {
+    pub id: String,
+    pub name: String,
+    pub item_type: String,
+    pub description: Option<String>,
+    pub rarity: String,
+    pub weight: Option<f64>,
+    pub value_gp: Option<i32>,
+    pub is_magical: bool,
+    pub attack_bonus: Option<i32>,
+    pub damage_bonus: Option<i32>,
+    pub damage_bonus_type: Option<String>,
+    pub source: Option<String>,
+    pub page: Option<i32>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct WeaponProfile {
+    pub item_id: String,
+    pub weapon_category: String,
+    pub weapon_range: String,
+    pub damage_dice: String,
+    pub damage_type: String,
+    pub range_normal: Option<i32>,
+    pub range_long: Option<i32>,
+    pub versatile_dice: Option<String>,
+    pub properties: Option<String>, // JSON array
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ArmorProfile {
+    pub item_id: String,
+    pub armor_category: String,
+    pub base_armor_class: i32,
+    pub dex_bonus_cap: Option<i32>,
+    pub strength_requirement: Option<i32>,
+    pub stealth_disadvantage: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EntityItem {
+    pub entity_id: String,
+    pub item_id: String,
+    pub quantity: i32,
+    pub is_equipped: bool,
+    pub equipped_slot: Option<String>,
+}
+
+/// Combined inventory item for the frontend — item + optional weapon/armor profile
+#[derive(Debug, Serialize, Deserialize)]
+pub struct InventoryItemResponse {
+    pub item: ItemLibrary,
+    pub weapon_profile: Option<WeaponProfile>,
+    pub armor_profile: Option<ArmorProfile>,
+    pub quantity: i32,
+    pub is_equipped: bool,
+    pub equipped_slot: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ItemAction {
+    pub item_id: String,
+    pub action_id: String,
+}
+
+/// Extended action with a source label so the frontend can show whether
+/// the action comes from an equipped item or is innate to the entity.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EntityActionWithSource {
+    pub action_id: String,
+    pub name: String,
+    pub action_type: String,
+    pub description: String,
+    pub is_attack: bool,
+    pub attack_bonus: Option<i32>,
+    pub damage_dice: Option<String>,
+    pub damage_type: Option<String>,
+    pub uses_per_day: Option<i32>,
+    pub uses_current: Option<i32>,
+    pub recharge_formula: Option<String>,
+    /// "innate" (from entity_actions) or "item" (from equipped item via item_actions)
+    pub source: String,
+    /// The item name if source == "item"
+    pub source_item_name: Option<String>,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ValidationResult {
     pub errors: Vec<String>,

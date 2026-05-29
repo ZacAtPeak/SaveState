@@ -248,4 +248,76 @@ pub mod queries {
         INSERT INTO entity_skills (entity_id, skill_id, is_proficient, is_expert)
         VALUES (?1, ?2, 1, 0)
     "#;
+
+    // ── Items & Inventory ────────────────────────────────────────────
+
+    pub const GET_ITEM_LIBRARY: &str = r#"
+        SELECT id, name, item_type, description, rarity, weight, value_gp,
+               is_magical, attack_bonus, damage_bonus, damage_bonus_type,
+               source, page
+        FROM item_library
+        ORDER BY name
+    "#;
+
+    pub const GET_WEAPON_PROFILE: &str = r#"
+        SELECT item_id, weapon_category, weapon_range, damage_dice, damage_type,
+               range_normal, range_long, versatile_dice, properties
+        FROM weapon_profiles
+        WHERE item_id = ?1
+    "#;
+
+    pub const GET_ARMOR_PROFILE: &str = r#"
+        SELECT item_id, armor_category, base_armor_class, dex_bonus_cap,
+               strength_requirement, stealth_disadvantage
+        FROM armor_profiles
+        WHERE item_id = ?1
+    "#;
+
+    pub const GET_ENTITY_INVENTORY: &str = r#"
+        SELECT ei.entity_id, ei.item_id, ei.quantity, ei.is_equipped, ei.equipped_slot,
+               il.id, il.name, il.item_type, il.description, il.rarity, il.weight, il.value_gp,
+               il.is_magical, il.attack_bonus, il.damage_bonus, il.damage_bonus_type, il.source, il.page
+        FROM entity_items ei
+        JOIN item_library il ON ei.item_id = il.id
+        WHERE ei.entity_id = ?1
+        ORDER BY ei.is_equipped DESC, il.name
+    "#;
+
+    pub const EQUIP_ITEM: &str = r#"
+        UPDATE entity_items
+        SET is_equipped = 1, equipped_slot = ?1
+        WHERE entity_id = ?2 AND item_id = ?3
+    "#;
+
+    pub const UNEQUIP_ITEM: &str = r#"
+        UPDATE entity_items
+        SET is_equipped = 0, equipped_slot = NULL
+        WHERE entity_id = ?1 AND item_id = ?2
+    "#;
+
+    /// Actions from equipped items via the item_actions join
+    pub const GET_EQUIPPED_ITEM_ACTIONS: &str = r#"
+        SELECT al.id, al.name, al.action_type, al.description, al.is_attack,
+               al.attack_bonus, al.damage_dice, al.damage_type,
+               NULL, NULL, NULL,
+               il.name
+        FROM entity_items ei
+        JOIN item_actions ia ON ei.item_id = ia.item_id
+        JOIN action_library al ON ia.action_id = al.id
+        JOIN item_library il ON ei.item_id = il.id
+        WHERE ei.entity_id = ?1 AND ei.is_equipped = 1
+        ORDER BY al.action_type, al.name
+    "#;
+
+    pub const ADD_ITEM_TO_ENTITY: &str = r#"
+        INSERT INTO entity_items (entity_id, item_id, quantity, is_equipped, equipped_slot)
+        VALUES (?1, ?2, ?3, 0, NULL)
+        ON CONFLICT(entity_id, item_id)
+        DO UPDATE SET quantity = quantity + ?3
+    "#;
+
+    pub const REMOVE_ITEM_FROM_ENTITY: &str = r#"
+        DELETE FROM entity_items
+        WHERE entity_id = ?1 AND item_id = ?2
+    "#;
 }

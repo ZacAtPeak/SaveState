@@ -221,6 +221,80 @@ export interface SpellSlotsResponse {
   groups: SpellSlotGroup[];
 }
 
+// ── Items / Inventory ────────────────────────────────────────────────
+
+export interface ItemLibrary {
+  id: string;
+  name: string;
+  item_type: string;
+  description: string | null;
+  rarity: string;
+  weight: number | null;
+  value_gp: number | null;
+  is_magical: boolean;
+  attack_bonus: number | null;
+  damage_bonus: number | null;
+  damage_bonus_type: string | null;
+  source: string | null;
+  page: number | null;
+}
+
+export interface WeaponProfile {
+  item_id: string;
+  weapon_category: string;
+  weapon_range: string;
+  damage_dice: string;
+  damage_type: string;
+  range_normal: number | null;
+  range_long: number | null;
+  versatile_dice: string | null;
+  properties: string | null; // JSON array like '["finesse","light"]'
+}
+
+export interface ArmorProfile {
+  item_id: string;
+  armor_category: string;
+  base_armor_class: number;
+  dex_bonus_cap: number | null;
+  strength_requirement: number | null;
+  stealth_disadvantage: boolean;
+}
+
+export interface EntityItem {
+  entity_id: string;
+  item_id: string;
+  quantity: number;
+  is_equipped: boolean;
+  equipped_slot: string | null;
+}
+
+export interface InventoryItemResponse {
+  item: ItemLibrary;
+  weapon_profile: WeaponProfile | null;
+  armor_profile: ArmorProfile | null;
+  quantity: number;
+  is_equipped: boolean;
+  equipped_slot: string | null;
+}
+
+export interface CharacterActionWithSource {
+  action_id: string;
+  name: string;
+  action_type: string;
+  description: string;
+  is_attack: boolean;
+  attack_bonus: number | null;
+  damage_dice: string | null;
+  damage_type: string | null;
+  uses_per_day: number | null;
+  uses_current: number | null;
+  recharge_formula: string | null;
+  /// 'innate' (from entity_actions) or 'item' (from equipped item)
+  source: string;
+  /// The item name if source === 'item'
+  source_item_name: string | null;
+}
+
 export interface SavedState {
   id: string;
   name: string;
